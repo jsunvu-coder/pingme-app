@@ -1,13 +1,28 @@
-import { ScreenContent } from 'components/ScreenContent';
-import { StatusBar } from 'expo-status-bar';
-
 import './global.css';
+import RootNavigator from 'navigation/RootNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from 'navigation/Navigation';
+import { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LinkingService } from 'business/services/LinkingService';
 
 export default function App() {
+  useEffect(() => {
+    // Initialize deep linking service
+    const linkingService = LinkingService.getInstance();
+    linkingService.initialize();
+
+    // Cleanup on unmount
+    return () => {
+      linkingService.cleanup();
+    };
+  }, []);
+
   return (
-    <>
-      <ScreenContent title="Home" path="App.tsx"></ScreenContent>
-      <StatusBar style="auto" />
-    </>
+    <SafeAreaProvider>
+      <NavigationContainer ref={navigationRef}>
+        <RootNavigator />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

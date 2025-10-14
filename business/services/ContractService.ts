@@ -1,0 +1,393 @@
+import axios from "axios";
+import { API_URL } from "business/Config";
+import { SESSION_EXPIRED } from "business/Constants";
+
+/**
+ * React Native version of Angular ContractService
+ * - Uses async/await axios HTTP client
+ * - Matches Angular 1:1 method parity
+ * - BehaviorSubject replaced with internal memory + callbacks
+ * - Includes detailed logging and session guard
+ */
+
+export class ContractService {
+  private static instance: ContractService;
+  private crypto: any | null = null;
+  private sync: { blockTime: bigint; localTime: number } | null = null;
+  private sessionExpiredCallbacks: (() => void)[] = [];
+
+  private constructor() {}
+
+  static getInstance(): ContractService {
+    if (!ContractService.instance) {
+      ContractService.instance = new ContractService();
+    }
+    return ContractService.instance;
+  }
+
+  // ========================================================
+  // 🔐 SESSION MANAGEMENT
+  // ========================================================
+  onSessionExpired(callback: () => void) {
+    this.sessionExpiredCallbacks.push(callback);
+  }
+
+  private triggerSessionExpired() {
+    console.warn("⚠️ [ContractService] Session expired");
+    for (const cb of this.sessionExpiredCallbacks) cb();
+  }
+
+  // ========================================================
+  // 💾 CRYPTO STATE
+  // ========================================================
+  getCrypto() {
+    return this.crypto;
+  }
+
+  setCrypto(crypto: any) {
+    console.log("🔐 [ContractService] Crypto state set:", {
+      username: crypto?.username,
+      expiry: crypto?.expiry,
+    });
+    this.crypto = crypto;
+  }
+
+  clearCrypto() {
+    console.log("🧹 [ContractService] Cleared crypto state");
+    this.crypto = null;
+  }
+
+  // ========================================================
+  // 🕒 TIMESTAMP HANDLING
+  // ========================================================
+  async getTimestamp(): Promise<{ timestamp: bigint }> {
+    const now = Date.now();
+    if (this.sync) {
+      const delta = Math.floor((now - this.sync.localTime) / 1000);
+      return { timestamp: this.sync.blockTime + BigInt(delta) };
+    }
+    const ret = await this._getTimestamp();
+    const blockTime = BigInt(ret.timestamp);
+    this.sync = { blockTime, localTime: now };
+    console.log("⏱ Cached timestamp:", blockTime.toString());
+    return { timestamp: blockTime };
+  }
+
+  private async _getTimestamp() {
+    return this.get("/pm_get_timestamp");
+  }
+
+  // ========================================================
+  // ⚙️ LOW LEVEL HTTP HELPERS
+  // ========================================================
+  private async get(endpoint: string) {
+    const url = `${API_URL}${endpoint}`;
+    const start = Date.now();
+    console.log(`📡 [GET] ${url}`);
+    try {
+      const { data, status } = await axios.get(url);
+      console.log(`✅ [GET] ${url} (${status}) in ${Date.now() - start}ms`, data);
+      return data;
+    } catch (error: any) {
+      this.logHttpError("GET", url, error, start);
+      throw error;
+    }
+  }
+
+  private async post(endpoint: string, body: Record<string, any>) {
+    const url = `${API_URL}${endpoint}`;
+    const start = Date.now();
+    console.log(`📡 [POST] ${url}`, body);
+    try {
+      const { data, status } = await axios.post(url, body);
+      console.log(`✅ [POST] ${url} (${status}) in ${Date.now() - start}ms`, data);
+      return data;
+    } catch (error: any) {
+      this.logHttpError("POST", url, error, start);
+      throw error;
+    }
+  }
+
+  private logHttpError(method: string, url: string, error: any, start: number) {
+    const duration = Date.now() - start;
+    console.error(
+      `❌ [${method}] ${url} failed after ${duration}ms`,
+      "\nMessage:", error?.message,
+      "\nStatus:", error?.response?.status ?? "N/A",
+      "\nResponse:", JSON.stringify(error?.response?.data ?? {}, null, 2)
+    );
+  }
+
+  // ========================================================
+  // 🛡️ SESSION GUARD
+  // ========================================================
+  private async sessionGuard<T>(call: () => Promise<T>): Promise<T> {
+    const cr = this.getCrypto();
+    if (cr?.expiry && Date.now() > cr.expiry) {
+      this.triggerSessionExpired();
+      throw new Error(SESSION_EXPIRED);
+    }
+    return await call();
+  }
+
+  // ========================================================
+  // 🌍 OPEN CALLS (NO GUARD)
+  // ========================================================
+  async claim(proof: string, salt: string, commitment: string) {
+    return this.post("/pm_claim", { proof, salt, commitment });
+  }
+
+  async commit(ct1: string, ct2?: string, ct3?: string) {
+    return this.post("/pm_commit", { ct1, ct2, ct3 });
+  }
+
+  async getCurrentSalt(salt: string) {
+    return this.get(`/pm_get_current_salt?salt=${salt}`);
+  }
+
+  async getGlobals() {
+    return this.get("/pm_get_globals");
+  }
+
+  async getLockbox(lockbox_commitment: string) {
+    return this.post("/pm_get_lockbox", { lockbox_commitment });
+  }
+
+  async hasBalance(commitment: string) {
+    return this.get(`/pm_has_balance?commitment=${commitment}`);
+  }
+
+  async hasLockbox(commitment: string) {
+    return this.get(`/pm_has_lockbox?commitment=${commitment}`);
+  }
+
+  async hasSalt(salt: string) {
+    return this.get(`/pm_has_salt?salt=${salt}`);
+  }
+
+  // ========================================================
+  // 🔐 GUARDED CALLS
+  // ========================================================
+  async changePassword(proof: string, next_salt: string, next_commitment: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_change_password", { proof, next_salt, next_commitment })
+    );
+  }
+
+  async getBalance(commitment: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_get_balance", { commitment })
+    );
+  }
+
+  async getCommitState(ct1: string, ct2?: string, ct3?: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_get_commit_state", { ct1, ct2, ct3 })
+    );
+  }
+
+  async getEvents(commitment: string, batch_size?: number) {
+    return this.sessionGuard(() =>
+      this.post("/pm_get_events", { commitment, batch_size })
+    );
+  }
+
+  async getForwarder(commitment: string) {
+    return this.sessionGuard(() =>
+      this.get(`/pm_get_forwarder?commitment=${commitment}`)
+    );
+  }
+
+  async getForwarderBalance(forwarder: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_get_forwarder_balance", { forwarder })
+    );
+  }
+
+  async reclaim(lockbox_commitment: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_reclaim", { lockbox_commitment })
+    );
+  }
+
+  async requestPay(
+    amount: string,
+    requester: string,
+    requestee: string,
+    token: string,
+    token_name: string,
+    custom_message: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/pm_request_pay", {
+        amount,
+        requester,
+        requestee,
+        token,
+        token_name,
+        custom_message,
+      })
+    );
+  }
+
+  async retrieve(commitment: string) {
+    return this.sessionGuard(() =>
+      this.post("/pm_retrieve", { commitment })
+    );
+  }
+
+  async withdraw(
+    token: string,
+    amount: string,
+    proof: string,
+    salt: string,
+    next_commitment: string,
+    recipient: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/pm_withdraw", {
+        token,
+        amount,
+        proof,
+        salt,
+        next_commitment,
+        recipient,
+      })
+    );
+  }
+
+  async withdrawAndDeposit(
+    token: string,
+    amount: string,
+    proof: string,
+    salt: string,
+    next_commitment: string,
+    commitment: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/pm_withdraw_and_deposit", {
+        token,
+        amount,
+        proof,
+        salt,
+        next_commitment,
+        commitment,
+      })
+    );
+  }
+
+  async withdrawAndSend(
+    token: string,
+    amount: string,
+    proof: string,
+    salt: string,
+    next_commitment: string,
+    duration: number,
+    lockbox_commitment: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/pm_withdraw_and_send", {
+        token,
+        amount,
+        proof,
+        salt,
+        next_commitment,
+        duration,
+        lockbox_commitment,
+      })
+    );
+  }
+
+  async withdrawAndSendEmail(
+    token: string,
+    amount: string,
+    proof: string,
+    salt: string,
+    next_commitment: string,
+    duration: number,
+    lockbox_commitment: string,
+    username: string,
+    lockbox_salt: string,
+    token_name: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/pm_withdraw_and_send_email", {
+        token,
+        amount,
+        proof,
+        salt,
+        next_commitment,
+        duration,
+        lockbox_commitment,
+        username,
+        lockbox_salt,
+        token_name: token_name ?? "USDT",
+      })
+    );
+  }
+
+  // ========================================================
+  // 🧩 RECOVERY FUNCTIONS
+  // ========================================================
+  async rvChangePassword(
+    proof: string,
+    commitment: string,
+    ct_kem: string,
+    ct: string,
+    tag: string,
+    nonce: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/rv_change_password", {
+        proof,
+        commitment,
+        ct_kem,
+        ct,
+        tag,
+        nonce,
+      })
+    );
+  }
+
+  async rvCommit(ct1: string, ct2: string) {
+    return this.post("/rv_commit", { ct1, ct2 });
+  }
+
+  async rvGetCommitState(ct1: string, ct2: string) {
+    return this.sessionGuard(() =>
+      this.post("/rv_get_commit_state", { ct1, ct2 })
+    );
+  }
+
+  async rvGetRecoveryPk(commitment: string) {
+    return this.sessionGuard(() =>
+      this.post("/rv_get_recovery_pk", { commitment })
+    );
+  }
+
+  async rvGetVaultRecordByRecoveryPk(recovery_pk: string) {
+    return this.sessionGuard(() =>
+      this.post("/rv_get_vault_record_by_recovery_pk", { recovery_pk })
+    );
+  }
+
+  async rvInitialize(
+    commitment: string,
+    recovery_pk: string,
+    ct_kem: string,
+    ct: string,
+    tag: string,
+    nonce: string
+  ) {
+    return this.sessionGuard(() =>
+      this.post("/rv_initialize", {
+        commitment,
+        recovery_pk,
+        ct_kem,
+        ct,
+        tag,
+        nonce,
+      })
+    );
+  }
+}
