@@ -12,7 +12,7 @@ export default function SegmentedTab({ label, icon, isActive, onPress }: Props) 
 		<TouchableOpacity
 			onPress={onPress}
 			activeOpacity={0.8}
-			className={`flex-1 flex-row items-center justify-center rounded-full py-1 ${
+			className={`flex-1 flex-row items-center justify-center rounded-full h-14 ${
 				isActive ? "bg-black" : ""
 			}`}
 		>

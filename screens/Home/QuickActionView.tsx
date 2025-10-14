@@ -19,10 +19,10 @@ export default function QuickActionsView() {
         navigation.navigate("Ping Now", { mode: "request" });
         break;
       case "Scan":
-        console.log("🔹 Open QR scanner");
+        navigation.navigate("QRCodeScreen", { mode: "scan" });
         break;
       case "Show":
-        console.log("🔹 Show my QR code");
+        navigation.navigate("QRCodeScreen", { mode: "myqr" });
         break;
       default:
         break;

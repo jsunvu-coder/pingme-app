@@ -29,11 +29,25 @@ export default function PingMeScreen() {
 	const [email, setEmail] = useState("pingme02@test.com");
 	const [isPickerVisible, setPickerVisible] = useState(false);
 
+	// ✅ Handle params passed from QR code navigation
 	useEffect(() => {
-		if (route.params?.mode) {
-			setMode(route.params.mode);
+		if (route.params) {
+			const { mode: paramMode, email: paramEmail, amount: paramAmount } =
+				route.params;
+
+			if (paramMode && (paramMode === "send" || paramMode === "request")) {
+				setMode(paramMode);
+			}
+
+			if (paramEmail && typeof paramEmail === "string") {
+				setEmail(paramEmail);
+			}
+
+			if (paramAmount && !isNaN(Number(paramAmount))) {
+				setAmount(String(paramAmount));
+			}
 		}
-	}, [route.params?.mode]);
+	}, [route.params]);
 
 	const handleContinue = async () => {
 		const numericAmount = parseFloat(amount);
@@ -66,7 +80,7 @@ export default function PingMeScreen() {
 
 	return (
 		<View className="flex-1 bg-white">
-			<SafeAreaView edges={['top']} />
+			<SafeAreaView edges={["top"]} />
 
 			<HeaderView title="Ping Now" variant="light" />
 
@@ -81,7 +95,10 @@ export default function PingMeScreen() {
 				>
 					<SendRequestTab mode={mode} onChange={setMode} />
 
-					<ChannelSelectView active={activeChannel} onChange={setActiveChannel} />
+					<ChannelSelectView
+						active={activeChannel}
+						onChange={setActiveChannel}
+					/>
 
 					{activeChannel === "Email" && (
 						<EmailRecipientSection
@@ -108,11 +125,7 @@ export default function PingMeScreen() {
 						/>
 					</View>
 
-					<PrimaryButton
-						title="Continue"
-						className="mt-6"
-						onPress={handleContinue}
-					/>
+					<PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</View>
