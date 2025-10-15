@@ -61,6 +61,7 @@ export class PayService {
     confirm,
     setLoading,
     setTxHash,
+    setPayLink
   }: {
     entry: any;
     username: string;
@@ -70,6 +71,7 @@ export class PayService {
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
     setLoading: (loading: boolean) => void;
     setTxHash: (hash?: string) => void;
+    setPayLink: (link?: string) => void
   }) {
     try {
       console.log("🚀 [PayService] Starting pay() process...");
@@ -173,7 +175,9 @@ export class PayService {
           setTxHash(txHash);
           console.log("✅ [PayService] Payment success! TX Hash:", txHash);
 
-          if (payLink) console.log("🔗 Payment link:", payLink);
+          if (payLink) {console.log("🔗 Payment link:", payLink);
+            setPayLink(payLink)
+          }
           return txHash;
         },
         cr.commitment,

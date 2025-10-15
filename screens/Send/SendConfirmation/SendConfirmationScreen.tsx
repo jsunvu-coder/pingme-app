@@ -6,7 +6,6 @@ import {
 	Platform,
 	KeyboardAvoidingView,
 	Alert,
-	Modal,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
@@ -137,6 +136,18 @@ export default function SendConfirmationScreen() {
 						});
 					}
 				},
+				setPayLink: (paylink?: string) => { 
+					if (paylink) {
+						console.log("✅ PayLink:", paylink);
+
+						push("PaymentLinkCreatedScreen", {
+							amount: Number(amount),
+							passphrase,
+							paylink,
+							duration: lockboxDuration || LOCKBOX_DURATION,
+						});
+					}
+				}
 			});
 
 			console.log("🎉 Payment completed successfully!");

@@ -68,14 +68,20 @@ export default function PingMeScreen() {
 			await RecentEmailStorage.save(recipient);
 		}
 
-		push("SendConfirmationScreen", {
+		const commonParams = {
 			amount: numericAmount,
 			displayAmount: `$${numericAmount.toFixed(2)}`,
 			recipient,
 			channel: activeChannel,
 			lockboxDuration: LOCKBOX_DURATION,
 			mode,
-		});
+		};
+
+		if (mode === "send") {
+			push("SendConfirmationScreen", commonParams);
+		} else {
+			push("RequestConfirmationScreen", commonParams);
+		}
 	};
 
 	return (

@@ -15,21 +15,23 @@ type PaymentLinkParams = {
 
 export default function PaymentLinkCreatedScreen() {
 	const route = useRoute();
-	const { payLink = "https://docs.google.com/document/d/1xvHi2jkwX73Qfl_b2WrA0D1NRJjxDFJmkcUqRK2lCTY/edit?tab=t.zkgwbszcpyr", amount = 10, duration = 7, passphrase = "1234" } =
+	const { payLink = "https://docs.google.com/document/d/1xvHi2jkwX73Qfl_b2WrA0D1NRJjxDFJmkcUqRK2lCTY/edit?tab=t.zkgwbszcpyr", amount = 10, duration = 7, passphrase } =
 		(route.params as PaymentLinkParams) || {};
 
 	return (
-		<SafeAreaView className="flex-1 px-6 bg-[#FAFAFA]">
+		<View className="flex-1 px-6 bg-[#FAFAFA]">
+			<SafeAreaView edges={["top"]} />
+
 			<ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
 				<Header />
 				<View className="my-6">
-					<PaymentLinkCard payLink={payLink} amount={amount} />
+					<PaymentLinkCard payLink={payLink} amount={amount} openLinkVisible={passphrase !== undefined}/>
 				</View>
-				<PaymentClaimCard passphrase={passphrase} content={`Recipient will have ${duration} days to claim.`} />
+				{passphrase && <PaymentClaimCard passphrase={passphrase} content={`Recipient will have ${duration} days to claim.`} />}
 			</ScrollView>
 
 			<PaymentLinkButtons payLink={payLink} passphrase={passphrase} />
-		</SafeAreaView>
+		</View>
 	);
 }
 

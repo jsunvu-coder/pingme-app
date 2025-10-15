@@ -3,6 +3,7 @@ import PrimaryButton from "components/PrimaryButton";
 import SecondaryButton from "components/ScondaryButton";
 import { setRootScreen } from "navigation/Navigation";
 import { Share } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PaymentLinkButtons({
 	payLink,
@@ -26,19 +27,17 @@ export default function PaymentLinkButtons({
 	};
 
 	return (
-		<View className="my-10">
-			<View className="flex-row space-y-4">
-				<SecondaryButton
-					title="Homepage"
-					onPress={handleBackHome}
-					className="flex-1 mr-3"
-				/>
-				<PrimaryButton
-					title="Share Now"
-					onPress={handleShare}
-					className="flex-1 ml-3"
-				/>
+		<View className="my-6">
+			<View className="flex-row gap-x-6">
+				<View className="flex-1">
+					<SecondaryButton title="Homepage" onPress={handleBackHome} />
+				</View>
+				<View className="flex-1">
+					<PrimaryButton title="Share Now" onPress={handleShare} />
+				</View>
 			</View>
+
+<SafeAreaView edges={['bottom']}/>
 		</View>
 
 	);
