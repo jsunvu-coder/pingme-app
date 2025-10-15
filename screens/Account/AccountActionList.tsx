@@ -1,6 +1,11 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import * as Application from "expo-application";
+
+const version = Application.nativeApplicationVersion ?? "";
+const build = Application.nativeBuildVersion ?? "";
+
 
 type ItemProps = {
 	label: string;
@@ -19,20 +24,20 @@ export default function AccountActionList({ onLogout }: Props) {
 			action: () => {},
 			rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
 		},
-		{
-			label: "Change Password",
-			action: () => {},
-			rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
-		},
-		{
-			label: "Rate us on App Store",
-			action: () => {},
-			rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
-		},
+		// {
+		// 	label: "Change Password",
+		// 	action: () => {},
+		// 	rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+		// },
+		// {
+		// 	label: "Rate us on App Store",
+		// 	action: () => {},
+		// 	rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+		// },
 		{
 			label: "About PingMe",
 			action: () => {},
-			rightView: <Text className="text-gray-400 text-lg">v1.0.0</Text>,
+			rightView: <Text className="text-gray-400 text-lg">v{version} ({build})</Text>,
 		},
 	];
 

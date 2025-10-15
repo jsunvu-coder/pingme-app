@@ -2,14 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Camera } from "expo-camera";
 import CameraPermissionView from "./CameraPermissionView";
 import { NoPermissionView } from "./NoPermissionView";
-import { push } from "navigation/Navigation";
-import { URL } from "business/Config";
 import QRScanner from "./QrScanner";
 import { useNavigation } from "@react-navigation/native";
 import { handleQRCode } from "./QRHandler";
 
 export default function ScanQRView() {
-    const navigation = useNavigation<any>();
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [deniedPermanently, setDeniedPermanently] = useState(false);
 

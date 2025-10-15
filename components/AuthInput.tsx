@@ -1,4 +1,4 @@
-import { View, TextInput, Text } from 'react-native';
+import { View, TextInput, Text, KeyboardTypeOptions } from 'react-native';
 import React from 'react';
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
   customView?: React.ReactNode;
   error?: boolean;
   errorMessage?: string;
+  keyboardType?: KeyboardTypeOptions,
+  autoCapitalize?: "none" | "sentences" | "words" | "characters",
 };
 
 export default function AuthInput({
@@ -21,6 +23,8 @@ export default function AuthInput({
   customView,
   error = false,
   errorMessage,
+  keyboardType, 
+  autoCapitalize
 }: Props) {
   const isEmpty = !value || value.trim() === '';
 
@@ -33,6 +37,8 @@ export default function AuthInput({
         placeholderTextColor="#909090"
         value={value}
         onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
         className="h-12 px-1 text-2xl text-[#0F0F0F]"
       />

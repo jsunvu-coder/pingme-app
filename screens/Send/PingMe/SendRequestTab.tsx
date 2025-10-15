@@ -1,33 +1,41 @@
 import { View } from "react-native";
+import AnimatedSegmentedTabs from "components/AnimatedSegmentedTabs";
 import ArrowUpRightIcon from "assets/ArrowUpRightIcon";
 import ArrowDownLeftIcon from "assets/ArrowDownLeftIcon";
-import SegmentedTab from "components/SegmentedTab";
+
+const SendIcon = ({ isActive }: { isActive: boolean }) => (
+  <ArrowUpRightIcon size={32} color={isActive ? "white" : "#929393"} />
+);
+
+const RequestIcon = ({ isActive }: { isActive: boolean }) => (
+  <ArrowDownLeftIcon size={32} color={isActive ? "white" : "#929393"} />
+);
 
 type Props = {
   mode: "send" | "request";
   onChange: (mode: "send" | "request") => void;
+  sendContent?: React.ReactNode;
+  requestContent?: React.ReactNode;
 };
 
-export default function SendRequestTab({ mode, onChange }: Props) {
-
+export default function SendRequestTab({
+  mode,
+  onChange,
+  sendContent,
+  requestContent,
+}: Props) {
   return (
-    <View
-      className="relative flex-row rounded-full border border-[#E9E9E9] bg-white p-1 overflow-hidden mb-6 mt-6"
-    >
-
-      <SegmentedTab
-        icon={<ArrowUpRightIcon color={mode === "send" ? "white" : "#929393"} />}
-        label="Send"
-        isActive={mode === "send"}
-        onPress={() => onChange("send")}
-      />
-
-      <SegmentedTab
-        icon={<ArrowDownLeftIcon color={mode === "request" ? "white" : "#929393"} />}
-        label="Request"
-        isActive={mode === "request"}
-        onPress={() => onChange("request")}
-      />
+    <View>
+      <AnimatedSegmentedTabs
+        activeKey={mode}
+        onChange={(key) => onChange(key as "send" | "request")}
+        tabs={[
+          { key: "send", label: "Send", icon: SendIcon },
+          { key: "request", label: "Request", icon: RequestIcon },
+        ]}
+      >
+        {mode === "send" ? sendContent : requestContent}
+      </AnimatedSegmentedTabs>
     </View>
   );
 }

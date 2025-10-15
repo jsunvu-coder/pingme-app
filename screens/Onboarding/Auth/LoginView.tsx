@@ -62,6 +62,7 @@ export default function LoginView({
           value={email}
           onChangeText={setEmail}
           placeholder="Email address"
+          keyboardType='email-address'
         />
 
         <AuthInput

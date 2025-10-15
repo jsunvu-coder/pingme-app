@@ -1,35 +1,33 @@
-import { useState } from "react";
 import { View } from "react-native";
+import AnimatedSegmentedTabs from "components/AnimatedSegmentedTabs";
 import QRCode1Icon from "assets/QRCode1Icon";
 import QRCode2Icon from "assets/QRCode2Icon";
-import SegmentedTab from "components/SegmentedTab";
-import { useNavigation } from "@react-navigation/native";
+
+const ScanIcon = ({ isActive }: { isActive: boolean }) => (
+  <QRCode1Icon isActive={isActive} />
+);
+
+const MyQrIcon = ({ isActive }: { isActive: boolean }) => (
+  <QRCode2Icon isActive={isActive} />
+);
 
 type Props = {
-  activeTab?: "scan" | "myqr";
+  activeTab: "scan" | "myqr";
   setActiveTab: (tab: "scan" | "myqr") => void;
 };
 
-export default function QrTabSwitch({ activeTab = "scan", setActiveTab }: Props) {
-
-  const handlePress = (tab: "scan" | "myqr") => {
-    setActiveTab(tab);
-  };
-
+export default function QrTabSwitch({ activeTab, setActiveTab }: Props) {
   return (
-    <View className="relative flex-row rounded-full border border-[#E9E9E9] bg-white p-1 overflow-hidden">
-      <SegmentedTab
-        label="Scan QR"
-        icon={<QRCode1Icon isActive={activeTab === "scan"} />}
-        isActive={activeTab === "scan"}
-        onPress={() => handlePress("scan")}
-      />
-
-      <SegmentedTab
-        label="My QR"
-        icon={<QRCode2Icon isActive={activeTab === "myqr"} />}
-        isActive={activeTab === "myqr"}
-        onPress={() => handlePress("myqr")}
+    <View className="mx-6">
+      <AnimatedSegmentedTabs
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as "scan" | "myqr")}
+        tabs={[
+          { key: "scan", label: "Scan QR", icon: ScanIcon },
+          { key: "myqr", label: "My QR", icon: MyQrIcon },
+        ]}
+        activeColor="black"
+        inactiveColor="#929393"
       />
     </View>
   );

@@ -42,7 +42,7 @@ export default function HomeScreen() {
 				>
 					<View className="flex-1 justify-end">
 						<BalanceView
-							balance={`$${loading ? "..." : totalBalance}`}
+							balance={`$${loading ? "0.00" : totalBalance}`}
 							tokens={balances}
 						/>
 					</View>

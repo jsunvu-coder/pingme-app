@@ -91,6 +91,8 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           customView={<PasswordRules password={password} />}
           error={!!errors.password}
           errorMessage={errors.password}
+          keyboardType='email-address'
+          autoCapitalize='none'
         />
 
         <AuthInput

@@ -13,7 +13,7 @@ export default function SegmentedTab({ label, icon, isActive, onPress }: Props) 
 			onPress={onPress}
 			activeOpacity={0.8}
 			className={`flex-1 flex-row items-center justify-center rounded-full h-14 ${
-				isActive ? "bg-black" : ""
+				isActive ? "" : ""
 			}`}
 		>
 			<View>{icon}</View>

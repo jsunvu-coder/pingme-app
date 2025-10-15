@@ -6,6 +6,7 @@ import AccountActionList from "./AccountActionList";
 import { AccountDataService } from "business/services/AccountDataService";
 import { BalanceService } from "business/services/BalanceService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { setRootScreen } from "navigation/Navigation";
 
 export default function AccountScreen() {
 	return (
@@ -27,7 +28,7 @@ export default function AccountScreen() {
 				/>
 
 				<AccountActionList
-					onLogout={() => console.log("Logging out...")}
+					onLogout={() => setRootScreen(["SplashScreen"])}
 				/>
 			</ScrollView>
 		</View>
