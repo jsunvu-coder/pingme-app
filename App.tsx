@@ -5,8 +5,13 @@ import { navigationRef } from 'navigation/Navigation';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LinkingService } from 'business/services/LinkingService';
+import { install } from 'react-native-quick-crypto';
 
 export default function App() {
+  useEffect(() => {
+    install();
+  }, []);
+
   useEffect(() => {
     // Initialize deep linking service
     const linkingService = LinkingService.getInstance();

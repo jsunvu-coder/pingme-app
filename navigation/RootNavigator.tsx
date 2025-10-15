@@ -20,7 +20,6 @@ import QRCodeScreen from 'screens/Pay/QrCode/QRCodeScreen';
 import PayQrScreen from 'screens/Pay/QrPayment/PayQrScreen';
 import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
-import PasswordRecoveryScreen from 'screens/PasswordRecovery/PasswordRecoveryScreen';
 import RequestSuccessScreen from 'screens/Request/RequestSuccess/RequestSuccessScreen';
 import AccountRecoveryScreen from 'screens/Recovery/AccountRecoveryScreen';
 
@@ -31,14 +30,14 @@ const transparentModalOptions: StackNavigationOptions = {
 	animation: 'slide_from_bottom',
 };
 
-const SCREEN_GROUPS: Array<{
+const SCREEN_GROUPS: {
 	label: string;
-	screens: Array<{
+	screens: {
 		name: string;
 		component: ComponentType<any>;
 		options?: StackNavigationOptions;
-	}>;
-}> = [
+	}[];
+}[] = [
 		{
 			label: 'Onboarding & Auth',
 			screens: [
@@ -112,8 +111,35 @@ const SCREEN_GROUPS: Array<{
 		{
 			label: 'Settings',
 			screens: [
-				{ name: 'PasswordRecoveryScreen', component: PasswordRecoveryScreen },
-				{ name: 'AccountRecoveryScreen', component: AccountRecoveryScreen },
+				{ name: 'AccountRecoveryScreen', component: AccountRecoveryScreen, options: {
+          headerShown: true,
+          headerTitle: 'Password Recovery',
+          headerStyle: {
+            backgroundColor: '#fff',
+            borderBottomWidth: 0,
+            shadowColor: 'transparent',
+            shadowOffset: {
+              width: 0,
+              height: 0,
+            },
+            shadowOpacity: 0,
+            shadowRadius: 0,
+						height: 120,
+          },
+          headerTitleStyle: {
+            color: '#444444',
+            fontWeight: '500',
+            fontSize: 20,
+          },
+          headerLeft: () => (
+            <TouchableOpacity
+              className="items-center justify-center"
+              activeOpacity={0.8}
+              onPress={() => goBack()}>
+              <BackIcon />
+            </TouchableOpacity>
+          ),
+        }, },
 			],
 		},
 	];

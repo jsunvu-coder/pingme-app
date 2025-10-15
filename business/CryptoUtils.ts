@@ -11,7 +11,8 @@ import { x25519 } from '@noble/curves/ed25519';
 import { GLOBAL_SALT, GLOBALS, NOT_HEX } from './Constants';
 import { Utils } from './Utils';
 import 'react-native-get-random-values';
-// import QuickCrypto from 'react-native-quick-crypto';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 export class CryptoUtils {
   private static asArrayBufferStrict(view: Uint8Array): ArrayBuffer {
@@ -122,25 +123,8 @@ export class CryptoUtils {
   }
 
   static async hkdf32(ikm: Uint8Array, salt: Uint8Array, info: Uint8Array): Promise<Uint8Array> {
-    const subtle: any = (crypto as any)?.subtle ?? (crypto as any).subtle;
-    const baseKey = await subtle.importKey(
-      'raw',
-      CryptoUtils.asArrayBufferStrict(ikm),
-      'HKDF',
-      false,
-      ['deriveBits']
-    );
-    const bits = await subtle.deriveBits(
-      {
-        name: 'HKDF',
-        hash: 'SHA-256',
-        salt: CryptoUtils.asArrayBufferStrict(salt),
-        info: CryptoUtils.asArrayBufferStrict(info),
-      },
-      baseKey,
-      256
-    );
-    return new Uint8Array(bits);
+    const okm = hkdf(sha256, ikm, salt, info, 32);
+    return new Uint8Array(okm);
   }
 
   static async aesGcmEncrypt256(
