@@ -1,4 +1,4 @@
-import { SafeAreaView, View, ActivityIndicator, Text, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, Alert } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SecurityNotice } from './SecurityNotice';
@@ -7,7 +7,7 @@ import { QRCodeCard } from './QRCodeCard';
 import { ActionFooter } from './ActionFooter';
 import { SuccessView } from './SuccessView';
 import PrimaryButton from 'components/PrimaryButton';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import RecoveryConfirmSheet from './RecoveryConfirmSheet';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -112,10 +112,13 @@ export default function AccountRecoveryScreen() {
       const rvCommitmentHash = CryptoUtils.globalHash(rvCommitment);
       if (!rvCommitmentHash) throw new Error('Failed to compute rv commitment hash');
 
+      const recoveryPkHash = CryptoUtils.globalHash(recoveryPkHex);
+      if (!recoveryPkHash) throw new Error('Failed to compute recovery pk hash');
+
       await auth.rvCommitProtect(
         () => contract.rvInitialize(rvCommitment, recoveryPkHex, ctKemHex, ctHex, tagHex, nonceHex),
-        rvCommitment,
-        rvCommitmentHash
+        rvCommitmentHash,
+        recoveryPkHash
       );
 
       setRecoveryPk(recoveryPkHex);
@@ -144,10 +147,10 @@ export default function AccountRecoveryScreen() {
         }
 
         const fileUri = FileSystem.cacheDirectory + 'recovery-qr.png';
-        await FileSystem.writeAsStringAsync(fileUri, data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+        const base64 = data?.startsWith('data:image') ? data.split(',')[1] : data;
+        await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: 'base64' });
         await MediaLibrary.saveToLibraryAsync(fileUri);
+        Alert.alert('Success', 'QR image saved to Photos');
       } catch (e: any) {
         console.warn('Failed to save QR image', e);
         Alert.alert('Error', e?.message || 'Failed to save QR image');
