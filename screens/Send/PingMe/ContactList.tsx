@@ -98,7 +98,7 @@ export default function ContactPickerModal({
 				) : (
 					<FlatList
 						data={contacts}
-						keyExtractor={(item, index) => item.id || index.toString()}
+						keyExtractor={(item, index) => index.toString()}
 						renderItem={({ item }) => {
 							const email = item.emails?.[0]?.email;
 							return (
