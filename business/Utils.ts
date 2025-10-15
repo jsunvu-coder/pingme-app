@@ -80,7 +80,6 @@ export class Utils {
   // ------------------------
   static filterBalance(bal: BalanceEntry[]): BalanceEntry[] {
     return bal
-      .filter((entry) => BigInt(entry.amount) > 0n)
       .sort((a, b) => {
         const bigA = BigInt(a.amount);
         const bigB = BigInt(b.amount);

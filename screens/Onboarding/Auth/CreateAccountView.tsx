@@ -60,9 +60,31 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
   const hasErrors = Object.keys(errors).length > 0;
   const isFormValid = email && password && confirm && !hasErrors && agreeToC;
 
+  const handleRegister = async () => {
+    setLoading(true);
+    const auth = AuthService.getInstance();
+    try {
+      const ok = await auth.signup(email, password, lockboxProof ?? route?.params?.lockboxProof);
+      if (ok) {
+        AccountDataService.getInstance().email = email;
+        const proof = lockboxProof ?? route?.params?.lockboxProof;
+        if (proof) {
+          presentOverMain('ShareScreen', { mode: 'claimed', amountUsdStr, from: 'signup' });
+        } else {
+          setRootScreen(['MainTab']);
+        }
+      }
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      Alert.alert('Signup failed', err?.message || 'Unable to create account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 gap-y-2 px-6 py-8">
+    <View className="flex-1 bg-white">
+      <View className="flex-1 gap-y-2 px-6">
         <AuthInput
           icon={<EmailIcon />}
           value={email}
@@ -91,8 +113,8 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           customView={<PasswordRules password={password} />}
           error={!!errors.password}
           errorMessage={errors.password}
-          keyboardType='email-address'
-          autoCapitalize='none'
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <AuthInput
@@ -126,37 +148,13 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
       </View>
 
       <PrimaryButton
-        className="mx-6"
+        className="mx-6 mb-6"
         title="Create Account"
         disabled={loading || !isFormValid}
         loading={loading}
         loadingText="Creating account..."
-        onPress={async () => {
-          setLoading(true);
-          const auth = AuthService.getInstance();
-          try {
-            const ok = await auth.signup(
-              email,
-              password,
-              lockboxProof ?? route?.params?.lockboxProof
-            );
-            if (ok) {
-              AccountDataService.getInstance().email = email;
-              const proof = lockboxProof ?? route?.params?.lockboxProof;
-              if (proof) {
-                presentOverMain('ShareScreen', { mode: 'claimed', amountUsdStr, from: 'signup' });
-              } else {
-                setRootScreen(['MainTab']);
-              }
-            }
-          } catch (err: any) {
-            console.error('Signup error:', err);
-            Alert.alert('Signup failed', err?.message || 'Unable to create account');
-          } finally {
-            setLoading(false);
-          }
-        }}
+        onPress={handleRegister}
       />
-    </SafeAreaView>
+    </View>
   );
 }

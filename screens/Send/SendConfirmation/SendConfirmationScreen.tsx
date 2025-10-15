@@ -56,7 +56,9 @@ export default function SendConfirmationScreen() {
 				const balances = balanceService.balances;
 				console.log("🔄 Balance update received:", balances);
 				if (balances && balances.length > 0) {
-					const matched = balances.find((b) => b.token === TOKENS.USDT) || balances[0];
+					const matched = balances
+						.filter(b => parseFloat(b.amount) > 0.0)
+						.find((b) => b.token === TOKENS.USDT) || balances[0];
 					setEntry(matched);
 					console.log("🔗 Active token entry:", matched);
 				}
@@ -136,7 +138,7 @@ export default function SendConfirmationScreen() {
 						});
 					}
 				},
-				setPayLink: (paylink?: string) => { 
+				setPayLink: (paylink?: string) => {
 					if (paylink) {
 						console.log("✅ PayLink:", paylink);
 

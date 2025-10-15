@@ -14,9 +14,11 @@ export default function PaymentLinkButtons({
 }) {
 	const handleShare = async () => {
 		try {
-			await Share.share({
-				message: `Here's your PingMe payment link:\n\n${payLink}\n\nPassphrase: ${passphrase}`,
-			});
+			let message = `Here's your PingMe payment link:\n\n${payLink}`
+			if (passphrase) {
+				message += `\n\nPassphrase: ${passphrase}`
+			}
+			await Share.share({ message: message, });
 		} catch (err) {
 			console.error("Share error:", err);
 		}
@@ -37,7 +39,7 @@ export default function PaymentLinkButtons({
 				</View>
 			</View>
 
-<SafeAreaView edges={['bottom']}/>
+			<SafeAreaView edges={['bottom']} />
 		</View>
 
 	);

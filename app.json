@@ -10,7 +10,6 @@
       "tsconfigPaths": true
     },
     "plugins": [
-      "expo-barcode-scanner",
       [
         "expo-camera",
         {
@@ -24,13 +23,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FD4912"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "buildNumber": "1",
@@ -47,8 +44,11 @@
       },
       "permissions": [
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.hailstonelab.pingme"
     },
     "extra": {
       "eas": {

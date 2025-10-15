@@ -53,6 +53,8 @@ export default function EmailRecipientSection({
 				icon={<View />}
 				value={email}
 				onChangeText={setEmail}
+				keyboardType="email-address"
+				autoCapitalize="none"
 				placeholder="Email address"
 			/>
 

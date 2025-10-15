@@ -10,8 +10,8 @@ type Props = {
   customView?: React.ReactNode;
   error?: boolean;
   errorMessage?: string;
-  keyboardType?: KeyboardTypeOptions,
-  autoCapitalize?: "none" | "sentences" | "words" | "characters",
+  keyboardType?: KeyboardTypeOptions;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 };
 
 export default function AuthInput({
@@ -23,8 +23,8 @@ export default function AuthInput({
   customView,
   error = false,
   errorMessage,
-  keyboardType, 
-  autoCapitalize
+  keyboardType,
+  autoCapitalize,
 }: Props) {
   const isEmpty = !value || value.trim() === '';
 
@@ -40,18 +40,20 @@ export default function AuthInput({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         secureTextEntry={secureTextEntry}
-        className="h-12 px-1 text-2xl text-[#0F0F0F]"
+        className="h-12 px-1 text-xl text-[#0F0F0F]"
       />
 
       <View
         style={{
-          height: 2,
+          height: 1,
           backgroundColor: error ? '#FB1028' : isEmpty ? '#3B3A3A' : '#BEBEBE',
           marginTop: 6,
         }}
       />
 
-      {error && errorMessage && <Text className="text-[#FB1028] mt-2 text-sm font-medium">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="mt-2 text-sm font-medium text-[#FB1028]">{errorMessage}</Text>
+      )}
 
       {customView && <View className="mt-4">{customView}</View>}
     </View>

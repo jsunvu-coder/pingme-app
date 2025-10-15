@@ -1,111 +1,210 @@
-import { useState } from "react";
-import { View, Text } from "react-native";
-import { useRoute } from "@react-navigation/native";
-import type { RouteProp } from "@react-navigation/native";
+import { useEffect, useState } from 'react';
+import { View, Text, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 
-import ModalContainer from "components/ModalContainer";
-import PrimaryButton from "components/PrimaryButton";
-import { LOCKBOX_DURATION } from "business/Constants";
-import CloseButton from "components/CloseButton";
-import PaymentSummaryCard from "./PaymentSummaryCard";
-import WalletRequestIcon from "assets/WalletRequestIcon";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { push } from "navigation/Navigation";
+import ModalContainer from 'components/ModalContainer';
+import PrimaryButton from 'components/PrimaryButton';
+import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
+import CloseButton from 'components/CloseButton';
+import PaymentSummaryCard from './PaymentSummaryCard';
+import WalletRequestIcon from 'assets/WalletRequestIcon';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { push } from 'navigation/Navigation';
+import { BalanceService } from 'business/services/BalanceService';
+import { RequestService } from 'api/RequestService';
 
 type RequestConfirmationParams = {
-	amount: number;
-	displayAmount: string;
-	recipient?: string;
-	channel: "Email" | "Link";
-	lockboxDuration?: number;
+  amount: number;
+  displayAmount: string;
+  recipient?: string;
+  channel: 'Email' | 'Link';
+  lockboxDuration?: number;
 };
 
 type RootStackParamList = {
-	RequestConfirmationScreen: RequestConfirmationParams;
+  RequestConfirmationScreen: RequestConfirmationParams;
 };
 
 export default function RequestConfirmationScreen() {
-	const route = useRoute<RouteProp<RootStackParamList, "RequestConfirmationScreen">>();
-	const params = route.params || {};
+  const route = useRoute<RouteProp<RootStackParamList, 'RequestConfirmationScreen'>>();
+  const params = route.params || {};
 
-	const {
-		amount = 0,
-		displayAmount = "$0.00",
-		recipient,
-		channel = "Email",
-		lockboxDuration = LOCKBOX_DURATION,
-	} = params;
+  const balanceService = BalanceService.getInstance();
 
-	const [loading, setLoading] = useState(false);
+  const {
+    amount = 0,
+    displayAmount = '$0.00',
+    recipient = '',
+    channel = 'Email',
+    lockboxDuration = LOCKBOX_DURATION,
+  } = params;
 
-	const handleSendingRequest = async () => {
-		setLoading(true);
+  const [loading, setLoading] = useState(false);
+  const [entry, setEntry] = useState<any | null>(null);
 
-		try {
-			if (channel === "Email" && recipient) {
-				// ✅ Case 1: Email request
-				push("RequestSuccessScreen", {
-					amount,
-					displayAmount,
-					recipient,
-					channel,
-					lockboxDuration,
-				});
-			} else {
-				// ✅ Case 2: Link request (no recipient)
-				// Simulate generated link data
-				const generatedLink = `https://app.pingme.xyz/claim?lockboxSalt=0x${Math.random()
-					.toString(16)
-					.slice(2)
-					.padEnd(64, "a")}`;
+  const requestService = RequestService.getInstance();
 
-				const durationInDays = Math.ceil(lockboxDuration / 86400); // convert seconds → days if needed
+  useEffect(() => {
+    let isMounted = true;
 
-				push("PaymentLinkCreatedScreen", {
-					payLink: generatedLink,
-					amount,
-					duration: durationInDays,
-				});
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
+    (async () => {
+      try {
+        await balanceService.getBalance();
+        if (!isMounted) return;
 
-	return (
-		<ModalContainer>
-			<View className="flex-1 bg-[#fafafa] rounded-t-[24px] overflow-hidden">
-				<View className="absolute top-6 right-6 z-10">
-					<CloseButton />
-				</View>
+        const balances = balanceService.balances;
+        console.log('🔄 Balance update received:', balances);
+        if (balances && balances.length > 0) {
+          const matched = balances.find((b) => b.token === TOKENS.USDT) || balances[0];
+          setEntry(matched);
+          console.log('🔗 Active token entry:', matched);
+        }
+      } catch (e) {
+        console.error('⚠️ Failed to load balances:', e);
+      }
+    })();
 
-				<View className="px-6 pt-10 pb-8">
-					<View className="items-center mb-6 mt-2">
-						<WalletRequestIcon />
-					</View>
+    return () => {
+      isMounted = false;
+      console.log('🧹 Unsubscribing from balance updates...');
+    };
+  }, [balanceService]);
 
-					<Text className="text-4xl font-bold text-center text-black mb-8">
-						You’re about to request a payment
-					</Text>
+  // 🔐 Confirm helper (same as PayService)
+  const confirm = async (msg: string, okOnly = false): Promise<boolean> => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        'Confirmation',
+        msg,
+        okOnly
+          ? [{ text: 'OK', onPress: () => resolve(true) }]
+          : [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Confirm', onPress: () => resolve(true) },
+            ]
+      );
+    });
+  };
 
-					<PaymentSummaryCard
-						amount={displayAmount}
-						recipient={recipient ?? "N/A"}
-						lockboxDuration={lockboxDuration}
-					/>
-				</View>
+  const handleSendingRequest = async () => {
+    if (!amount || Number(amount) <= 0) {
+      Alert.alert('Invalid amount', 'Payment amount must be greater than 0.');
+      return;
+    }
 
-				<View className="flex-1" />
+    if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
+      Alert.alert('Invalid recipient', 'Please provide a valid email address.');
+      return;
+    }
 
-				<PrimaryButton
-					title={channel === "Email" ? "Send Payment Request" : "Confirm Request"}
-					loading={loading}
-					className="mx-6 mb-6"
-					onPress={handleSendingRequest}
-				/>
+    setLoading(true);
 
-				<SafeAreaView edges={["bottom"]} />
-			</View>
-		</ModalContainer>
-	);
+    try {
+      console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
+
+      if (channel === 'Email') {
+        await sendByEmail();
+      } else {
+        await sendByLink();
+      }
+
+      console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
+    } catch (err) {
+      console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
+      Alert.alert('Error', 'Failed to send payment request. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendByEmail = async () => {
+    await requestService.requestPayment({
+      entry,
+      requestee: recipient,
+      amount: amount.toString(),
+      customMessage: '',
+      confirm,
+      setLoading,
+      setSent: (sent) => {
+        if (sent) {
+          console.log('✅ Request sent successfully!');
+
+          push('RequestSuccessScreen', {
+            amount,
+            displayAmount,
+            recipient,
+            channel,
+            lockboxDuration,
+          });
+        }
+      },
+    });
+  };
+
+  const sendByLink = async () => {
+    await requestService.requestPaymentByLink({
+      entry,
+      requestee: recipient,
+      amount: amount.toString(),
+      customMessage: '',
+      confirm,
+      setLoading,
+      setPayLink: (url) => {
+        console.log('✅ Request sent successfully!');
+        const durationInDays = Math.ceil(lockboxDuration / 86400);
+        push('PaymentLinkCreatedScreen', {
+          payLink: url,
+          amount,
+          duration: durationInDays,
+        });
+      },
+    });
+  };
+
+  return (
+    <ModalContainer>
+      <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
+        <View className="absolute top-6 right-6 z-10">
+          <CloseButton />
+        </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'position' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+          style={{ flex: 1 }}>
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View className="px-6 pt-10 pb-8">
+              <View className="mt-2 mb-6 items-center">
+                <WalletRequestIcon />
+              </View>
+
+              <Text className="mb-8 text-center text-4xl font-bold text-black">
+                You’re about to request a payment
+              </Text>
+
+              <PaymentSummaryCard
+                amount={displayAmount}
+                recipient={recipient ?? 'N/A'}
+                lockboxDuration={lockboxDuration}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        <View className="px-6 pb-6">
+          <PrimaryButton
+            title={channel === 'Email' ? 'Send Payment Request' : 'Confirm Request'}
+            loading={loading}
+            onPress={handleSendingRequest}
+          />
+        </View>
+
+        <SafeAreaView edges={['bottom']} />
+      </View>
+    </ModalContainer>
+  );
 }

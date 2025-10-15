@@ -16,9 +16,9 @@ export default function LoginView({
   amountUsdStr,
 }: any) {
   const route = useRoute<any>();
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? 'pingme01@test.com';
+  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('12345678');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -56,13 +56,13 @@ export default function LoginView({
 
   return (
     <View className="flex-1 bg-white">
-      <View className="flex-1 gap-y-2 px-6 py-8">
+      <View className="flex-1 gap-y-2 px-6">
         <AuthInput
           icon={<EmailIcon />}
           value={email}
           onChangeText={setEmail}
           placeholder="Email address"
-          keyboardType='email-address'
+          keyboardType="email-address"
         />
 
         <AuthInput

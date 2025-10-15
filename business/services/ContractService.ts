@@ -1,6 +1,6 @@
 import axios from "axios";
 import { API_URL } from "business/Config";
-import { SESSION_EXPIRED } from "business/Constants";
+import { SESSION_EXPIRED, TOKEN_NAMES } from "business/Constants";
 
 /**
  * React Native version of Angular ContractService
@@ -321,7 +321,7 @@ export class ContractService {
         lockbox_commitment,
         username,
         lockbox_salt,
-        token_name: token_name ?? "USDT",
+        token_name: token_name ?? TOKEN_NAMES.USDT,
       })
     );
   }

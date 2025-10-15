@@ -41,3 +41,7 @@ export const LOCKBOX_DURATION = 1 // 1 day
 export const TOKENS = {
   USDT: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
 }
+
+export const TOKEN_NAMES = { 
+  USDT: 'USDT'
+}
