@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
+import { push } from "navigation/Navigation";
 
 type ItemProps = {
 	label: string;
@@ -10,13 +11,16 @@ type ItemProps = {
 
 type Props = {
 	onLogout: () => void;
+	navigation: any;
 };
 
-export default function AccountActionList({ onLogout }: Props) {
+export default function AccountActionList({ onLogout, navigation }: Props) {
 	const items: ItemProps[] = [
 		{
 			label: "Password Recovery",
-			action: () => {},
+				action: () => {
+					push('AccountRecoveryScreen');
+				},
 			rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
 		},
 		{

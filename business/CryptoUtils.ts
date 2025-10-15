@@ -6,15 +6,20 @@ import {
   solidityPacked,
   toUtf8Bytes,
   toUtf8String,
-} from "ethers";
-import { x25519 } from "@noble/curves/ed25519";
-import { GLOBAL_SALT, GLOBALS, NOT_HEX } from "./Constants";
-import { Utils } from "./Utils";
-import "react-native-get-random-values";
+} from 'ethers';
+import { x25519 } from '@noble/curves/ed25519';
+import { GLOBAL_SALT, GLOBALS, NOT_HEX } from './Constants';
+import { Utils } from './Utils';
+import 'react-native-get-random-values';
+// import QuickCrypto from 'react-native-quick-crypto';
 
 export class CryptoUtils {
+  private static asArrayBufferStrict(view: Uint8Array): ArrayBuffer {
+    const copy = new Uint8Array(view.byteLength);
+    copy.set(view);
+    return copy.buffer;
+  }
   static globalHash(hexData: string): string | null {
-
     if (!CryptoUtils.isHex(hexData)) {
       throw new Error(NOT_HEX);
     }
@@ -25,16 +30,16 @@ export class CryptoUtils {
     // Ensure we always have a valid BytesLike for salt
     let globalSalt = sessionObj?.[GLOBAL_SALT];
     if (!globalSalt || !CryptoUtils.isHex(globalSalt)) {
-      globalSalt = "0x";
+      globalSalt = '0x';
     }
-    const dataType = hexData.length === 66 ? "bytes32" : "bytes";
-    const packed = solidityPacked([dataType, "bytes32"], [hexData, globalSalt]);
+    const dataType = hexData.length === 66 ? 'bytes32' : 'bytes';
+    const packed = solidityPacked([dataType, 'bytes32'], [hexData, globalSalt]);
     const hash = keccak256(packed);
     return hash;
   }
 
   static globalHash2(hexData: string, hexSalt: string): string | null {
-    const packed = solidityPacked(["bytes", "bytes32"], [hexData, hexSalt]);
+    const packed = solidityPacked(['bytes', 'bytes32'], [hexData, hexSalt]);
     return CryptoUtils.globalHash(packed);
   }
 
@@ -51,16 +56,16 @@ export class CryptoUtils {
   }
 
   static isHex(s: string): boolean {
-    return s.startsWith("0x");
+    return s.startsWith('0x');
   }
 
   static randomString(
     len = 16,
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   ): string {
     const bytes = new Uint8Array(len);
     crypto.getRandomValues(bytes);
-    let s = "";
+    let s = '';
     for (let i = 0; i < len; ++i) {
       s += alphabet[bytes[i] % alphabet.length];
     }
@@ -80,13 +85,11 @@ export class CryptoUtils {
   }
 
   static toBytesLike(hex: string): string {
-    return hex.startsWith("0x") ? hex : "0x" + hex;
+    return hex.startsWith('0x') ? hex : '0x' + hex;
   }
 
   static hexToStr(hex: string): string {
-    return CryptoUtils.isHex(hex)
-      ? toUtf8String(CryptoUtils.hexToBytes(hex))
-      : "";
+    return CryptoUtils.isHex(hex) ? toUtf8String(CryptoUtils.hexToBytes(hex)) : '';
   }
 
   static padTo32(b: Uint8Array): Uint8Array {
@@ -103,7 +106,7 @@ export class CryptoUtils {
 
   static x25519PublicKey(priv: Uint8Array): Uint8Array {
     if (priv.length !== 32) {
-      throw new Error("priv must be 32 bytes");
+      throw new Error('priv must be 32 bytes');
     }
     return x25519.getPublicKey(priv);
   }
@@ -118,16 +121,22 @@ export class CryptoUtils {
     return x25519.getSharedSecret(priv, pub); // 32 bytes
   }
 
-  static async hkdf32(
-    ikm: Uint8Array,
-    salt: Uint8Array,
-    info: Uint8Array
-  ): Promise<Uint8Array> {
-    const baseKey = await crypto.subtle.importKey("raw", ikm, "HKDF", false, [
-      "deriveBits",
-    ]);
-    const bits = await crypto.subtle.deriveBits(
-      { name: "HKDF", hash: "SHA-256", salt, info },
+  static async hkdf32(ikm: Uint8Array, salt: Uint8Array, info: Uint8Array): Promise<Uint8Array> {
+    const subtle: any = (crypto as any)?.subtle ?? (crypto as any).subtle;
+    const baseKey = await subtle.importKey(
+      'raw',
+      CryptoUtils.asArrayBufferStrict(ikm),
+      'HKDF',
+      false,
+      ['deriveBits']
+    );
+    const bits = await subtle.deriveBits(
+      {
+        name: 'HKDF',
+        hash: 'SHA-256',
+        salt: CryptoUtils.asArrayBufferStrict(salt),
+        info: CryptoUtils.asArrayBufferStrict(info),
+      },
       baseKey,
       256
     );
@@ -138,12 +147,21 @@ export class CryptoUtils {
     key: Uint8Array,
     plaintext: Uint8Array
   ): Promise<{ ct: Uint8Array; tag: Uint8Array; nonce: Uint8Array }> {
-    const k = await crypto.subtle.importKey("raw", key, "AES-GCM", false, [
-      "encrypt",
-    ]);
+    const subtle: any = (crypto as any)?.subtle ?? (crypto as any).subtle;
+    const k = await subtle.importKey(
+      'raw',
+      CryptoUtils.asArrayBufferStrict(key),
+      'AES-GCM',
+      false,
+      ['encrypt']
+    );
     const nonce = crypto.getRandomValues(new Uint8Array(12));
     const ctTag = new Uint8Array(
-      await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, k, plaintext)
+      await subtle.encrypt(
+        { name: 'AES-GCM', iv: CryptoUtils.asArrayBufferStrict(nonce) },
+        k,
+        CryptoUtils.asArrayBufferStrict(plaintext)
+      )
     );
     const ct = ctTag.slice(0, ctTag.length - 16);
     const tag = ctTag.slice(ctTag.length - 16);
@@ -156,13 +174,22 @@ export class CryptoUtils {
     tag: Uint8Array,
     nonce: Uint8Array
   ): Promise<Uint8Array> {
-    const k = await crypto.subtle.importKey("raw", key, "AES-GCM", false, [
-      "decrypt",
-    ]);
+    const subtle: any = (crypto as any)?.subtle ?? (crypto as any).subtle;
+    const k = await subtle.importKey(
+      'raw',
+      CryptoUtils.asArrayBufferStrict(key),
+      'AES-GCM',
+      false,
+      ['decrypt']
+    );
     const ctTag = new Uint8Array(ct.length + tag.length);
     ctTag.set(ct, 0);
     ctTag.set(tag, ct.length);
-    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: nonce }, k, ctTag);
+    const pt = await subtle.decrypt(
+      { name: 'AES-GCM', iv: CryptoUtils.asArrayBufferStrict(nonce) },
+      k,
+      CryptoUtils.asArrayBufferStrict(ctTag)
+    );
     return new Uint8Array(pt);
   }
 }

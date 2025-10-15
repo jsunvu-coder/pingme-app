@@ -1,6 +1,9 @@
 import { Fragment, type ComponentType } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { StackNavigationOptions } from '@react-navigation/stack';
+import { goBack } from 'navigation/Navigation';
+import BackIcon from 'assets/BackIcon';
+import { TouchableOpacity } from 'react-native';
 
 import MainTab from 'screens/MainTab';
 import SendPaymentScreen from 'screens/Send/PingMe/PingMeScreen';
@@ -19,6 +22,7 @@ import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
 import PasswordRecoveryScreen from 'screens/PasswordRecovery/PasswordRecoveryScreen';
 import RequestSuccessScreen from 'screens/Request/RequestSuccess/RequestSuccessScreen';
+import AccountRecoveryScreen from 'screens/Recovery/AccountRecoveryScreen';
 
 const Stack = createStackNavigator();
 
@@ -109,6 +113,7 @@ const SCREEN_GROUPS: Array<{
 			label: 'Settings',
 			screens: [
 				{ name: 'PasswordRecoveryScreen', component: PasswordRecoveryScreen },
+				{ name: 'AccountRecoveryScreen', component: AccountRecoveryScreen },
 			],
 		},
 	];

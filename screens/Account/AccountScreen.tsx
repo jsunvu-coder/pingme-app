@@ -6,8 +6,11 @@ import AccountActionList from "./AccountActionList";
 import { AccountDataService } from "business/services/AccountDataService";
 import { BalanceService } from "business/services/BalanceService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 
 export default function AccountScreen() {
+	const navigation = useNavigation<any>();
+
 	return (
 		<View className="flex-1 bg-[#FAFAFA]">
 			<SafeAreaView edges={['top']} />
@@ -28,6 +31,7 @@ export default function AccountScreen() {
 
 				<AccountActionList
 					onLogout={() => console.log("Logging out...")}
+					navigation={navigation}
 				/>
 			</ScrollView>
 		</View>
