@@ -27,10 +27,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.minghails.pingme",
+      "bundleIdentifier": "com.hailstonelab.pingme",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -42,17 +44,14 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.minghails.pingme"
+      "package": "com.hailstonelab.pingme"
     },
     "extra": {
       "eas": {
-        "projectId": "1e603a3d-242c-4eb1-aff7-bd47ca75ab47"
+        "projectId": "27fd7c79-94a6-48d9-967b-dc7cafa7a950"
       }
-    },
-    "owner": "minghails"
+    }
   }
 }
