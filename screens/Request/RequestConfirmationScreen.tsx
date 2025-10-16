@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { View, Text, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { push } from 'navigation/Navigation';
 import { BalanceService } from 'business/services/BalanceService';
 import { RequestService } from 'api/RequestService';
+import enUS from 'i18n/en-US.json';
 
 type RequestConfirmationParams = {
   amount: number;
@@ -71,30 +73,34 @@ export default function RequestConfirmationScreen() {
     };
   }, [balanceService]);
 
-  // 🔐 Confirm helper (same as PayService)
+  // 🔐 Confirm helper (uses LocalizedAlert)
   const confirm = async (msg: string, okOnly = false): Promise<boolean> => {
-    return new Promise((resolve) => {
-      Alert.alert(
-        'Confirmation',
-        msg,
-        okOnly
-          ? [{ text: 'OK', onPress: () => resolve(true) }]
-          : [
-              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Confirm', onPress: () => resolve(true) },
-            ]
-      );
+    if (okOnly) {
+      return showLocalizedAlert({ message: msg });
+    }
+    return showLocalizedAlert({
+      message: msg,
+      buttons: [
+        { text: 'Cancel', style: 'cancel', onPress: () => {} },
+        { text: 'Confirm', onPress: () => {} },
+      ],
     });
   };
 
   const handleSendingRequest = async () => {
     if (!amount || Number(amount) <= 0) {
-      Alert.alert('Invalid amount', 'Payment amount must be greater than 0.');
+      await showLocalizedAlert({
+        title: 'Invalid amount',
+        message: 'Payment amount must be greater than 0.',
+      });
       return;
     }
 
     if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
-      Alert.alert('Invalid recipient', 'Please provide a valid email address.');
+      await showLocalizedAlert({
+        title: 'Invalid recipient',
+        message: 'Please provide a valid email address.',
+      });
       return;
     }
 
@@ -112,7 +118,10 @@ export default function RequestConfirmationScreen() {
       console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
     } catch (err) {
       console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
-      Alert.alert('Error', 'Failed to send payment request. Please try again.');
+      await showLocalizedAlert({
+        title: 'Error',
+        message: 'Failed to send payment request. Please try again.',
+      });
     } finally {
       setLoading(false);
     }

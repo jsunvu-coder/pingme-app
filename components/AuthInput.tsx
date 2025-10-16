@@ -38,7 +38,7 @@ export default function AuthInput({
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
+        autoCapitalize={autoCapitalize ?? 'none'}
         secureTextEntry={secureTextEntry}
         className="h-12 px-1 text-xl text-[#0F0F0F]"
       />

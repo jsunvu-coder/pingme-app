@@ -51,7 +51,6 @@ export class AuthService {
 
   private handleError(context: string, error: any): never {
     console.error(`❌ [AuthService] ${context}`, error);
-    Alert.alert('Error', `${context}\n\n${error?.message ?? error}`);
     throw error;
   }
 
@@ -299,8 +298,12 @@ export class AuthService {
         expiry: Date.now() + EXPIRY_MS,
       });
 
-      if (lockboxProof) {
-        const lockboxProofHash = CryptoUtils.globalHash(lockboxProof);
+      const newLockboxProof = lockboxProof || CryptoUtils.strToHex(username);
+      console.log('New lockbox proof:', newLockboxProof);
+      console.log('Lockbox proof (param):', lockboxProof);
+      console.log('Lockbox proof (username):', CryptoUtils.strToHex(username));
+      if (newLockboxProof) {
+        const lockboxProofHash = CryptoUtils.globalHash(newLockboxProof);
         if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
         if (!salt) throw new Error('Failed to generate salt.');
         const saltHash = CryptoUtils.globalHash(salt);
@@ -309,7 +312,7 @@ export class AuthService {
         const commitmentHash = CryptoUtils.globalHash(commitment);
         if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
         await this.commitProtect(
-          () => this.contractService.claim(lockboxProof, salt, commitment),
+          () => this.contractService.claim(newLockboxProof, salt, commitment),
           lockboxProofHash,
           saltHash,
           commitmentHash
@@ -328,8 +331,8 @@ export class AuthService {
   async logout(): Promise<void> {
     try {
       this.log('Logging out...');
-      await this.balanceService.clear();
-      await this.contractService.clearCrypto();
+      this.balanceService.clear();
+      this.contractService.clearCrypto();
       this.log('Logout complete');
     } catch (err) {
       this.handleError('Logout failed', err);

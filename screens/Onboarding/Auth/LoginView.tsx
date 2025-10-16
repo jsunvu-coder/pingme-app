@@ -50,7 +50,7 @@ export default function LoginView({
     } catch (err: any) {
       setLoading(false);
       console.error('Login error:', err);
-      Alert.alert('Login failed', err.message || 'Invalid credentials');
+      Alert.alert('Login failed', 'Invalid credentials');
     }
   };
 
@@ -63,6 +63,7 @@ export default function LoginView({
           onChangeText={setEmail}
           placeholder="Email address"
           keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <AuthInput

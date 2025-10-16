@@ -75,7 +75,6 @@ export class PayService {
   }) {
     try {
       console.log('🚀 [PayService] Starting pay() process...');
-
       // ---------- Validation ----------
       if (!entry?.amount) {
         if (await confirm('_ALERT_SELECT_BALANCE', false)) return;
