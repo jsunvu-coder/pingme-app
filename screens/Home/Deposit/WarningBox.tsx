@@ -5,7 +5,7 @@ export default function WarningBox() {
 	return (
 		<View className="bg-red-500 rounded-2xl p-4 flex-row items-start">
 			<View className="pt-1">
-				<WarningIcon />
+				<WarningIcon color="#ffffff" />
 			</View>
 
 			<View className="flex-1 ml-4">
