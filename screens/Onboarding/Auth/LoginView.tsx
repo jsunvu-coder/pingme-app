@@ -4,7 +4,7 @@ import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
 import PasswordIcon from 'assets/PasswordIcon';
 import { AuthService } from 'business/services/AuthService';
-import { setRootScreen, presentOverMain, push } from 'navigation/Navigation';
+import { setRootScreen, push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { useRoute } from '@react-navigation/native';
@@ -12,9 +12,9 @@ import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 
 export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
+  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? 'pingme5@test.com';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('12345678');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -63,6 +63,7 @@ export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr 
         <AuthInput
           icon={<EmailIcon />}
           value={email}
+          autoFocus
           onChangeText={setEmail}
           placeholder="Email address"
           keyboardType="email-address"
@@ -84,7 +85,7 @@ export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr 
         </View>
       </View>
 
-      <View className="px-6 pb-6">
+      <View className="mt-6 px-6 pb-6">
         <PrimaryButton
           title="Log In"
           onPress={handleLogin}

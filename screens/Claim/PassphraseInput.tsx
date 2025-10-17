@@ -20,6 +20,7 @@ export const PassphraseInput = ({
       onChangeText={onChangeText}
       placeholder="Enter passphrase"
       error={error}
+      autoFocus
       errorMessage={errorMessage}
     />
   </View>

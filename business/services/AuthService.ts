@@ -276,7 +276,7 @@ export class AuthService {
   }
 
   // ---------- Signup ----------
-  async signup(username: string, password: string, lockboxProof?: string): Promise<boolean> {
+  async signup(username: string, password: string, lockboxProof: string): Promise<boolean> {
     try {
       this.log('Starting signup process...');
       const input_data = CryptoUtils.strToHex2(username, password);
@@ -288,6 +288,8 @@ export class AuthService {
       const proof = CryptoUtils.globalHash2(input_data, salt);
       if (!proof) throw new Error('Failed to generate proof.');
       const commitment = CryptoUtils.globalHash(proof);
+      if (!commitment) throw new Error('Failed to generate commitment.');
+
       this.contractService.setCrypto({
         username,
         input_data,
@@ -298,29 +300,35 @@ export class AuthService {
         expiry: Date.now() + EXPIRY_MS,
       });
 
-      const newLockboxProof = lockboxProof || CryptoUtils.strToHex(username);
-      if (newLockboxProof) {
-        const lockboxProofHash = CryptoUtils.globalHash(newLockboxProof);
-        if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
-        if (!salt) throw new Error('Failed to generate salt.');
-        const saltHash = CryptoUtils.globalHash(salt);
-        if (!saltHash) throw new Error('Failed to generate salt hash.');
-        if (!commitment) throw new Error('Failed to generate commitment.');
-        const commitmentHash = CryptoUtils.globalHash(commitment);
-        if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
-        await this.commitProtect(
-          () => this.contractService.claim(newLockboxProof, salt, commitment),
-          lockboxProofHash,
-          saltHash,
-          commitmentHash
-        );
-        this.log('Signup completed successfully (with claim)');
-      } else {
-        this.log('Signup completed successfully (no claim)');
-      }
+      const _lockboxProof = lockboxProof ?? CryptoUtils.strToHex(username);
+      console.log('Ky - lockboxProof', _lockboxProof);
+      const lockboxProofHash = CryptoUtils.globalHash(_lockboxProof);
+
+      console.log('Ky - lockboxProofHash', lockboxProofHash);
+
+      if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
+      console.log('Ky - lockboxProofHash', lockboxProofHash);
+      const saltHash = CryptoUtils.globalHash(salt);
+      console.log('Ky - saltHash', saltHash);
+      if (!lockboxProofHash || !saltHash)
+        throw new Error('Failed to generate lockbox proof or salt hash.');
+      const commitmentHash = CryptoUtils.globalHash(commitment);
+      if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
+
+      console.log('Ky - lockboxProofHash', lockboxProofHash);
+
+      await this.commitProtect(
+        () => this.contractService.claim(_lockboxProof, salt, commitment),
+        lockboxProofHash,
+        saltHash,
+        commitmentHash
+      );
+
+      this.log('Signup completed successfully.');
       return true;
     } catch (err) {
       this.handleError(SIGNUP_ERROR, err);
+      throw err;
     }
   }
 

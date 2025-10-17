@@ -3,6 +3,7 @@ import { useRoute } from '@react-navigation/native';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ContractService } from 'business/services/ContractService';
 import { solidityPacked } from 'ethers';
+import { push } from 'navigation/Navigation';
 
 export type LockboxStatus = 'OPEN' | 'EXPIRED' | 'CLAIMED' | 'RECLAIMED' | 'UNKNOWN';
 
@@ -147,6 +148,13 @@ export const useClaimPayment = () => {
       const ret = await contractService.getLockbox(lockboxCommitment);
       console.log('✅ getLockbox response:', ret);
       setLockbox(ret);
+
+      push('AuthScreen', {
+        mode: 'login',
+        headerType: 'full',
+        showTabs: true,
+        lockboxProof: lockboxProof,
+      });
     } catch (err: any) {
       console.error('❌ Verify failed:', err);
       setVerifyError('Incorrect passphrase, please try again');

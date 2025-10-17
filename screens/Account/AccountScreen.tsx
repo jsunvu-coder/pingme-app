@@ -30,7 +30,7 @@ export default function AccountScreen() {
           balance={`$${BalanceService.getInstance().totalBalance || '$0.00'}`}
         />
 
-        <AccountActionList onLogout={() => setRootScreen(['SplashScreen'])} />
+        <AccountActionList />
       </ScrollView>
     </View>
   );

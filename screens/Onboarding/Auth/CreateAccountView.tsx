@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, Linking, Alert, TouchableWithoutFeedback } from 'react-native';
+import {
+  View,
+  Text,
+  Linking,
+  Alert,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PasswordRules from 'components/PasswordRules';
 import AuthInput from 'components/AuthInput';
@@ -16,10 +23,13 @@ import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 export default function CreateAccountView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
   const initialEmail =
-    prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
+    prefillUsername ??
+    route?.params?.prefillUsername ??
+    route?.params?.username ??
+    'nguyentruongky33@gmail.com';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [password, setPassword] = useState('1231231A');
+  const [confirm, setConfirm] = useState('1231231A');
   const [agreeToC, setAgreeToC] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
@@ -65,7 +75,8 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
     const auth = AuthService.getInstance();
 
     try {
-      const ok = await auth.signup(email, password, lockboxProof ?? route?.params?.lockboxProof);
+      const lockbox = lockboxProof ?? route?.params?.lockboxProof;
+      const ok = await auth.signup(email, password, lockbox);
 
       if (ok) {
         AccountDataService.getInstance().email = email;

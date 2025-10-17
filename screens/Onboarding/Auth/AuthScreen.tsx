@@ -1,13 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  ScrollView,
+  Keyboard,
+  Animated,
+  Platform,
+  Easing,
+  Dimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AuthTabs from './AuthTabs';
 import CreateAccountView from './CreateAccountView';
 import LoginView from './LoginView';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// ✅ Small screen detection (e.g. iPhone SE/8)
+const IS_SMALL_SCREEN = Platform.OS === 'ios' && SCREEN_HEIGHT <= 667;
 
 type AuthParams = {
   mode?: 'signup' | 'login';
@@ -16,51 +29,114 @@ type AuthParams = {
   lockboxProof?: string;
   username?: string;
   amountUsdStr?: string;
+  showTabs?: boolean;
 };
 
 export default function AuthScreen() {
   const route = useRoute<RouteProp<Record<string, AuthParams>, string>>();
-  const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
-  const [headerType, setHeaderType] = useState<'simple' | 'full'>('full');
+  const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
+  const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
+  const [showTabs, setShowTabs] = useState(false);
+
+  // 👇 Animations
+  const spacerHeight = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (route.params?.mode) {
-      setActiveTab(route.params.mode);
+    if (route.params?.mode) setActiveTab(route.params.mode);
+    if (route.params?.headerType) setHeaderType(route.params.headerType);
+    if (route.params?.showTabs !== undefined) setShowTabs(route.params.showTabs);
+
+    if (route.params?.lockboxProof) {
+      console.log('🔗 [AuthScreen] Received lockboxProof:', route.params.lockboxProof);
     }
-    if (route.params?.headerType) {
-      setHeaderType(route.params.headerType);
-    }
-  }, [route.params?.mode, route.params?.headerType]);
+  }, [route.params]);
+
+  // ✅ Keyboard animation only if (small screen && showTabs)
+  useEffect(() => {
+    if (!(IS_SMALL_SCREEN && showTabs)) return;
+
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        Animated.parallel([
+          Animated.timing(spacerHeight, {
+            toValue: 150,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: false,
+          }),
+          Animated.timing(translateY, {
+            toValue: -100,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    );
+
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.parallel([
+          Animated.timing(spacerHeight, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: false,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [spacerHeight, translateY, showTabs]);
 
   return (
     <View className="flex-1 bg-white">
       <SafeAreaView edges={['top']} />
+
+      <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <View className="flex-1 py-8 bg-white">
+          <View className="flex-1 bg-white py-8">
             {headerType === 'simple' ? <SimpleHeader /> : <Header />}
 
-            <AuthTabs activeTab={activeTab} onChange={setActiveTab} />
+            {showTabs && <AuthTabs activeTab={activeTab} onChange={setActiveTab} />}
 
-            {activeTab === 'signup' ? (
-              <CreateAccountView
-                lockboxProof={route.params?.lockboxProof}
-                prefillUsername={route.params?.username}
-                from={route.params?.from}
-                amountUsdStr={route.params?.amountUsdStr}
-              />
-            ) : (
+            {activeTab === 'login' ? (
               <LoginView
                 lockboxProof={route.params?.lockboxProof}
                 prefillUsername={route.params?.username}
                 from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
               />
+            ) : (
+              <CreateAccountView
+                lockboxProof={route.params?.lockboxProof}
+                prefillUsername={route.params?.username}
+                from={route.params?.from}
+                amountUsdStr={route.params?.amountUsdStr}
+              />
             )}
+
+            {/* Spacer only active on small screen with tabs */}
+            {IS_SMALL_SCREEN && showTabs && <Animated.View style={{ height: spacerHeight }} />}
           </View>
         </ScrollView>
+      </Animated.View>
     </View>
   );
 }
@@ -74,7 +150,6 @@ const Header = () => (
         <Ionicons name="wallet-outline" size={56} color="#FD4912" />
       </View>
     </View>
-
     <Text className="mb-8 text-center text-2xl font-bold text-gray-900">
       Payment is ready.{'\n'}Just one more step.
     </Text>

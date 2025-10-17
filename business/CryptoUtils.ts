@@ -86,6 +86,7 @@ export class CryptoUtils {
   }
 
   static toBytesLike(hex: string): string {
+    console.log('toBytesLike input:', hex);
     return hex.startsWith('0x') ? hex : '0x' + hex;
   }
 

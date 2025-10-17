@@ -17,7 +17,7 @@ export const handleUrl = (data: string) => {
     console.log('🔍 [handleUrl] Incoming URL:', data);
 
     // Ensure URL starts with the configured base
-    if (!data.startsWith(APP_URL)) {
+    if (!data?.startsWith(APP_URL)) {
       console.warn('❌ Unsupported URL:', data);
       return;
     }

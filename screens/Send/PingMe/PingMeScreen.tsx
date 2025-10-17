@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import {
+  ScrollView,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  Animated,
+  Easing,
+  Dimensions,
+  Keyboard,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { ScrollView, View, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { push } from 'navigation/Navigation';
 
@@ -23,22 +33,106 @@ export default function PingMeScreen() {
   const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
 
-  // ✅ Handle params passed from QR code navigation
+  // --- Animations ---
+  const emailOpacity = useRef(new Animated.Value(1)).current;
+  const emailTranslateY = useRef(new Animated.Value(0)).current;
+  const amountTranslateY = useRef(new Animated.Value(0)).current;
+  const spacerHeight = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  // 🔹 Animate channel (Email ↔ Link)
+  const animateChannel = (toEmail: boolean) => {
+    if (toEmail) {
+      Animated.parallel([
+        Animated.timing(emailOpacity, {
+          toValue: 1,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(emailTranslateY, {
+          toValue: 0,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(amountTranslateY, {
+          toValue: 20,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(emailOpacity, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(emailTranslateY, {
+          toValue: -20,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(amountTranslateY, {
+          toValue: 0,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  useEffect(() => {
+    animateChannel(activeChannel === 'Email');
+  }, [activeChannel]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: -150,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    );
+
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [spacerHeight, translateY]);
+
+  // ✅ Handle QR navigation params
   useEffect(() => {
     if (route.params) {
       const { mode: paramMode, email: paramEmail, amount: paramAmount } = route.params;
-
-      if (paramMode && (paramMode === 'send' || paramMode === 'request')) {
-        setMode(paramMode);
-      }
-
-      if (paramEmail && typeof paramEmail === 'string') {
-        setEmail(paramEmail);
-      }
-
-      if (paramAmount && !isNaN(Number(paramAmount))) {
-        setAmount(String(paramAmount));
-      }
+      if (paramMode && (paramMode === 'send' || paramMode === 'request')) setMode(paramMode);
+      if (paramEmail && typeof paramEmail === 'string') setEmail(paramEmail);
+      if (paramAmount && !isNaN(Number(paramAmount))) setAmount(String(paramAmount));
     }
   }, [route.params]);
 
@@ -56,8 +150,6 @@ export default function PingMeScreen() {
         return;
       }
       recipient = email.trim();
-
-      // 💾 Save email to local storage
       await RecentEmailStorage.save(recipient);
     }
 
@@ -70,37 +162,39 @@ export default function PingMeScreen() {
       mode,
     };
 
-    if (mode === 'send') {
-      push('SendConfirmationScreen', commonParams);
-    } else {
-      push('RequestConfirmationScreen', commonParams);
-    }
+    if (mode === 'send') push('SendConfirmationScreen', commonParams);
+    else push('RequestConfirmationScreen', commonParams);
   };
 
   return (
     <View className="flex-1 bg-white">
-      <SafeAreaView edges={['top']} />
+      <View className="z-40 bg-white pb-6">
+        <SafeAreaView edges={['top']} />
+        <HeaderView title="Ping Now" variant="light" />
+      </View>
 
-      <HeaderView title="Ping Now" variant="light" />
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
         <ScrollView
           className="flex-1 px-6 pt-5"
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled">
           <SendRequestTab mode={mode} onChange={setMode} />
-
           <ChannelSelectView active={activeChannel} onChange={setActiveChannel} />
 
-          {activeChannel === 'Email' && (
-            <EmailRecipientSection
-              email={email}
-              setEmail={setEmail}
-              onPressContactList={() => setPickerVisible(true)}
-            />
-          )}
+          {/* Animated Email Section */}
+          <Animated.View
+            style={{
+              opacity: emailOpacity,
+              transform: [{ translateY: emailTranslateY }],
+            }}>
+            {activeChannel === 'Email' && (
+              <EmailRecipientSection
+                email={email}
+                setEmail={setEmail}
+                onPressContactList={() => setPickerVisible(true)}
+              />
+            )}
+          </Animated.View>
 
           <ContactPickerModal
             visible={isPickerVisible}
@@ -111,17 +205,18 @@ export default function PingMeScreen() {
             }}
           />
 
-          <View className="mt-8">
+          {/* Animated Amount Section */}
+          <Animated.View style={{ transform: [{ translateY: amountTranslateY }] }}>
             <PaymentAmountView
               balance={`$${BalanceService.getInstance().totalBalance}`}
               value={amount}
               onChange={setAmount}
             />
-          </View>
 
-          <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
+            <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
+          </Animated.View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </View>
   );
 }

@@ -110,8 +110,10 @@ export class PayService {
         if (await confirm('_ALERT_MIN_DURATION', false)) return;
       }
 
+      console.log('✅ [PayService] before confirm');
       // ---------- Confirm ----------
       if (!(await confirm('_CONFIRM_PAYMENT'))) return;
+      console.log('✅ [PayService] after confirm');
       setLoading(true);
 
       // ---------- Cryptographic preparation ----------

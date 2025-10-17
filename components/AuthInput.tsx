@@ -1,5 +1,5 @@
-import { View, TextInput, Text, KeyboardTypeOptions } from 'react-native';
-import React from 'react';
+import { View, TextInput, Text, KeyboardTypeOptions, TextInputProps } from 'react-native';
+import React, { RefAttributes } from 'react';
 
 type Props = {
   icon?: React.ReactNode;
@@ -12,6 +12,7 @@ type Props = {
   errorMessage?: string;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoFocus?: boolean;
 };
 
 export default function AuthInput({
@@ -25,7 +26,10 @@ export default function AuthInput({
   errorMessage,
   keyboardType,
   autoCapitalize,
-}: Props) {
+  autoFocus = false,
+  editable = true,
+  ref,
+}: Props & TextInputProps & RefAttributes<any>) {
   const isEmpty = !value || value.trim() === '';
 
   return (
@@ -33,10 +37,14 @@ export default function AuthInput({
       {icon && <View className="mb-2">{icon}</View>}
 
       <TextInput
+        ref={ref}
         placeholder={placeholder}
         placeholderTextColor="#909090"
         value={value}
+        autoFocus={autoFocus}
+        editable={editable}
         onChangeText={onChangeText}
+        autoCorrect={false}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize ?? 'none'}
         secureTextEntry={secureTextEntry}

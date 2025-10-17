@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { View, Text, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, Text, ScrollView, Platform, Keyboard, Animated, Easing } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -14,7 +13,9 @@ import CloseButton from 'components/CloseButton';
 import { PayService } from 'api/PayService';
 import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
 import { BalanceService } from 'business/services/BalanceService';
+import { showLocalizedAlert } from 'components/LocalizedAlert';
 import enUS from 'i18n/en-US.json';
+import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -34,8 +35,8 @@ export default function SendConfirmationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'SendConfirmationScreen'>>();
   const params = route.params || {};
 
-  const [usePassphrase, setUsePassphrase] = useState(true);
-  const [passphrase, setPassphrase] = useState('1234');
+  const [usePassphrase, setUsePassphrase] = useState(false);
+  const [passphrase, setPassphrase] = useState('');
   const [entry, setEntry] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState<number>(0);
@@ -45,30 +46,64 @@ export default function SendConfirmationScreen() {
 
   const balanceService = BalanceService.getInstance();
 
-  // ✅ Parse params (both from internal navigation or universal link)
+  // 👇 smooth keyboard animation value
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  // Smooth show/hide keyboard
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        const keyboardHeight = e.endCoordinates.height || 300;
+        Animated.timing(translateY, {
+          toValue: -keyboardHeight / 2.2,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [translateY]);
+
+  // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
-
     const rawAmount = params.amount ? Number(params.amount) : 0;
     setAmount(rawAmount);
     setDisplayAmount(params.displayAmount ?? `$${rawAmount.toFixed(2)}`);
-
-    // Prefer `recipient`, fallback to `requester`
     setRecipient(params.recipient || params.requester || '');
     setToken(params.token);
   }, [params]);
 
   // ✅ Fetch balances and set token entry
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
     (async () => {
       try {
         await balanceService.getBalance();
-        if (!isMounted) return;
+        if (!mounted) return;
 
         const balances = balanceService.balances;
         console.log('🔄 Balance update received:', balances);
+
         if (balances && balances.length > 0) {
           const matched =
             balances.find((b) => b.token === TOKENS.USDT && parseFloat(b.amount) > 0.0) ||
@@ -83,11 +118,12 @@ export default function SendConfirmationScreen() {
     })();
 
     return () => {
-      isMounted = false;
+      mounted = false;
       console.log('🧹 Unsubscribing from balance updates...');
     };
   }, [balanceService]);
 
+  // ✅ Main payment handler
   const pay = async () => {
     if (!amount || Number(amount) <= 0) {
       await showLocalizedAlert({
@@ -117,6 +153,7 @@ export default function SendConfirmationScreen() {
 
     try {
       setLoading(true);
+
       await PayService.getInstance().pay({
         entry: {
           token: entry.token,
@@ -127,20 +164,57 @@ export default function SendConfirmationScreen() {
         amount: amount.toString(),
         passphrase: passphrase,
         days: params.lockboxDuration || LOCKBOX_DURATION,
+
+        // ✅ flexible confirm handler
         confirm: async (msg: string) => {
           const message = Object.prototype.hasOwnProperty.call(enUS, msg)
             ? enUS[msg as keyof typeof enUS]
             : msg;
-          await showLocalizedAlert({
-            title: 'Confirmation',
-            message,
-            buttons: [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm' }],
+
+          // Show OK-only alerts for info messages
+          if (
+            !message.toLowerCase().includes('confirm') &&
+            !message.toLowerCase().includes('sure')
+          ) {
+            await showLocalizedAlert({
+              title: 'Information',
+              message,
+              buttons: [{ text: 'OK' }],
+            });
+            return true; // proceed automatically after OK
+          }
+
+          // Show confirmation popup (OK + Cancel)
+          return new Promise<boolean>((resolve) => {
+            showLocalizedAlert({
+              title: 'Confirmation',
+              message,
+              buttons: [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                  onPress: () => {
+                    console.log('❌ Payment canceled by user');
+                    resolve(false);
+                  },
+                },
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    console.log('✅ User confirmed payment');
+                    resolve(true);
+                  },
+                },
+              ],
+            });
           });
-          return true;
         },
+
         setLoading: (loading: boolean) => setLoading(loading),
+
         setTxHash: (hash?: string) => {
           if (hash) {
+            console.log('🎉 Payment completed successfully!');
             console.log('✅ Transaction hash:', hash);
             push('PaymentSuccessScreen', {
               recipient,
@@ -150,10 +224,19 @@ export default function SendConfirmationScreen() {
               channel: params.channel || 'Link',
               duration: params.lockboxDuration || LOCKBOX_DURATION,
             });
+
+            PingHistoryStorage.save({
+              status: 'pending',
+              email: recipient,
+              amount: displayAmount,
+              time: new Date().toLocaleString(),
+            });
           }
         },
+
         setPayLink: (payLink: string) => {
           if (payLink) {
+            console.log('🎉 Payment completed successfully!');
             console.log('✅ PayLink:', payLink);
             push('PaymentLinkCreatedScreen', {
               amount,
@@ -164,8 +247,6 @@ export default function SendConfirmationScreen() {
           }
         },
       });
-
-      console.log('🎉 Payment completed successfully!');
     } catch (err) {
       console.error('❌ Payment failed:', err);
       await showLocalizedAlert({
@@ -180,14 +261,13 @@ export default function SendConfirmationScreen() {
   return (
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
+        {/* Close Button */}
         <View className="absolute top-6 right-6 z-10">
           <CloseButton />
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'position' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-          style={{ flex: 1 }}>
+        {/* Smooth keyboard animation wrapper */}
+        <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
           <ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
@@ -223,7 +303,7 @@ export default function SendConfirmationScreen() {
               </View>
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </Animated.View>
       </View>
     </ModalContainer>
   );

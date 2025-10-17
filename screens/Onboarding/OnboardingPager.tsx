@@ -1,23 +1,21 @@
-import { Image, ScrollView, View } from "react-native";
-import OnboardingSlide from "./OnboardingSlide";
-import SecondaryButton from "components/ScondaryButton";
-import PrimaryButton from "components/PrimaryButton";
+import { Image, ScrollView, View } from 'react-native';
+import OnboardingSlide from './OnboardingSlide';
+import SecondaryButton from 'components/ScondaryButton';
+import PrimaryButton from 'components/PrimaryButton';
+import { push } from 'navigation/Navigation';
 
-const Page1 = require("../../assets/intro-1.png");
+const Page1 = require('../../assets/intro-1.png');
 
 export default function OnboardingPager({ navigation }: any) {
   const slides = [
-    "No banks, no borders — just fast, simple transfers.",
-    "Pay with just an email or chat handle.",
-    "0 fees. Your funds, your control — always.",
+    'No banks, no borders — just fast, simple transfers.',
+    'Pay with just an email or chat handle.',
+    '0 fees. Your funds, your control — always.',
   ];
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
         {slides.map((text, idx) => (
           <OnboardingSlide
             key={idx}
@@ -28,18 +26,8 @@ export default function OnboardingPager({ navigation }: any) {
         ))}
       </ScrollView>
 
-      <View className="px-8 mb-16">
-        <PrimaryButton
-          title="Create Account"
-          onPress={() => navigation.navigate("AuthScreen", { mode: "signup", headerType: 'simple' })}
-        />
-
-        <View className="h-6" />
-
-        <SecondaryButton
-          title="Log In"
-          onPress={() => navigation.navigate("AuthScreen", { mode: "login", headerType: 'simple' })}
-        />
+      <View className="mb-16 h-[15%] px-8 pt-8">
+        <SecondaryButton title="Log In" onPress={() => push('AuthScreen')} />
       </View>
     </View>
   );

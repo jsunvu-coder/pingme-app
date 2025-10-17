@@ -7,6 +7,7 @@ const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
 
 import { push } from 'navigation/Navigation';
+import { AuthService } from 'business/services/AuthService';
 
 type ItemProps = {
   label: string;
@@ -14,11 +15,14 @@ type ItemProps = {
   rightView?: React.ReactNode;
 };
 
-type Props = {
-  onLogout: () => void;
-};
+type Props = {};
 
-export default function AccountActionList({ onLogout }: Props) {
+export default function AccountActionList({}: Props) {
+  const handleLogout = () => {
+    AuthService.getInstance().logout();
+    push('SplashScreen');
+  };
+
   const items: ItemProps[] = [
     {
       label: 'Password Recovery',
@@ -59,7 +63,7 @@ export default function AccountActionList({ onLogout }: Props) {
 
       <Item
         label="Log out"
-        action={onLogout}
+        action={handleLogout}
         rightView={<Ionicons name="log-out-outline" size={22} color="#FD4912" />}
       />
     </View>
