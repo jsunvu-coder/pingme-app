@@ -19,8 +19,8 @@ export default function PingMeScreen() {
   const route = useRoute<any>();
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
-  const [amount, setAmount] = useState('1');
-  const [email, setEmail] = useState('pingme01@test.com');
+  const [amount, setAmount] = useState('');
+  const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
 
   // ✅ Handle params passed from QR code navigation

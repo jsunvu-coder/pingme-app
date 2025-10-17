@@ -17,10 +17,9 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
   const route = useRoute<any>();
   const initialEmail =
     prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
-  const [email, setEmail] = useState('nguyentruongky33@gmail.com');
-  // const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('1231231A');
-  const [confirm, setConfirm] = useState('1231231A');
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [agreeToC, setAgreeToC] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});

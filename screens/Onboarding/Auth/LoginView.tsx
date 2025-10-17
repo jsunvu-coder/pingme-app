@@ -12,9 +12,9 @@ import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 
 export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? 'pingme13@test.com';
+  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('12345678');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
