@@ -3,6 +3,7 @@
     "name": "PingMe",
     "slug": "pingme",
     "version": "1.0.0",
+    "scheme": "pingme",
     "web": {
       "favicon": "./assets/intro-1.png"
     },
@@ -32,6 +33,7 @@
       "supportsTablet": true,
       "buildNumber": "2",
       "bundleIdentifier": "com.hailstonelab.pingme",
+      "associatedDomains": ["applinks:app.pingme.xyz"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -43,7 +45,20 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
-      "package": "com.hailstonelab.pingme"
+      "package": "com.hailstonelab.pingme",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.pingme.xyz",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "extra": {
       "eas": {

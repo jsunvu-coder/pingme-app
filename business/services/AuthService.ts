@@ -335,4 +335,18 @@ export class AuthService {
       this.handleError('Logout failed', err);
     }
   }
+
+  async isLoggedIn(): Promise<boolean> {
+    try {
+      const cr = this.contractService.getCrypto();
+      if (!cr || !cr.proof || Date.now() > cr.expiry) {
+        this.log('User is not logged in');
+        return false;
+      }
+      this.log('User is logged in');
+      return true;
+    } catch (err) {
+      this.handleError('isLoggedIn check failed', err);
+    }
+  }
 }

@@ -197,7 +197,7 @@ export default function RequestConfirmationScreen() {
 
               <PaymentSummaryCard
                 amount={displayAmount}
-                recipient={recipient ?? 'N/A'}
+                recipient={recipient}
                 lockboxDuration={lockboxDuration}
               />
             </View>

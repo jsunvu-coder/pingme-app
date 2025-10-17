@@ -8,12 +8,13 @@ import { setRootScreen, presentOverMain, push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { useRoute } from '@react-navigation/native';
+import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 
 export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
+  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? 'pingme13@test.com';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('12345678');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -23,23 +24,30 @@ export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr 
     }
 
     setLoading(true);
-
     const authService = AuthService.getInstance();
+
     try {
       const ok = await authService.signin(
         email,
         password,
         lockboxProof ?? route?.params?.lockboxProof
       );
+
       setLoading(false);
 
       if (ok) {
         AccountDataService.getInstance().email = email;
-        const proof = lockboxProof ?? route?.params?.lockboxProof;
-        if (proof) {
-          presentOverMain('ShareScreen', { mode: 'claimed', amountUsdStr, from: 'login' });
-        } else {
-          setRootScreen(['MainTab']);
+        setRootScreen(['MainTab']);
+
+        const pendingLink = deepLinkHandler.getPendingLink();
+        const hasPendingLink = pendingLink !== undefined && pendingLink !== null;
+
+        if (hasPendingLink) {
+          console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
+          setTimeout(() => {
+            deepLinkHandler.resumePendingLink();
+          }, 500); // ✅ 0.5-second delay
+          return;
         }
       }
     } catch (err: any) {

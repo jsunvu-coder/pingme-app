@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { View, Text, ScrollView, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { View, Text, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -10,18 +10,19 @@ import { push } from 'navigation/Navigation';
 import WalletSendIcon from 'assets/WalletSendIcon';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import PassphraseSection from './PassphraseSection';
-
+import CloseButton from 'components/CloseButton';
 import { PayService } from 'api/PayService';
 import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
 import { BalanceService } from 'business/services/BalanceService';
-import CloseButton from 'components/CloseButton';
 import enUS from 'i18n/en-US.json';
 
 type SendConfirmationParams = {
-  amount: number;
-  displayAmount: string;
+  amount?: number | string;
+  displayAmount?: string;
   recipient?: string;
-  channel: 'Email' | 'Link';
+  requester?: string;
+  token?: string;
+  channel?: 'Email' | 'Link';
   lockboxDuration?: number;
 };
 
@@ -31,15 +32,33 @@ type RootStackParamList = {
 
 export default function SendConfirmationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'SendConfirmationScreen'>>();
-  const params = route.params;
+  const params = route.params || {};
 
   const [usePassphrase, setUsePassphrase] = useState(true);
   const [passphrase, setPassphrase] = useState('1234');
   const [entry, setEntry] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [amount, setAmount] = useState<number>(0);
+  const [recipient, setRecipient] = useState<string>('');
+  const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
+  const [token, setToken] = useState<string | undefined>(undefined);
 
   const balanceService = BalanceService.getInstance();
 
+  // ✅ Parse params (both from internal navigation or universal link)
+  useEffect(() => {
+    console.log('[SendConfirmation] Received params:', params);
+
+    const rawAmount = params.amount ? Number(params.amount) : 0;
+    setAmount(rawAmount);
+    setDisplayAmount(params.displayAmount ?? `$${rawAmount.toFixed(2)}`);
+
+    // Prefer `recipient`, fallback to `requester`
+    setRecipient(params.recipient || params.requester || '');
+    setToken(params.token);
+  }, [params]);
+
+  // ✅ Fetch balances and set token entry
   useEffect(() => {
     let isMounted = true;
 
@@ -52,9 +71,9 @@ export default function SendConfirmationScreen() {
         console.log('🔄 Balance update received:', balances);
         if (balances && balances.length > 0) {
           const matched =
-            balances
-              .filter((b) => parseFloat(b.amount) > 0.0)
-              .find((b) => b.token === TOKENS.USDT) || balances[0];
+            balances.find((b) => b.token === TOKENS.USDT && parseFloat(b.amount) > 0.0) ||
+            balances.find((b) => parseFloat(b.amount) > 0.0) ||
+            balances[0];
           setEntry(matched);
           console.log('🔗 Active token entry:', matched);
         }
@@ -70,13 +89,6 @@ export default function SendConfirmationScreen() {
   }, [balanceService]);
 
   const pay = async () => {
-    if (!params) {
-      await showLocalizedAlert({ title: 'Error', message: 'Missing transaction details.' });
-      return;
-    }
-
-    const { amount, displayAmount, recipient, channel, lockboxDuration } = params;
-
     if (!amount || Number(amount) <= 0) {
       await showLocalizedAlert({
         title: 'Invalid amount',
@@ -85,7 +97,7 @@ export default function SendConfirmationScreen() {
       return;
     }
 
-    if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
+    if (!recipient || !recipient.includes('@')) {
       await showLocalizedAlert({
         title: 'Missing recipient',
         message: 'Please provide a valid email address.',
@@ -102,11 +114,10 @@ export default function SendConfirmationScreen() {
     }
 
     console.log('💳 Starting payment...', {
+      token,
       amount,
       displayAmount,
       recipient,
-      channel,
-      lockboxDuration,
       usePassphrase,
       passphrase,
       entry,
@@ -120,41 +131,43 @@ export default function SendConfirmationScreen() {
           amount: entry.amount,
           tokenName: entry.tokenName,
         },
-        username: recipient || '',
+        username: recipient,
         amount: amount.toString(),
-        passphrase: passphrase || '',
-        days: lockboxDuration || LOCKBOX_DURATION,
-        confirm: async (msg: string, okOnly?: boolean) => {
+        passphrase: passphrase,
+        days: params.lockboxDuration || LOCKBOX_DURATION,
+        confirm: async (msg: string) => {
           const message = Object.prototype.hasOwnProperty.call(enUS, msg)
             ? enUS[msg as keyof typeof enUS]
             : msg;
-          await showLocalizedAlert({ title: 'Confirmation', message });
+          await showLocalizedAlert({
+            title: 'Confirmation',
+            message,
+            buttons: [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm' }],
+          });
           return true;
         },
         setLoading: (loading: boolean) => setLoading(loading),
         setTxHash: (hash?: string) => {
           if (hash) {
             console.log('✅ Transaction hash:', hash);
-
             push('PaymentSuccessScreen', {
               recipient,
-              amount: Number(amount),
+              amount,
               passphrase,
               txHash: hash,
-              channel,
-              duration: lockboxDuration || LOCKBOX_DURATION,
+              channel: params.channel || 'Link',
+              duration: params.lockboxDuration || LOCKBOX_DURATION,
             });
           }
         },
         setPayLink: (paylink?: string) => {
           if (paylink) {
             console.log('✅ PayLink:', paylink);
-
             push('PaymentLinkCreatedScreen', {
-              amount: Number(amount),
+              amount,
               passphrase,
               paylink,
-              duration: lockboxDuration || LOCKBOX_DURATION,
+              duration: params.lockboxDuration || LOCKBOX_DURATION,
             });
           }
         },
@@ -197,9 +210,9 @@ export default function SendConfirmationScreen() {
               </Text>
 
               <PaymentSummaryCard
-                amount={params?.displayAmount ?? '$0.00'}
-                recipient={params?.recipient ?? 'N/A'}
-                lockboxDuration={params?.lockboxDuration ?? LOCKBOX_DURATION}
+                amount={displayAmount}
+                recipient={recipient}
+                lockboxDuration={params.lockboxDuration ?? LOCKBOX_DURATION}
               />
 
               <PassphraseSection

@@ -29,7 +29,7 @@ export default function ShareScreen() {
       const amtText = amountUsdStr ?? amount.toFixed(2);
       return `Just claimed $${amtText} in 2 sec!\nWant to flex?`;
     }
-    return `Just sent $${amount.toFixed(2)} in ${duration} sec!`;
+    return `Just sent $${amount.toFixed(2)} in 2 sec!`;
   })();
 
   const description = (() => {
@@ -43,7 +43,7 @@ export default function ShareScreen() {
   return (
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
-        <CloseButton className="mr-6 mt-6 items-end" />
+        <CloseButton className="mt-6 mr-6 items-end" />
 
         <ScrollView className="px-6 pb-10">
           <Header title={title} description={description} />

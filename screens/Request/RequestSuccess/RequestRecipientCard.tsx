@@ -1,34 +1,29 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RequestRecipientCard({
-	recipient,
-	amount,
+  recipient,
+  amount,
 }: {
-	recipient: string;
-	amount: number;
+  recipient: string;
+  amount: number;
 }) {
-	return (
-		<View className="bg-white rounded-2xl  px-6 py-8">
-			<Text className="text-3xl text-gray-800">
-				You've sent payment to{" "}
-				<Text className="font-semibold">{recipient}</Text>
-			</Text>
+  return (
+    <View className="rounded-2xl bg-white px-6 py-8">
+      <Text className="text-3xl text-gray-800">
+        You've sent payment to <Text className="font-semibold">{recipient}</Text>
+      </Text>
 
-			<TouchableOpacity className="mt-2">
-				<Text className="text-[#FD4912] text-lg">
-					Add recipient to Contact List
-				</Text>
-			</TouchableOpacity>
+      <TouchableOpacity className="mt-2" style={{ opacity: 0 }}>
+        <Text className="text-lg text-[#FD4912]">Add recipient to Contact List</Text>
+      </TouchableOpacity>
 
-			<View className="mt-6 border-t border-[#FFDBD0] pt-6 flex-row justify-between items-center">
-				<Text className="text-gray-500 text-lg">Amount</Text>
-				<Text className="text-2xl mr-1">
-					${amount.toFixed(2)}
-				</Text>
-				{/* Keep this view to make the amount at the center */}
-				<View />
-			</View>
-		</View>
-	);
+      <View className="mt-6 flex-row items-center justify-between border-t border-[#FFDBD0] pt-6">
+        <Text className="text-lg text-gray-500">Amount</Text>
+        <Text className="mr-1 text-2xl">${amount.toFixed(2)}</Text>
+        {/* Keep this view to make the amount at the center */}
+        <View />
+      </View>
+    </View>
+  );
 }

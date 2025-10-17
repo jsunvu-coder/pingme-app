@@ -33,15 +33,15 @@ export const SPACE = ' ';
 export const TOPUP = 'TOPUP';
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-export const LOCKBOX_DURATION = 1 // 1 day
+export const LOCKBOX_DURATION = 14; // 14 day
 
 // ####################################################
 // DO NOT CHANGE THESE VALUES!!!!
 // ####################################################
 export const TOKENS = {
-  USDT: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
-}
+  USDT: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7',
+};
 
-export const TOKEN_NAMES = { 
-  USDT: 'USDT'
-}
+export const TOKEN_NAMES = {
+  USDT: 'USDT',
+};

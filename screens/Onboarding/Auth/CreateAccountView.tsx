@@ -11,15 +11,16 @@ import PrimaryButton from 'components/PrimaryButton';
 import { AuthService } from 'business/services/AuthService';
 import { setRootScreen, presentOverMain } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 
 export default function CreateAccountView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
   const initialEmail =
     prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
-  const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [email, setEmail] = useState('nguyentruongky33@gmail.com');
+  // const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState('1231231A');
+  const [confirm, setConfirm] = useState('1231231A');
   const [agreeToC, setAgreeToC] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
@@ -63,15 +64,20 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
   const handleRegister = async () => {
     setLoading(true);
     const auth = AuthService.getInstance();
+
     try {
       const ok = await auth.signup(email, password, lockboxProof ?? route?.params?.lockboxProof);
+
       if (ok) {
         AccountDataService.getInstance().email = email;
-        const proof = lockboxProof ?? route?.params?.lockboxProof;
-        if (proof) {
-          presentOverMain('ShareScreen', { mode: 'claimed', amountUsdStr, from: 'signup' });
-        } else {
-          setRootScreen(['MainTab']);
+
+        setRootScreen(['MainTab']);
+
+        const pendingLink = deepLinkHandler.getPendingLink();
+        const hasPendingLink = pendingLink !== undefined && pendingLink !== null;
+        if (hasPendingLink) {
+          deepLinkHandler.resumePendingLink();
+          return;
         }
       }
     } catch (err: any) {
@@ -148,7 +154,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
       </View>
 
       <PrimaryButton
-        className="mx-6 mb-6"
+        className="m-6"
         title="Create Account"
         disabled={loading || !isFormValid}
         loading={loading}

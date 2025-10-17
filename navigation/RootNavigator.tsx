@@ -49,7 +49,14 @@ const SCREEN_GROUPS: Array<{
         component: OnboardingPager,
         options: { presentation: 'card', animation: 'fade' },
       },
-      { name: 'AuthScreen', component: AuthScreen },
+      {
+        name: 'AuthScreen',
+        component: AuthScreen,
+        options: {
+          presentation: 'card',
+          animation: 'slide_from_right',
+        },
+      },
     ],
   },
   {

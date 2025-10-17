@@ -19,8 +19,8 @@ export default function PingMeScreen() {
   const route = useRoute<any>();
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
-  const [amount, setAmount] = useState('');
-  const [email, setEmail] = useState('');
+  const [amount, setAmount] = useState('1');
+  const [email, setEmail] = useState('pingme01@test.com');
   const [isPickerVisible, setPickerVisible] = useState(false);
 
   // ✅ Handle params passed from QR code navigation
@@ -87,7 +87,7 @@ export default function PingMeScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          className="flex-1 px-5 pt-5"
+          className="flex-1 px-6 pt-5"
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled">
           <SendRequestTab mode={mode} onChange={setMode} />

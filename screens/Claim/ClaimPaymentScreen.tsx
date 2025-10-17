@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import { setRootScreen, push } from 'navigation/Navigation';
@@ -14,6 +14,7 @@ import { ActionButtons } from './ActionButtons';
 // Hooks and Utils
 import { useClaimPayment } from './hooks/useClaimPayment';
 import { validateClaimParams } from './utils/claimUtils';
+import { AuthService } from 'business/services/AuthService';
 
 export default function ClaimPaymentScreen() {
   const {
@@ -63,8 +64,13 @@ export default function ClaimPaymentScreen() {
     });
   };
 
-  const handleBack = () => {
-    setRootScreen(['AuthScreen']);
+  const handleBack = async () => {
+    const isLoggedIn = await AuthService.getInstance().isLoggedIn();
+    if (isLoggedIn) {
+      setRootScreen(['MainTab']);
+    } else {
+      setRootScreen(['AuthScreen']);
+    }
   };
 
   return (
