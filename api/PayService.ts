@@ -70,8 +70,8 @@ export class PayService {
     days: number;
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
     setLoading: (loading: boolean) => void;
-    setTxHash: (hash?: string) => void;
-    setPayLink: (link?: string) => void;
+    setTxHash: (hash: string) => void;
+    setPayLink: (link: string) => void;
   }) {
     try {
       console.log('🚀 [PayService] Starting pay() process...');

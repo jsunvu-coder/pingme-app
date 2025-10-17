@@ -15,6 +15,8 @@ import { ActionButtons } from './ActionButtons';
 import { useClaimPayment } from './hooks/useClaimPayment';
 import { validateClaimParams } from './utils/claimUtils';
 import { AuthService } from 'business/services/AuthService';
+import OutlineButton from 'components/OutlineButton';
+import PrimaryButton from 'components/PrimaryButton';
 
 export default function ClaimPaymentScreen() {
   const {
@@ -41,28 +43,6 @@ export default function ClaimPaymentScreen() {
       setRootScreen(['AuthScreen']);
     }
   }, [lockboxSalt]);
-
-  const handleSignin = () => {
-    push('AuthScreen', {
-      mode: 'login',
-      headerType: 'simple',
-      from: 'claim',
-      lockboxProof,
-      username,
-      amountUsdStr: formatUsdFromLockbox(),
-    });
-  };
-
-  const handleSignup = () => {
-    push('AuthScreen', {
-      mode: 'signup',
-      headerType: 'simple',
-      from: 'claim',
-      lockboxProof,
-      username,
-      amountUsdStr: formatUsdFromLockbox(),
-    });
-  };
 
   const handleBack = async () => {
     const isLoggedIn = await AuthService.getInstance().isLoggedIn();
@@ -107,14 +87,14 @@ export default function ClaimPaymentScreen() {
             )}
           </View>
 
-          <ActionButtons
-            status={derivedStatus}
-            loading={loading}
-            onVerify={handleVerify}
-            onSignin={handleSignin}
-            onSignup={handleSignup}
-            onBack={handleBack}
-          />
+          <View className="mt-10 flex-1 flex-row items-center justify-between space-x-3">
+            <View className="mr-3 flex-1">
+              <OutlineButton title="Cancel" onPress={handleBack} />
+            </View>
+            <View className="ml-3 flex-1">
+              <PrimaryButton title="Claim" onPress={handleVerify} />
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

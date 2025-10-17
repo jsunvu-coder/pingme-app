@@ -97,14 +97,6 @@ export default function SendConfirmationScreen() {
       return;
     }
 
-    if (!recipient || !recipient.includes('@')) {
-      await showLocalizedAlert({
-        title: 'Missing recipient',
-        message: 'Please provide a valid email address.',
-      });
-      return;
-    }
-
     if (!entry) {
       await showLocalizedAlert({
         title: 'Error',
@@ -160,13 +152,13 @@ export default function SendConfirmationScreen() {
             });
           }
         },
-        setPayLink: (paylink?: string) => {
-          if (paylink) {
-            console.log('✅ PayLink:', paylink);
+        setPayLink: (payLink: string) => {
+          if (payLink) {
+            console.log('✅ PayLink:', payLink);
             push('PaymentLinkCreatedScreen', {
               amount,
               passphrase,
-              paylink,
+              payLink,
               duration: params.lockboxDuration || LOCKBOX_DURATION,
             });
           }
