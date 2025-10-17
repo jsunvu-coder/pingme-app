@@ -4,17 +4,12 @@ import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
 import PasswordIcon from 'assets/PasswordIcon';
 import { AuthService } from 'business/services/AuthService';
-import { setRootScreen, presentOverMain } from 'navigation/Navigation';
+import { setRootScreen, presentOverMain, push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { useRoute } from '@react-navigation/native';
 
-export default function LoginView({
-  navigation,
-  lockboxProof,
-  prefillUsername,
-  amountUsdStr,
-}: any) {
+export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
   const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
   const [email, setEmail] = useState(initialEmail);
@@ -75,9 +70,7 @@ export default function LoginView({
         />
 
         <View className="mt-2 flex-row items-center justify-between">
-          <Text
-            className="font-medium text-[#FD4912]"
-            onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text className="font-medium text-[#FD4912]" onPress={() => push('ScanRecoveryScreen')}>
             Forgot password?
           </Text>
         </View>

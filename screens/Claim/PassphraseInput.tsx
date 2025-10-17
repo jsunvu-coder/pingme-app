@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import AuthInput from 'components/AuthInput';
-import LockIcon from 'assets/LockIcon';
+import KeyIcon from 'assets/KeyIcon';
 
 export const PassphraseInput = ({
   value,
@@ -15,7 +15,7 @@ export const PassphraseInput = ({
 }) => (
   <View className="rounded-2xl bg-white p-6">
     <AuthInput
-      icon={<LockIcon />}
+      icon={<KeyIcon />}
       value={value}
       onChangeText={onChangeText}
       placeholder="Enter passphrase"

@@ -1,5 +1,5 @@
-import { View, Animated, Dimensions, TouchableOpacity, Text } from "react-native";
-import { useEffect, useRef } from "react";
+import { View, Animated, Dimensions, TouchableOpacity, Text } from 'react-native';
+import { useEffect, useRef } from 'react';
 
 type TabItem = {
   key: string;
@@ -20,12 +20,12 @@ export default function AnimatedSegmentedTabs({
   tabs,
   activeKey,
   onChange,
-  activeColor = "black",
-  inactiveColor = "#929393",
+  activeColor = 'black',
+  inactiveColor = '#929393',
   children,
 }: Props) {
-  const screenWidth = Dimensions.get("window").width;
-  const tabWidth = screenWidth / tabs.length - 16;
+  const screenWidth = Dimensions.get('window').width;
+  const tabWidth = screenWidth / tabs.length - 22;
   const activeIndex = tabs.findIndex((t) => t.key === activeKey);
   const translateX = useRef(new Animated.Value(activeIndex)).current;
 
@@ -45,11 +45,11 @@ export default function AnimatedSegmentedTabs({
 
   return (
     <View>
-      <View className="relative flex-row rounded-full border border-[#E9E9E9] bg-white p-1 overflow-hidden mb-6 mt-6">
+      <View className="relative mt-6 mb-6 flex-row overflow-hidden rounded-full border border-[#E9E9E9] bg-white p-1">
         {/* Animated highlight */}
         <Animated.View
           style={{
-            position: "absolute",
+            position: 'absolute',
             top: 4,
             bottom: 4,
             left,
@@ -67,14 +67,9 @@ export default function AnimatedSegmentedTabs({
               key={tab.key}
               className="flex-1 flex-row items-center justify-center py-2"
               onPress={() => onChange(tab.key)}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               {Icon && <Icon isActive={isActive} />}
-              <Text
-                className={`ml-1 font-semibold ${
-                  isActive ? "text-white" : "text-gray-500"
-                }`}
-              >
+              <Text className={`ml-1 font-semibold ${isActive ? 'text-white' : 'text-gray-500'}`}>
                 {tab.label}
               </Text>
             </TouchableOpacity>

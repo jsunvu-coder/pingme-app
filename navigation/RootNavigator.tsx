@@ -22,6 +22,8 @@ import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
 import RequestSuccessScreen from 'screens/Request/RequestSuccess/RequestSuccessScreen';
 import AccountRecoveryScreen from 'screens/Recovery/AccountRecoveryScreen';
+import ScanRecoveryScreen from 'screens/Recovery/ScanRecoveryScreen';
+import RecoveryPasswordScreen from 'screens/Recovery/RecoveryPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -154,6 +156,14 @@ const SCREEN_GROUPS: Array<{
             </TouchableOpacity>
           ),
         },
+      },
+      {
+        name: 'ScanRecoveryScreen',
+        component: ScanRecoveryScreen,
+      },
+      {
+        name: 'RecoveryPasswordScreen',
+        component: RecoveryPasswordScreen,
       },
     ],
   },

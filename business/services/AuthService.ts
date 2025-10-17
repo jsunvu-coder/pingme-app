@@ -299,9 +299,6 @@ export class AuthService {
       });
 
       const newLockboxProof = lockboxProof || CryptoUtils.strToHex(username);
-      console.log('New lockbox proof:', newLockboxProof);
-      console.log('Lockbox proof (param):', lockboxProof);
-      console.log('Lockbox proof (username):', CryptoUtils.strToHex(username));
       if (newLockboxProof) {
         const lockboxProofHash = CryptoUtils.globalHash(newLockboxProof);
         if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
