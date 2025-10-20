@@ -31,7 +31,7 @@ export default function ScanRecoveryScreen() {
         </View>
 
         <View className="mt-6 mb-24 items-center">
-          <UploadPhotoButton />
+          <UploadPhotoButton onScanSuccess={handleScanSuccess} />
         </View>
       </View>
     </View>

@@ -1,16 +1,18 @@
-import { View, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+const adCard = require('../../assets/ad_card.png');
 
 export const AdCard = () => {
-	return <View className="bg-white rounded-2xl p-5 mt-10">
-		<Text className="text-gray-800 text-base">
-			Sent money faster than a text with{" "}
-			<Text className="font-semibold">@PingMe</Text>
-		</Text>
-		<Text className="text-[#FD4912] font-medium mt-1">#JustPinged</Text>
+  return (
+    <View className="mt-10 rounded-2xl bg-white p-5">
+      <Text className="text-base text-gray-800">
+        Sent money faster than a text with <Text className="font-semibold">@PingMe</Text>
+      </Text>
+      <Text className="mt-1 font-medium text-[#FD4912]">#JustPinged</Text>
 
-		<View className="bg-gray-100 rounded-xl mt-4 h-40 items-center justify-center">
-			<Ionicons name="image-outline" size={48} color="#B0B0B0" />
-		</View>
-	</View>
-}
+      <View className="mt-4 h-40 items-center justify-center rounded-xl bg-gray-100">
+        <Image source={adCard} resizeMode="contain" className="w-full" />
+      </View>
+    </View>
+  );
+};

@@ -137,22 +137,33 @@ export default function PingMeScreen() {
   }, [route.params]);
 
   const handleContinue = async () => {
-    const numericAmount = parseFloat(amount);
-    if (!numericAmount || numericAmount <= 0) {
-      Alert.alert('Invalid amount', 'Please enter a valid payment amount.');
-      return;
-    }
-
+    // --- 1️⃣ Validate email (only if Email mode is active)
     let recipient = '';
     if (activeChannel === 'Email') {
       if (!email.trim()) {
         Alert.alert('Missing email', 'Please enter a recipient email address.');
         return;
       }
+
+      // Optional: basic email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        Alert.alert('Invalid email', 'Please enter a valid email address.');
+        return;
+      }
+
       recipient = email.trim();
       await RecentEmailStorage.save(recipient);
     }
 
+    // --- 2️⃣ Validate amount
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      Alert.alert('Invalid amount', 'Please enter a valid payment amount.');
+      return;
+    }
+
+    // --- 3️⃣ Proceed with navigation
     const commonParams = {
       amount: numericAmount,
       displayAmount: `$${numericAmount.toFixed(2)}`,
@@ -162,8 +173,11 @@ export default function PingMeScreen() {
       mode,
     };
 
-    if (mode === 'send') push('SendConfirmationScreen', commonParams);
-    else push('RequestConfirmationScreen', commonParams);
+    if (mode === 'send') {
+      push('SendConfirmationScreen', commonParams);
+    } else {
+      push('RequestConfirmationScreen', commonParams);
+    }
   };
 
   return (

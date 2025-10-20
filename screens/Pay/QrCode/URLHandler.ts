@@ -1,5 +1,6 @@
 import { APP_URL } from 'business/Config';
 import { push } from 'navigation/Navigation';
+import { Alert } from 'react-native';
 
 /**
  * Universal deep link and QR handler for PingMe app.
@@ -19,6 +20,7 @@ export const handleUrl = (data: string) => {
     // Ensure URL starts with the configured base
     if (!data?.startsWith(APP_URL)) {
       console.warn('❌ Unsupported URL:', data);
+      Alert.alert('Oops', 'The provided URL is not supported');
       return;
     }
 

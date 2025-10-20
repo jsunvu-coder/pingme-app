@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Camera } from 'expo-camera';
+import { View } from 'react-native';
 import CameraPermissionView from './CameraPermissionView';
 import { NoPermissionView } from './NoPermissionView';
 import QRScanner from './QrScanner';
 import { handleUrl } from './URLHandler';
+import UploadPhotoButton from './UploadPhotoButton';
 
 export default function ScanQRView() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -61,5 +63,15 @@ export default function ScanQRView() {
   }
 
   // === Case 3: Permission granted
-  return <QRScanner onScanSuccess={handleQRCode} />;
+  return (
+    <View className="flex-1 bg-white">
+      <View className="flex-[0.9]">
+        <QRScanner onScanSuccess={handleQRCode} />
+      </View>
+
+      <View className="flex-[0.1] items-center justify-center pb-10">
+        <UploadPhotoButton onScanSuccess={handleQRCode} />
+      </View>
+    </View>
+  );
 }

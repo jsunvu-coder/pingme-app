@@ -12,6 +12,12 @@
     },
     "plugins": [
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to let you upload images."
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
@@ -21,7 +27,7 @@
       ]
     ],
     "orientation": "portrait",
-    "icon": "./assets/intro-1.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/icon.png",
@@ -35,8 +41,16 @@
       "bundleIdentifier": "com.hailstonelab.pingme",
       "associatedDomains": ["applinks:app.pingme.xyz"],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "instagram-stories",
+          "fb",
+          "twitter",
+          "x-com.twitter.android"
+        ]
+      },
+      "appleTeamId": "698L9G9LDH"
     },
     "android": {
       "versionCode": 1,

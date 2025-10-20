@@ -177,7 +177,7 @@ const SCREEN_GROUPS: Array<{
 ];
 
 const RootNavigator = () => {
-  const ENTRY_SCREEN = 'SplashScreen';
+  const ENTRY_SCREEN = 'ShareScreen';
 
   return (
     <Stack.Navigator
