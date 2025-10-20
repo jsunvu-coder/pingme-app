@@ -2,6 +2,7 @@ import { Image, ScrollView, View } from 'react-native';
 import OnboardingSlide from './OnboardingSlide';
 import SecondaryButton from 'components/ScondaryButton';
 import { push } from 'navigation/Navigation';
+import PrimaryButton from 'components/PrimaryButton';
 
 const Page1 = require('../../assets/intro_1.png');
 const Page2 = require('../../assets/intro_2.png');
@@ -37,7 +38,7 @@ export default function OnboardingPager({ navigation }: any) {
       </ScrollView>
 
       <View className="mb-16 h-[15%] px-8 pt-8">
-        <SecondaryButton title="Log In" onPress={() => push('AuthScreen')} />
+        <PrimaryButton title="Log In to PingMe" onPress={() => push('AuthScreen')} />
       </View>
     </View>
   );

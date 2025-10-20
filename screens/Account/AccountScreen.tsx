@@ -6,7 +6,6 @@ import AccountActionList from './AccountActionList';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { BalanceService } from 'business/services/BalanceService';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { setRootScreen } from 'navigation/Navigation';
 import { useNavigation } from '@react-navigation/native';
 
 export default function AccountScreen() {
@@ -18,7 +17,7 @@ export default function AccountScreen() {
 
       <HeaderView title="Account" variant="light" />
 
-      <ScrollView className="m-6">
+      <ScrollView className="m-6" showsVerticalScrollIndicator={false}>
         <AccountTierView
           pointsToNextTier={80}
           currentTier="BRONZE"

@@ -24,7 +24,8 @@
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
           "recordAudioAndroid": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -34,12 +35,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#FD4912"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "buildNumber": "2",
       "bundleIdentifier": "com.hailstonelab.pingme",
-      "associatedDomains": ["applinks:app.pingme.xyz"],
+      "associatedDomains": [
+        "applinks:app.pingme.xyz"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -58,7 +63,10 @@
         "foregroundImage": "./assets/intro-1.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
       "package": "com.hailstonelab.pingme",
       "intentFilters": [
         {
@@ -70,7 +78,10 @@
               "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },

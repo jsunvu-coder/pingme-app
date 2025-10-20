@@ -10,7 +10,7 @@ export const AdCard = () => {
       </Text>
       <Text className="mt-1 font-medium text-[#FD4912]">#JustPinged</Text>
 
-      <View className="mt-4 h-40 items-center justify-center rounded-xl bg-gray-100">
+      <View className="mt-8 mb-6 h-40 items-center justify-center rounded-xl bg-gray-100">
         <Image source={adCard} resizeMode="contain" className="w-full" />
       </View>
     </View>

@@ -37,7 +37,9 @@ const SCREEN_GROUPS: Array<{
   screens: Array<{
     name: string;
     component: ComponentType<any>;
-    options?: StackNavigationOptions;
+    options?:
+      | StackNavigationOptions
+      | ((props: { route: any; navigation: any }) => StackNavigationOptions);
   }>;
 }> = [
   {
@@ -65,9 +67,14 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'MainTab',
         component: MainTab,
-        options: {
-          presentation: 'card',
-          animation: 'slide_from_left',
+        options: ({ route }) => {
+          const entryAnimation =
+            (route?.params as { entryAnimation?: string } | undefined)?.entryAnimation;
+
+          return {
+            presentation: 'card',
+            animation: entryAnimation === 'slide_from_right' ? 'slide_from_right' : 'slide_from_left',
+          };
         },
       },
     ],
@@ -177,7 +184,7 @@ const SCREEN_GROUPS: Array<{
 ];
 
 const RootNavigator = () => {
-  const ENTRY_SCREEN = 'ShareScreen';
+  const ENTRY_SCREEN = 'SplashScreen';
 
   return (
     <Stack.Navigator

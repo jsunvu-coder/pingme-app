@@ -90,5 +90,8 @@
 	<string>Light</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+  <key>NSFaceIDUsageDescription</key>
+  <string>Allow PingMe to use Face ID for secure login</string>
+
 </dict>
 </plist>

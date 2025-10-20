@@ -77,7 +77,7 @@ export default function AccountRecoveryScreen() {
       if (!rvCommitment) throw new Error('Failed to compute recovery commitment');
 
       // Generate recovery code and derive keys
-      const code = CryptoUtils.randomString(16);
+      const code = CryptoUtils.randomString(50);
       const codeHash = CryptoUtils.globalHash(CryptoUtils.strToHex(code));
       if (!codeHash) throw new Error('Failed to compute code hash');
       const recPriv = await CryptoUtils.hkdf32(

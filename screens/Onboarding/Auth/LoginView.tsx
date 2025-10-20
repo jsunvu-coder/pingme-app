@@ -1,21 +1,50 @@
-import { useState } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Switch, Alert } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
 import PasswordIcon from 'assets/PasswordIcon';
-import { AuthService } from 'business/services/AuthService';
-import { setRootScreen, push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
-import { AccountDataService } from 'business/services/AccountDataService';
 import { useRoute } from '@react-navigation/native';
-import { deepLinkHandler } from 'business/services/DeepLinkHandler';
+import { Ionicons } from '@expo/vector-icons';
+import { push } from 'navigation/Navigation';
+import { LoginViewModel, BiometricType } from './LoginViewModel';
 
-export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
+export default function LoginView({
+  lockboxProof,
+  prefillUsername,
+  from,
+}: {
+  lockboxProof?: string;
+  prefillUsername?: string;
+  from?: string;
+  amountUsdStr?: string;
+}) {
   const route = useRoute<any>();
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? 'pingme15@test.com';
+  const vm = new LoginViewModel();
+
+  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('12345678');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [useBiometric, setUseBiometric] = useState(false);
+  const [biometricType, setBiometricType] = useState<BiometricType>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { biometricType, useBiometric, savedEmail, savedPassword } = await vm.initialize();
+      setBiometricType(biometricType);
+      setUseBiometric(useBiometric);
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPassword) setPassword(savedPassword);
+
+      const shouldAutoLogin = lockboxProof === undefined;
+      console.log('shouldAutoLogin:', shouldAutoLogin);
+      // 🚫 Skip Face ID auto login when tabs are visible
+      if (shouldAutoLogin) {
+        await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
+      }
+    })();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -24,37 +53,14 @@ export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr 
     }
 
     setLoading(true);
-    const authService = AuthService.getInstance();
-
-    try {
-      const ok = await authService.signin(
-        email,
-        password,
-        lockboxProof ?? route?.params?.lockboxProof
-      );
-
-      setLoading(false);
-
-      if (ok) {
-        AccountDataService.getInstance().email = email;
-        setRootScreen(['MainTab']);
-
-        const pendingLink = deepLinkHandler.getPendingLink();
-        const hasPendingLink = pendingLink !== undefined && pendingLink !== null;
-
-        if (hasPendingLink) {
-          console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
-          setTimeout(() => {
-            deepLinkHandler.resumePendingLink();
-          }, 500); // ✅ 0.5-second delay
-          return;
-        }
-      }
-    } catch (err: any) {
-      setLoading(false);
-      console.error('Login error:', err);
-      Alert.alert('Login failed', 'Invalid credentials');
-    }
+    await vm.handleLogin(
+      email,
+      password,
+      useBiometric,
+      biometricType,
+      lockboxProof ?? route?.params?.lockboxProof
+    );
+    setLoading(false);
   };
 
   return (
@@ -70,17 +76,31 @@ export default function LoginView({ lockboxProof, prefillUsername, amountUsdStr 
           autoCapitalize="none"
         />
 
-        <AuthInput
-          icon={<PasswordIcon />}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password"
-          secureTextEntry
-        />
+        <View>
+          <AuthInput
+            icon={<PasswordIcon />}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            secureTextEntry
+          />
+          <TouchableOpacity
+            className="absolute top-3 right-0 flex-row items-center justify-center px-4"
+            onPress={() => push('ScanRecoveryScreen')}>
+            <Text className="text-md mr-2 font-semibold text-[#FD4912]">Forgot Password</Text>
+            <Ionicons name="scan-outline" size={22} color="#1D1D1D" />
+          </TouchableOpacity>
+        </View>
 
-        <View className="mt-2 flex-row items-center justify-between">
-          <Text className="font-medium text-[#FD4912]" onPress={() => push('ScanRecoveryScreen')}>
-            Forgot password?
+        <View className="mt-3 flex-row items-center">
+          <Switch
+            value={useBiometric}
+            onValueChange={setUseBiometric}
+            trackColor={{ false: '#ccc', true: '#FD4912' }}
+            thumbColor={useBiometric ? '#fff' : '#f4f3f4'}
+          />
+          <Text className="ml-3 text-[15px] text-[#1D1D1D]">
+            Use {biometricType ?? 'Face/Touch ID'} to log in next time
           </Text>
         </View>
       </View>

@@ -58,7 +58,7 @@ export default function ClaimPaymentScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="flex-1 justify-between px-6 py-10">
           <View>
-            <ClaimHeader />
+            <ClaimHeader email={username} />
 
             {!lockbox && (
               <View className="mt-6">

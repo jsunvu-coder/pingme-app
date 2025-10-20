@@ -34,9 +34,9 @@ export default function PingHistoryView() {
         <ArrowRightIcon />
       </TouchableOpacity>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
         {history.map((item, i) => (
-          <PingHistoryItemView key={i} item={item} width={itemWidth} />
+          <PingHistoryItemView key={i} item={item} />
         ))}
       </ScrollView>
     </View>

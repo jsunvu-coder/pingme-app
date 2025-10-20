@@ -38,7 +38,13 @@ export default function HomeScreen() {
 
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           <View className="flex-1 justify-end">
-            <BalanceView balance={`$${loading ? '0.00' : totalBalance}`} tokens={balances} />
+            <BalanceView
+              balance={`$${loading ? '0.00' : totalBalance}`}
+              tokens={balances}
+              onRefresh={async () => {
+                await BalanceService.getInstance().getBalance();
+              }}
+            />
           </View>
 
           <View className="mt-10 flex-1 rounded-t-3xl bg-[#FAFAFA] px-6 pt-6 pb-12">

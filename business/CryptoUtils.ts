@@ -61,7 +61,7 @@ export class CryptoUtils {
   }
 
   static randomString(
-    len = 16,
+    len = 50,
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   ): string {
     const bytes = new Uint8Array(len);

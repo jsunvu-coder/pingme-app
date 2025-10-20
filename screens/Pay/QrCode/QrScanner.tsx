@@ -42,7 +42,7 @@ export default function QRScanner({ onScanSuccess }: QRScannerProps) {
   }
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="m-6 flex-1 overflow-hidden rounded-3xl bg-black">
       <CameraView
         style={{ flex: 1 }}
         facing="back"

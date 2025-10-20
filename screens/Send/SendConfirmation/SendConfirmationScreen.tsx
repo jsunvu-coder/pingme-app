@@ -16,6 +16,7 @@ import { BalanceService } from 'business/services/BalanceService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import enUS from 'i18n/en-US.json';
 import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
+import { AccountDataService } from 'business/services/AccountDataService';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -85,7 +86,7 @@ export default function SendConfirmationScreen() {
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
-    const rawAmount = params.amount ? Number(params.amount) : 0;
+    const rawAmount = (params.amount ? Number(params.amount) : 0) / 1000000;
     setAmount(rawAmount);
     setDisplayAmount(params.displayAmount ?? `$${rawAmount.toFixed(2)}`);
     setRecipient(params.recipient || params.requester || '');
@@ -225,7 +226,8 @@ export default function SendConfirmationScreen() {
               duration: params.lockboxDuration || LOCKBOX_DURATION,
             });
 
-            PingHistoryStorage.save({
+            const userEmail = AccountDataService.getInstance().email ?? '';
+            PingHistoryStorage.save(userEmail, {
               status: 'pending',
               email: recipient,
               amount: displayAmount,

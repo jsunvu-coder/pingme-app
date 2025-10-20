@@ -21,7 +21,7 @@ export default function PaymentAmountView({ value, onChange, balance }: Props) {
         value={value}
         onChangeText={onChange}
         placeholder="Amount"
-        keyboardType="number-pad"
+        keyboardType="decimal-pad"
       />
     </View>
   );
