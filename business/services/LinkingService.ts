@@ -14,8 +14,8 @@ export const linking = {
   async getInitialURL() {
     const url = await Linking.getInitialURL();
     if (url) {
-      console.log('[Linking] Cold-start URL:', url);
-      await deepLinkHandler.handleURL(url);
+      // We let Splash -> DeepLinkHandler.handleAppStart() own cold-start handling
+      console.log('[Linking] Cold-start URL (suppressed):', url);
     }
     return null; // prevent RN from auto-navigating
   },
@@ -23,7 +23,7 @@ export const linking = {
   subscribe(listener: (url: string) => void) {
     const onReceiveURL = async ({ url }: { url: string }) => {
       console.log('[Linking] Runtime URL:', url);
-      listener(url);
+      // We handle navigation ourselves via DeepLinkHandler to support auth gating
       await deepLinkHandler.handleURL(url);
     };
     const sub = Linking.addEventListener('url', onReceiveURL);

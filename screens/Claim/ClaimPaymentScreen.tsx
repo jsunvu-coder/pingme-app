@@ -2,21 +2,19 @@ import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { setRootScreen, push } from 'navigation/Navigation';
+import { setRootScreen } from 'navigation/Navigation';
 
 // Components
 import { PassphraseInput } from './PassphraseInput';
 import { ClaimHeader } from './ClaimHeader';
 import { VerificationCard } from './VerificationCard';
 import { StatusCard } from './StatusCard';
-import { ActionButtons } from './ActionButtons';
 
 // Hooks and Utils
 import { useClaimPayment } from './hooks/useClaimPayment';
 import { validateClaimParams } from './utils/claimUtils';
 import { AuthService } from 'business/services/AuthService';
-import OutlineButton from 'components/OutlineButton';
-import PrimaryButton from 'components/PrimaryButton';
+import { ActionButtons } from './ActionButtons';
 
 export default function ClaimPaymentScreen() {
   const {
@@ -24,13 +22,11 @@ export default function ClaimPaymentScreen() {
     setPassphrase,
     loading,
     lockbox,
-    lockboxProof,
     verifyError,
     derivedStatus,
     statusColorClass,
     headerSubtitle,
     handleVerify,
-    formatUsdFromLockbox,
     username,
     lockboxSalt,
   } = useClaimPayment();
@@ -87,14 +83,12 @@ export default function ClaimPaymentScreen() {
             )}
           </View>
 
-          <View className="mt-10 flex-1 flex-row items-center justify-between space-x-3">
-            <View className="mr-3 flex-1">
-              <OutlineButton title="Cancel" onPress={handleBack} />
-            </View>
-            <View className="ml-3 flex-1">
-              <PrimaryButton title="Claim" onPress={handleVerify} />
-            </View>
-          </View>
+          <ActionButtons
+            status={derivedStatus}
+            loading={loading}
+            onVerify={handleVerify}
+            onBack={handleBack}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

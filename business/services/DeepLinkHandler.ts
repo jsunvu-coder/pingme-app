@@ -37,7 +37,27 @@ class DeepLinkHandler {
         console.log('[DeepLinkHandler] Cold start URL detected:', url);
 
         const u = new URL(url);
-        const path = u.pathname.replace(/^\//, '');
+        const normalizedPathname = u.pathname.replace(/^\/+--\//, '/');
+        let path = normalizedPathname.replace(/^\//, '');
+        // For custom scheme like pingme://claim, pathname may be empty and 'claim' is the host
+        if (!path) path = (u.host || u.hostname || '').toLowerCase();
+        console.log(
+          '[DeepLinkHandler] Cold start parsed path:',
+          path,
+          'query=',
+          Object.fromEntries(u.searchParams)
+        );
+
+        // If initial URL has no path (e.g., exp://host:port), treat as NO deep link
+        if (!path) {
+          console.log('[DeepLinkHandler] Empty path on cold start → treating as no deep link');
+          if (isLoggedIn) {
+            setRootScreen(['MainTab']);
+          } else {
+            setRootScreen(['OnboardingPager']);
+          }
+          return;
+        }
 
         // CLAIM → open immediately regardless of login
         if (path === 'claim') {
@@ -82,7 +102,12 @@ class DeepLinkHandler {
 
     try {
       const u = new URL(url);
-      path = u.pathname.replace(/^\//, '');
+      // Expo dev URLs may use "/--/" as the app path separator, e.g. exp://host:port/--/claim
+      // Normalize by removing leading "--/" if present
+      const normalizedPathname = u.pathname.replace(/^\/+--\//, '/');
+      path = normalizedPathname.replace(/^\//, '');
+      // For custom scheme like pingme://claim, pathname may be empty and 'claim' is the host
+      if (!path) path = (u.host || u.hostname || '').toLowerCase();
       u.searchParams.forEach((v, k) => (params[k] = v));
     } catch (e) {
       console.error('[DeepLinkHandler] Invalid URL:', e);
