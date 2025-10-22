@@ -149,12 +149,14 @@ export const useClaimPayment = () => {
       console.log('✅ getLockbox response:', ret);
       setLockbox(ret);
 
-      push('AuthScreen', {
-        mode: 'login',
-        headerType: 'full',
-        showTabs: true,
-        lockboxProof: lockboxProof,
-      });
+      if (ret.status === 0) {
+        push('AuthScreen', {
+          mode: 'login',
+          headerType: 'full',
+          showTabs: true,
+          lockboxProof: finalProof,
+        });
+      }
     } catch (err: any) {
       console.error('❌ Verify failed:', err);
       setVerifyError('Incorrect passphrase, please try again');
