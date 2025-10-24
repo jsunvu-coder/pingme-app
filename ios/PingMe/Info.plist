@@ -44,7 +44,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>7</string>
+	<string>10</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSMinimumSystemVersion</key>
@@ -62,6 +62,8 @@
 	<string>Allow $(PRODUCT_NAME) to access your camera</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your contacts</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Allow PingMe to use Face ID for secure login</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your microphone</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -96,8 +98,5 @@
 	<string>Light</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-  <key>NSFaceIDUsageDescription</key>
-  <string>Allow PingMe to use Face ID for secure login</string>
-
 </dict>
 </plist>

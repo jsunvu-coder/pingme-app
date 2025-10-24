@@ -36,9 +36,19 @@ export default function AccountActionList() {
     })();
   }, []);
 
-  const handleLogout = () => {
-    AuthService.getInstance().logout();
-    push('SplashScreen');
+  const handleLogout = async () => {
+    try {
+      await AuthService.getInstance().logout();
+      await AsyncStorage.clear();
+      const secureKeys = ['lastEmail', 'lastPassword'];
+      for (const key of secureKeys) {
+        await SecureStore.deleteItemAsync(key);
+      }
+
+      push('SplashScreen');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   // === Toggle biometric preference logic

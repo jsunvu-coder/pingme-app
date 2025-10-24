@@ -22,8 +22,7 @@ export default function LoginView({
   const route = useRoute<any>();
   const vm = new LoginViewModel();
 
-  const initialEmail = prefillUsername ?? route?.params?.prefillUsername ?? '';
-  const [email, setEmail] = useState(initialEmail);
+  const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
@@ -31,17 +30,23 @@ export default function LoginView({
 
   useEffect(() => {
     (async () => {
-      const { biometricType, useBiometric, savedEmail, savedPassword } = await vm.initialize();
-      setBiometricType(biometricType);
-      setUseBiometric(useBiometric);
-      if (savedEmail) setEmail(savedEmail);
-      if (savedPassword) setPassword(savedPassword);
+      const init = await vm.initialize();
+      setBiometricType(init.biometricType);
+      setUseBiometric(init.useBiometric);
 
-      const shouldAutoLogin = lockboxProof === undefined;
-      console.log('shouldAutoLogin:', shouldAutoLogin);
-      // 🚫 Skip Face ID auto login when tabs are visible
-      if (shouldAutoLogin) {
-        await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
+      if (init.useBiometric && init.biometricType) {
+        const result = await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
+
+        if (result.success && result.email && result.password) {
+          // ✅ First, update UI to show credentials
+          setEmail(result.email);
+          setPassword(result.password);
+
+          // ✅ Wait one tick for UI to update, then continue navigation
+          setTimeout(() => {
+            vm.resumeAfterBiometricLogin(result.email!);
+          }, 300);
+        }
       }
     })();
   }, []);
@@ -69,7 +74,6 @@ export default function LoginView({
         <AuthInput
           icon={<EmailIcon />}
           value={email}
-          autoFocus
           onChangeText={setEmail}
           placeholder="Email address"
           keyboardType="email-address"

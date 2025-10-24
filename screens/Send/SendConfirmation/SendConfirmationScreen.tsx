@@ -86,7 +86,12 @@ export default function SendConfirmationScreen() {
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
-    const rawAmount = (params.amount ? Number(params.amount) : 0) / 1000000;
+    const parseAmount = (amount?: number | string) => {
+      const num = Number(amount) || 0;
+      return num >= 1e5 ? num / 1_000_000 : num;
+    };
+
+    const rawAmount = parseAmount(params.amount);
     setAmount(rawAmount);
     setDisplayAmount(params.displayAmount ?? `$${rawAmount.toFixed(2)}`);
     setRecipient(params.recipient || params.requester || '');

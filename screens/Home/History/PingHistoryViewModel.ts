@@ -54,7 +54,7 @@ export class PingHistoryViewModel {
         default:
           direction = 'other';
           amountNumber = 0;
-          displayLabel = 'Other';
+          displayLabel = 'Deposit';
           sign = '';
           color = 'text-gray-500';
           iconName = 'arrow-up';

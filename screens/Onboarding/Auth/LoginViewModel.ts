@@ -1,4 +1,3 @@
-// screens/Auth/LoginViewModel.ts
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Alert } from 'react-native';
@@ -13,23 +12,13 @@ export class LoginViewModel {
   biometricType: BiometricType = null;
   useBiometric = false;
 
-  /**
-   * Initialize login view model:
-   * - Check stored FaceID/TouchID preference
-   * - Detect biometric type
-   * - Preload saved credentials (if any)
-   */
   async initialize(): Promise<{
     biometricType: BiometricType;
     useBiometric: boolean;
-    savedEmail?: string;
-    savedPassword?: string;
   }> {
-    // Load biometric preference
     const savedPref = await SecureStore.getItemAsync('useBiometric');
     if (savedPref === 'true') this.useBiometric = true;
 
-    // Detect hardware type
     const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
     if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
       this.biometricType = 'Face ID';
@@ -37,60 +26,53 @@ export class LoginViewModel {
       this.biometricType = 'Touch ID';
     }
 
-    // Load any saved credentials
-    const savedEmail = await SecureStore.getItemAsync('lastEmail');
-    const savedPassword = await SecureStore.getItemAsync('lastPassword');
-
     return {
       biometricType: this.biometricType,
       useBiometric: this.useBiometric,
-      savedEmail: savedEmail ?? '',
-      savedPassword: savedPassword ?? '',
     };
   }
 
   /**
-   * If user enabled biometric login, try automatic authentication and login.
+   * Authenticate with biometric → load credentials → return them for UI
+   * Let the view call `resumeAfterBiometricLogin()` to continue navigation
    */
-  async tryBiometricAutoLogin(lockboxProof?: string) {
-    if (!this.useBiometric) return false;
+  async tryBiometricAutoLogin(
+    lockboxProof?: string
+  ): Promise<{ success: boolean; email?: string; password?: string }> {
+    if (!this.useBiometric) return { success: false, email: undefined, password: undefined };
 
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     const enrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!hasHardware || !enrolled) return false;
+    if (!hasHardware || !enrolled) return { success: false, email: undefined, password: undefined };
 
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Log in with Face ID',
+      promptMessage: `Log in with ${this.biometricType ?? 'biometric'}`,
       fallbackLabel: 'Use Passcode',
       disableDeviceFallback: false,
     });
 
-    if (result.success) {
-      await this.autoLogin(lockboxProof);
-      return true;
-    }
-    return false;
+    if (!result.success) return { success: false, email: undefined, password: undefined };
+
+    // ✅ Load credentials after successful biometric authentication
+    const email = await SecureStore.getItemAsync('lastEmail');
+    const password = await SecureStore.getItemAsync('lastPassword');
+
+    if (!email || !password) return { success: false, email: undefined, password: undefined };
+
+    // Just verify login success but don't navigate yet
+    // const ok = await AuthService.getInstance().signin(email, password, lockboxProof);
+
+    // Return credentials to fill the UI first
+    return { success: true, email, password };
   }
 
   /**
-   * Perform automatic login using saved credentials.
+   * Called by the view *after* it fills username/password to proceed navigation.
    */
-  async autoLogin(lockboxProof?: string) {
-    try {
-      const email = await SecureStore.getItemAsync('lastEmail');
-      const password = await SecureStore.getItemAsync('lastPassword');
-      if (!email || !password) return;
-
-      const ok = await AuthService.getInstance().signin(email, password, lockboxProof);
-      if (ok) this.handleSuccessfulLogin(email);
-    } catch (err) {
-      console.error('Auto-login failed', err);
-    }
+  resumeAfterBiometricLogin(email: string) {
+    this.handleSuccessfulLogin(email);
   }
 
-  /**
-   * Handle normal login + credential storage + biometric activation.
-   */
   async handleLogin(
     email: string,
     password: string,
@@ -106,15 +88,9 @@ export class LoginViewModel {
       return false;
     }
 
-    // Always save credentials securely after successful login
-    await SecureStore.setItemAsync('lastEmail', email, {
-      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
-    });
-    await SecureStore.setItemAsync('lastPassword', password, {
-      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
-    });
+    await SecureStore.setItemAsync('lastEmail', email);
+    await SecureStore.setItemAsync('lastPassword', password);
 
-    // If biometric is on, confirm and mark preference
     if (useBiometric) {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
@@ -136,9 +112,6 @@ export class LoginViewModel {
     return true;
   }
 
-  /**
-   * Clear saved credentials (e.g. when user disables FaceID or logs out)
-   */
   async clearStoredCredentials() {
     await SecureStore.deleteItemAsync('lastEmail');
     await SecureStore.deleteItemAsync('lastPassword');
@@ -146,9 +119,6 @@ export class LoginViewModel {
     this.useBiometric = false;
   }
 
-  /**
-   * Full logout process with cleanup.
-   */
   async logout() {
     await this.clearStoredCredentials();
     AuthService.getInstance().logout();

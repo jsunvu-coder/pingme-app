@@ -14,6 +14,10 @@ export default function HomeScreen() {
   const [totalBalance, setTotalBalance] = useState('0.00');
 
   useEffect(() => {
+    getBalances();
+  }, []);
+
+  const getBalances = async () => {
     const balanceService = BalanceService.getInstance();
 
     balanceService.onBalanceChange((updated) => {
@@ -26,7 +30,7 @@ export default function HomeScreen() {
       setTotalBalance(balanceService.totalBalance);
       setLoading(false);
     });
-  }, []);
+  };
 
   return (
     <View className="flex-1 bg-[#FD4912]">
@@ -41,9 +45,7 @@ export default function HomeScreen() {
             <BalanceView
               balance={`$${loading ? '0.00' : totalBalance}`}
               tokens={balances}
-              onRefresh={async () => {
-                await BalanceService.getInstance().getBalance();
-              }}
+              onRefresh={getBalances}
             />
           </View>
 

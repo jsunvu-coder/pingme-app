@@ -14,7 +14,7 @@ import AuthInput from 'components/AuthInput';
 import PasswordIcon from 'assets/PasswordIcon';
 
 type RecoveryParams = {
-  recoveryCode: string;
+  password: string;
 };
 
 type RootStackParamList = {
@@ -23,11 +23,11 @@ type RootStackParamList = {
 
 export default function RecoveryPasswordScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'RecoveryPasswordScreen'>>();
-  const { recoveryCode } = route.params;
+  const { password } = route.params;
   const [loading] = useState(false);
 
   const handleCopyPassword = async () => {
-    await Clipboard.setStringAsync(recoveryCode);
+    await Clipboard.setStringAsync(password);
     await showLocalizedAlert({
       title: 'Success',
       message: 'Password copied to clipboard',
@@ -59,7 +59,7 @@ export default function RecoveryPasswordScreen() {
         <View className="mt-8 rounded-xl">
           <AuthInput
             icon={<PasswordIcon />}
-            value={recoveryCode}
+            value={password}
             onChangeText={() => {}}
             placeholder="Password"
           />
