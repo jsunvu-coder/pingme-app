@@ -1,6 +1,6 @@
-import axios from "axios";
-import { API_URL } from "business/Config";
-import { SESSION_EXPIRED, TOKEN_NAMES } from "business/Constants";
+import axios from 'axios';
+import { API_URL } from 'business/Config';
+import { SESSION_EXPIRED, TOKEN_NAMES } from 'business/Constants';
 
 /**
  * React Native version of Angular ContractService
@@ -33,7 +33,7 @@ export class ContractService {
   }
 
   private triggerSessionExpired() {
-    console.warn("⚠️ [ContractService] Session expired");
+    console.warn('⚠️ [ContractService] Session expired');
     for (const cb of this.sessionExpiredCallbacks) cb();
   }
 
@@ -45,7 +45,7 @@ export class ContractService {
   }
 
   setCrypto(crypto: any) {
-    console.log("🔐 [ContractService] Crypto state set:", {
+    console.log('🔐 [ContractService] Crypto state set:', {
       username: crypto?.username,
       expiry: crypto?.expiry,
     });
@@ -53,7 +53,7 @@ export class ContractService {
   }
 
   clearCrypto() {
-    console.log("🧹 [ContractService] Cleared crypto state");
+    console.log('🧹 [ContractService] Cleared crypto state');
     this.crypto = null;
   }
 
@@ -69,12 +69,12 @@ export class ContractService {
     const ret = await this._getTimestamp();
     const blockTime = BigInt(ret.timestamp);
     this.sync = { blockTime, localTime: now };
-    console.log("⏱ Cached timestamp:", blockTime.toString());
+    console.log('⏱ Cached timestamp:', blockTime.toString());
     return { timestamp: blockTime };
   }
 
   private async _getTimestamp() {
-    return this.get("/pm_get_timestamp");
+    return this.get('/pm_get_timestamp');
   }
 
   // ========================================================
@@ -89,7 +89,7 @@ export class ContractService {
       console.log(`✅ [GET] ${url} (${status}) in ${Date.now() - start}ms`, data);
       return data;
     } catch (error: any) {
-      this.logHttpError("GET", url, error, start);
+      this.logHttpError('GET', url, error, start);
       throw error;
     }
   }
@@ -103,7 +103,7 @@ export class ContractService {
       console.log(`✅ [POST] ${url} (${status}) in ${Date.now() - start}ms`, data);
       return data;
     } catch (error: any) {
-      this.logHttpError("POST", url, error, start);
+      this.logHttpError('POST', url, error, start);
       throw error;
     }
   }
@@ -112,9 +112,12 @@ export class ContractService {
     const duration = Date.now() - start;
     console.error(
       `❌ [${method}] ${url} failed after ${duration}ms`,
-      "\nMessage:", error?.message,
-      "\nStatus:", error?.response?.status ?? "N/A",
-      "\nResponse:", JSON.stringify(error?.response?.data ?? {}, null, 2)
+      '\nMessage:',
+      error?.message,
+      '\nStatus:',
+      error?.response?.status ?? 'N/A',
+      '\nResponse:',
+      JSON.stringify(error?.response?.data ?? {}, null, 2)
     );
   }
 
@@ -134,11 +137,11 @@ export class ContractService {
   // 🌍 OPEN CALLS (NO GUARD)
   // ========================================================
   async claim(proof: string, salt: string, commitment: string) {
-    return this.post("/pm_claim", { proof, salt, commitment });
+    return this.post('/pm_claim', { proof, salt, commitment });
   }
 
   async commit(ct1: string, ct2?: string, ct3?: string) {
-    return this.post("/pm_commit", { ct1, ct2, ct3 });
+    return this.post('/pm_commit', { ct1, ct2, ct3 });
   }
 
   async getCurrentSalt(salt: string) {
@@ -146,11 +149,11 @@ export class ContractService {
   }
 
   async getGlobals() {
-    return this.get("/pm_get_globals");
+    return this.get('/pm_get_globals');
   }
 
   async getLockbox(lockbox_commitment: string) {
-    return this.post("/pm_get_lockbox", { lockbox_commitment });
+    return this.post('/pm_get_lockbox', { lockbox_commitment });
   }
 
   async hasBalance(commitment: string) {
@@ -170,44 +173,32 @@ export class ContractService {
   // ========================================================
   async changePassword(proof: string, next_salt: string, next_commitment: string) {
     return this.sessionGuard(() =>
-      this.post("/pm_change_password", { proof, next_salt, next_commitment })
+      this.post('/pm_change_password', { proof, next_salt, next_commitment })
     );
   }
 
   async getBalance(commitment: string) {
-    return this.sessionGuard(() =>
-      this.post("/pm_get_balance", { commitment })
-    );
+    return this.sessionGuard(() => this.post('/pm_get_balance', { commitment }));
   }
 
   async getCommitState(ct1: string, ct2?: string, ct3?: string) {
-    return this.sessionGuard(() =>
-      this.post("/pm_get_commit_state", { ct1, ct2, ct3 })
-    );
+    return this.sessionGuard(() => this.post('/pm_get_commit_state', { ct1, ct2, ct3 }));
   }
 
   async getEvents(commitment: string, batch_size?: number) {
-    return this.sessionGuard(() =>
-      this.post("/pm_get_events", { commitment, batch_size })
-    );
+    return this.sessionGuard(() => this.post('/pm_get_events', { commitment, batch_size }));
   }
 
   async getForwarder(commitment: string) {
-    return this.sessionGuard(() =>
-      this.get(`/pm_get_forwarder?commitment=${commitment}`)
-    );
+    return this.sessionGuard(() => this.get(`/pm_get_forwarder?commitment=${commitment}`));
   }
 
   async getForwarderBalance(forwarder: string) {
-    return this.sessionGuard(() =>
-      this.post("/pm_get_forwarder_balance", { forwarder })
-    );
+    return this.sessionGuard(() => this.post('/pm_get_forwarder_balance', { forwarder }));
   }
 
   async reclaim(lockbox_commitment: string) {
-    return this.sessionGuard(() =>
-      this.post("/pm_reclaim", { lockbox_commitment })
-    );
+    return this.sessionGuard(() => this.post('/pm_reclaim', { lockbox_commitment }));
   }
 
   async requestPay(
@@ -219,7 +210,7 @@ export class ContractService {
     custom_message: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/pm_request_pay", {
+      this.post('/pm_request_pay', {
         amount,
         requester,
         requestee,
@@ -231,9 +222,7 @@ export class ContractService {
   }
 
   async retrieve(commitment: string) {
-    return this.sessionGuard(() =>
-      this.post("/pm_retrieve", { commitment })
-    );
+    return this.sessionGuard(() => this.post('/pm_retrieve', { commitment }));
   }
 
   async withdraw(
@@ -245,7 +234,7 @@ export class ContractService {
     recipient: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/pm_withdraw", {
+      this.post('/pm_withdraw', {
         token,
         amount,
         proof,
@@ -265,7 +254,7 @@ export class ContractService {
     commitment: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/pm_withdraw_and_deposit", {
+      this.post('/pm_withdraw_and_deposit', {
         token,
         amount,
         proof,
@@ -286,7 +275,7 @@ export class ContractService {
     lockbox_commitment: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/pm_withdraw_and_send", {
+      this.post('/pm_withdraw_and_send', {
         token,
         amount,
         proof,
@@ -311,7 +300,7 @@ export class ContractService {
     token_name: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/pm_withdraw_and_send_email", {
+      this.post('/pm_withdraw_and_send_email', {
         token,
         amount,
         proof,
@@ -338,7 +327,7 @@ export class ContractService {
     nonce: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/rv_change_password", {
+      this.post('/rv_change_password', {
         proof,
         commitment,
         ct_kem,
@@ -350,24 +339,20 @@ export class ContractService {
   }
 
   async rvCommit(ct1: string, ct2: string) {
-    return this.post("/rv_commit", { ct1, ct2 });
+    return this.post('/rv_commit', { ct1, ct2 });
   }
 
   async rvGetCommitState(ct1: string, ct2: string) {
-    return this.sessionGuard(() =>
-      this.post("/rv_get_commit_state", { ct1, ct2 })
-    );
+    return this.sessionGuard(() => this.post('/rv_get_commit_state', { ct1, ct2 }));
   }
 
   async rvGetRecoveryPk(commitment: string) {
-    return this.sessionGuard(() =>
-      this.post("/rv_get_recovery_pk", { commitment })
-    );
+    return this.sessionGuard(() => this.post('/rv_get_recovery_pk', { commitment }));
   }
 
   async rvGetVaultRecordByRecoveryPk(recovery_pk: string) {
     return this.sessionGuard(() =>
-      this.post("/rv_get_vault_record_by_recovery_pk", { recovery_pk })
+      this.post('/rv_get_vault_record_by_recovery_pk', { recovery_pk })
     );
   }
 
@@ -380,7 +365,7 @@ export class ContractService {
     nonce: string
   ) {
     return this.sessionGuard(() =>
-      this.post("/rv_initialize", {
+      this.post('/rv_initialize', {
         commitment,
         recovery_pk,
         ct_kem,

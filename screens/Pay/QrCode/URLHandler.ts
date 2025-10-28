@@ -6,7 +6,7 @@ import { Alert } from 'react-native';
  * Universal deep link and QR handler for PingMe app.
  * Supports:
  *  - https://app.pingme.xyz/claim?lockboxSalt=0x...
- *  - https://app.pingme.xyz/pay?token=...&amount=...&requester=...
+ *  - https://app.pingme.xyz/send?token=...&amount=...&requester=...
  */
 export const handleUrl = (data: string) => {
   try {
@@ -25,7 +25,7 @@ export const handleUrl = (data: string) => {
     }
 
     const url = new URL(data);
-    const path = url.pathname; // e.g. "/claim" or "/pay"
+    const path = url.pathname; // e.g. "/claim" or "/send"
 
     // ---------- Handle /claim ----------
     if (path === '/claim') {
@@ -40,14 +40,46 @@ export const handleUrl = (data: string) => {
       return;
     }
 
-    // ---------- Handle /pay ----------
-    if (path === '/pay') {
+    console.log('path', path);
+
+    // ---------- Handle /send ----------
+    if (path.startsWith('/send')) {
       const token = url.searchParams.get('token');
-      const amount = url.searchParams.get('amount');
-      const requester = url.searchParams.get('requester');
+
+      let amount = url.searchParams.get('amount');
+      let requester = url.searchParams.get('requester') ?? url.searchParams.get('email');
+
+      if (!requester) {
+        const emailMatch = path.match(/\/send\/email=([^/]+)/);
+        if (emailMatch?.[1]) requester = decodeURIComponent(emailMatch[1]);
+      }
+
+      if (!amount) {
+        const amountMatch = path.match(/\/send\/amount=([^/]+)/);
+        if (amountMatch?.[1]) amount = amountMatch[1];
+      }
 
       if (!token || !amount || !requester) {
-        console.warn('⚠️ Missing params in pay URL', { token, amount, requester });
+        console.warn('⚠️ Missing params in send URL', { token, amount, requester });
+
+        const fallbackParams: Record<string, unknown> = {
+          mode: 'send',
+          source: 'qr',
+          timestamp: Date.now(),
+        };
+
+        if (requester) fallbackParams.email = requester;
+        if (amount) {
+          const numericAmount = Number(amount);
+          if (Number.isFinite(numericAmount)) {
+            fallbackParams.amount = numericAmount;
+          }
+        }
+
+        push('MainTab', {
+          screen: 'Ping Now',
+          params: fallbackParams,
+        });
         return;
       }
 

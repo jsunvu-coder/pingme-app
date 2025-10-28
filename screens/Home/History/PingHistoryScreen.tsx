@@ -2,25 +2,25 @@ import { ScrollView, View, Text, TouchableOpacity, RefreshControl } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, useCallback } from 'react';
-import { EventLog } from 'business/models/EventLog';
 import { goBack } from 'navigation/Navigation';
 import { HistoryRow } from './HistoryRow';
 import FilterDropdown from './FilterDropDown';
 import { PingHistoryViewModel } from './PingHistoryViewModel';
+import { TransactionViewModel } from './TransactionViewModel';
+
+const vm = new PingHistoryViewModel();
 
 export default function PingHistoryScreen() {
-  const [events, setEvents] = useState<EventLog[]>([]);
+  const [transactions, setTransactions] = useState<TransactionViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'send' | 'receive'>('all');
 
-  const vm = new PingHistoryViewModel();
-
   const loadData = async () => {
     setLoading(true);
     try {
-      const allEvents = await vm.loadEvents();
-      setEvents(allEvents);
+      const allTransactions = await vm.getTransactions();
+      setTransactions(allTransactions);
     } catch (err) {
       console.error('❌ Failed to load ping history:', err);
     } finally {
@@ -39,8 +39,8 @@ export default function PingHistoryScreen() {
   }, []);
 
   // 🔍 Use VM helpers to filter and group
-  const filteredEvents = vm.filterEvents(events, filterType);
-  const groupedEvents = vm.groupByDate(filteredEvents);
+  const filteredTransactions = vm.filterTransactions(transactions, filterType);
+  const groupedTransactions = vm.groupByDate(filteredTransactions);
 
   return (
     <SafeAreaView className="flex-1 bg-[#FAFAFA]">
@@ -65,21 +65,22 @@ export default function PingHistoryScreen() {
 
         {loading ? (
           <Text className="mt-20 text-center text-gray-500">Loading history...</Text>
-        ) : filteredEvents.length === 0 ? (
+        ) : filteredTransactions.length === 0 ? (
           <Text className="mt-20 text-center text-gray-400">
             No {filterType !== 'all' ? filterType : ''} ping history found.
           </Text>
         ) : (
-          Object.entries(groupedEvents).map(([date, dayEvents]) => {
+          Object.entries(groupedTransactions).map(([date, dayEvents]) => {
             const label = typeof date === 'string' ? date.toUpperCase() : '';
             return (
               <View key={label} className="mb-6">
                 <Text className="mb-3 font-medium text-gray-400">{label}</Text>
 
                 {Array.isArray(dayEvents) &&
-                  dayEvents.map((event, index) => (
-                    <HistoryRow key={`${label}-${index}`} event={event} />
-                  ))}
+                  dayEvents.map((event, index) => {
+                    const key = `${label}-${index}-${event.timestamp}`;
+                    return <HistoryRow key={key} event={event} />;
+                  })}
               </View>
             );
           })

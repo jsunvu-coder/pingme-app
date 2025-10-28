@@ -128,6 +128,7 @@ export default function PingMeScreen() {
 
   // ✅ Handle QR navigation params
   useEffect(() => {
+    console.log('PingMeScreen route.params:', route.params);
     if (route.params) {
       const { mode: paramMode, email: paramEmail, amount: paramAmount } = route.params;
       if (paramMode && (paramMode === 'send' || paramMode === 'request')) setMode(paramMode);

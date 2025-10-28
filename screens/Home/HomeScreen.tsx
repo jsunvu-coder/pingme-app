@@ -14,22 +14,29 @@ export default function HomeScreen() {
   const [totalBalance, setTotalBalance] = useState('0.00');
 
   useEffect(() => {
-    getBalances();
-  }, []);
-
-  const getBalances = async () => {
     const balanceService = BalanceService.getInstance();
 
-    balanceService.onBalanceChange((updated) => {
+    const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
-      setTotalBalance(balanceService.totalBalance); // ✅ always read the cached value
-      setLoading(false);
-    });
-
-    balanceService.getBalance().finally(() => {
       setTotalBalance(balanceService.totalBalance);
       setLoading(false);
-    });
+    };
+
+    balanceService.onBalanceChange(onUpdate);
+    void balanceService.getBalance();
+
+    return () => {
+      balanceService.offBalanceChange(onUpdate);
+    };
+  }, []);
+
+  const handleRefresh = async () => {
+    const balanceService = BalanceService.getInstance();
+    setLoading(true);
+    await balanceService.getBalance();
+    setBalances(balanceService.currentBalances);
+    setTotalBalance(balanceService.totalBalance);
+    setLoading(false);
   };
 
   return (
@@ -45,7 +52,7 @@ export default function HomeScreen() {
             <BalanceView
               balance={`$${loading ? '0.00' : totalBalance}`}
               tokens={balances}
-              onRefresh={getBalances}
+              onRefresh={handleRefresh}
             />
           </View>
 

@@ -37,8 +37,16 @@ export class BalanceService {
     this.balanceListeners.push(listener);
   }
 
+  offBalanceChange(listener: BalanceListener): void {
+    this.balanceListeners = this.balanceListeners.filter((fn) => fn !== listener);
+  }
+
   onUpdateTimeChange(listener: UpdateTimeListener): void {
     this.updateTimeListeners.push(listener);
+  }
+
+  offUpdateTimeChange(listener: UpdateTimeListener): void {
+    this.updateTimeListeners = this.updateTimeListeners.filter((fn) => fn !== listener);
   }
 
   private notifyBalanceChange(): void {

@@ -1,116 +1,77 @@
-import { EventLog } from 'business/models/EventLog';
-import { AccountDataService } from 'business/services/AccountDataService';
+import { RecordEntry } from 'business/Types';
+import { RecordService } from 'business/services/RecordService';
+import { ContractService } from 'business/services/ContractService';
+import { parseTransaction } from './TransactionParser';
+import { TransactionViewModel } from './TransactionViewModel';
 
 export class PingHistoryViewModel {
-  private accountData = AccountDataService.getInstance();
+  private recordService = RecordService.getInstance();
+  private contractService = ContractService.getInstance();
 
-  async loadEvents(): Promise<EventLog[]> {
-    await this.accountData.refreshData();
-    const records = this.accountData.getRecords();
-    return this.parseEventLogs(records || []);
+  async getTransactions(): Promise<TransactionViewModel[]> {
+    try {
+      const records = await this.recordService.getRecord();
+      const commitment = this.contractService.getCrypto()?.commitment ?? '';
+      return this.parseTransactions(records || [], commitment);
+    } catch (err) {
+      console.error('[PingHistoryViewModel] Failed to load transactions', err);
+      return [];
+    }
   }
 
-  private parseEventLogs(rawEvents: EventLog[]): EventLog[] {
-    return rawEvents.map((e) => {
-      let direction: 'sent' | 'received' | 'other' = 'other';
-      let amountNumber = Number(e.amount ?? 0);
-      let displayLabel = '';
-      let color = '';
-      let iconName = '';
-      let iconColor = '';
-      let sign = '';
+  /**
+   * Parse and deduplicate transactions by (action + txHash).
+   * Keeps only the first occurrence of each unique pair.
+   */
+  private parseTransactions(rawEvents: RecordEntry[], commitment: string): TransactionViewModel[] {
+    const seen = new Set<string>();
 
-      switch (e.action) {
-        case 9: // Payment → Outgoing (-)
-          direction = 'sent';
-          amountNumber = -Math.abs(amountNumber);
-          displayLabel = 'Payment';
-          sign = '-';
-          color = 'text-red-500';
-          iconName = 'arrow-up';
-          iconColor = '#EF4444';
-          break;
+    const parsed: TransactionViewModel[] = [];
 
-        case 0: // Claim → Incoming (+)
-          direction = 'received';
-          amountNumber = Math.abs(amountNumber);
-          displayLabel = 'Claim';
-          sign = '+';
-          color = 'text-green-500';
-          iconName = 'arrow-down';
-          iconColor = '#fff';
-          break;
+    for (const event of rawEvents) {
+      const txHash = event.txHash ?? '';
+      const action = Number(event.action ?? -1);
+      const key = `${action}-${txHash}`;
 
-        case 2: // New Balance → Incoming (+)
-          direction = 'received';
-          amountNumber = Math.abs(amountNumber);
-          displayLabel = 'New Balance';
-          sign = '+';
-          color = 'text-green-500';
-          iconName = 'arrow-down';
-          iconColor = '#fff';
-          break;
+      // ⚠️ Skip duplicates or missing hash
+      if (!txHash || seen.has(key)) continue;
 
-        default:
-          direction = 'other';
-          amountNumber = 0;
-          displayLabel = 'Deposit';
-          sign = '';
-          color = 'text-gray-500';
-          iconName = 'arrow-up';
-          iconColor = '#fff';
-          break;
-      }
+      seen.add(key);
 
-      const readableTime = new Date(e.timestamp * 1000).toLocaleString('en-CA', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
+      const tx = parseTransaction(event, commitment);
+      if (tx) parsed.push(tx);
+    }
 
-      const amountDisplay = `${sign}${(Math.abs(amountNumber) / 1_000_000).toFixed(2)}`;
-
-      return {
-        ...e,
-        direction,
-        amountNumber,
-        readableTime,
-        displayLabel,
-        amountDisplay,
-        color,
-        iconName,
-        iconColor,
-      };
-    });
+    // sort newest → oldest
+    return parsed.sort((a, b) => b.timestamp - a.timestamp);
   }
 
-  /** Group parsed events by human-readable date */
-  groupByDate(events: EventLog[]): Record<string, EventLog[]> {
-    return events.reduce<Record<string, EventLog[]>>((acc, event) => {
-      const timestamp = Number(event.timestamp) * 1000;
-      if (!timestamp || isNaN(timestamp)) return acc;
+  /** Group parsed events by calendar day (e.g. 2025-10-28) */
+  groupByDate(events: TransactionViewModel[]): Record<string, TransactionViewModel[]> {
+    return events.reduce<Record<string, TransactionViewModel[]>>((acc, event) => {
+      if (!event.timestamp) return acc;
 
-      const label = new Date(timestamp).toLocaleDateString('en-US', {
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
+      // 🗓 Format as "YYYY-MM-DD"
+      const date = new Date(event.timestamp);
+      const key = date.toISOString().split('T')[0]; // "2025-10-28"
 
-      if (!acc[label]) acc[label] = [];
-      acc[label].push(event);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(event);
+
       return acc;
     }, {});
   }
 
   /** Filter events by direction */
-  filterEvents(events: EventLog[], filter: 'all' | 'send' | 'receive'): EventLog[] {
+  filterTransactions(
+    events: TransactionViewModel[],
+    filter: 'all' | 'send' | 'receive'
+  ): TransactionViewModel[] {
     if (filter === 'all') return events;
     return events.filter((e) => {
       if (!e.direction) return false;
-      if (filter === 'send') return e.direction === 'sent';
-      if (filter === 'receive') return e.direction === 'received';
+      if (filter === 'send') return e.direction === 'send';
+      if (filter === 'receive') return e.direction === 'receive';
       return true;
     });
   }

@@ -19,8 +19,9 @@ export default function QRScanner({ onScanSuccess }: QRScannerProps) {
 
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     if (!scannedData) {
-      setScannedData(data);
-      onScanSuccess(data);
+      const decoded = decodeURIComponent(data);
+      setScannedData(decoded);
+      onScanSuccess(decoded);
       setTimeout(() => setScannedData(null), 3000);
     }
   };

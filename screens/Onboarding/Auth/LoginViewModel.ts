@@ -66,13 +66,6 @@ export class LoginViewModel {
     return { success: true, email, password };
   }
 
-  /**
-   * Called by the view *after* it fills username/password to proceed navigation.
-   */
-  resumeAfterBiometricLogin(email: string) {
-    this.handleSuccessfulLogin(email);
-  }
-
   async handleLogin(
     email: string,
     password: string,
@@ -91,7 +84,7 @@ export class LoginViewModel {
     await SecureStore.setItemAsync('lastEmail', email);
     await SecureStore.setItemAsync('lastPassword', password);
 
-    if (useBiometric) {
+    if (useBiometric && !this.useBiometric) {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       if (hasHardware && enrolled) {
@@ -106,6 +99,9 @@ export class LoginViewModel {
       } else {
         Alert.alert('Unavailable', 'Biometric authentication not set up on this device.');
       }
+    } else if (!useBiometric && this.useBiometric) {
+      await SecureStore.setItemAsync('useBiometric', 'false');
+      this.useBiometric = false;
     }
 
     this.handleSuccessfulLogin(email);

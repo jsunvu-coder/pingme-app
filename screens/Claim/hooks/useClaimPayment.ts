@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ContractService } from 'business/services/ContractService';
@@ -114,9 +114,9 @@ export const useClaimPayment = () => {
 
   // Verify passphrase and get lockbox data
   const handleVerify = async () => {
-    if (!passphrase.trim()) {
-      console.log('⚠️ Passphrase empty');
-      return;
+    const normalizedPassphrase = passphrase.trim();
+    if (!normalizedPassphrase) {
+      console.log('⚠️ Passphrase empty – attempting claim with blank value');
     }
 
     try {
@@ -125,7 +125,7 @@ export const useClaimPayment = () => {
       setLockbox(null);
 
       const user = (username || '').toLowerCase().trim();
-      const pass = passphrase.trim();
+      const pass = normalizedPassphrase;
       const inputData = CryptoUtils.strToHex2(user, pass);
       const p = CryptoUtils.globalHash2(inputData, lockboxSalt!);
       if (!p) throw new Error('Failed to compute p');
@@ -165,10 +165,18 @@ export const useClaimPayment = () => {
     }
   };
 
+  const updatePassphrase = useCallback(
+    (value: string) => {
+      if (verifyError) setVerifyError(null);
+      setPassphrase(value);
+    },
+    [verifyError]
+  );
+
   return {
     // State
     passphrase,
-    setPassphrase,
+    setPassphrase: updatePassphrase,
     loading,
     lockbox,
     lockboxProof,

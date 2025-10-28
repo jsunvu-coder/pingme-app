@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Switch, Alert } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
@@ -20,7 +20,7 @@ export default function LoginView({
   amountUsdStr?: string;
 }) {
   const route = useRoute<any>();
-  const vm = new LoginViewModel();
+  const vm = useMemo(() => new LoginViewModel(), []);
 
   const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
   const [password, setPassword] = useState('');
@@ -38,14 +38,9 @@ export default function LoginView({
         const result = await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
 
         if (result.success && result.email && result.password) {
-          // ✅ First, update UI to show credentials
+          // ✅ Fill UI with stored credentials; user will submit manually
           setEmail(result.email);
           setPassword(result.password);
-
-          // ✅ Wait one tick for UI to update, then continue navigation
-          setTimeout(() => {
-            vm.resumeAfterBiometricLogin(result.email!);
-          }, 300);
         }
       }
     })();

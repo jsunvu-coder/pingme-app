@@ -269,6 +269,15 @@ export class AuthService {
       );
 
       this.log('Claim successful');
+
+      try {
+        this.log('Refreshing balances after claim...');
+        await this.balanceService.getBalance();
+        this.recordService.updateRecord();
+      } catch (refreshErr) {
+        console.warn('⚠️ [AuthService] Failed to refresh balance after claim', refreshErr);
+      }
+
       return true;
     } catch (err) {
       this.handleError(SIGNIN_ERROR, err);
@@ -301,21 +310,14 @@ export class AuthService {
       });
 
       const _lockboxProof = lockboxProof ?? CryptoUtils.strToHex(username);
-      console.log('Ky - lockboxProof', _lockboxProof);
       const lockboxProofHash = CryptoUtils.globalHash(_lockboxProof);
 
-      console.log('Ky - lockboxProofHash', lockboxProofHash);
-
       if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
-      console.log('Ky - lockboxProofHash', lockboxProofHash);
       const saltHash = CryptoUtils.globalHash(salt);
-      console.log('Ky - saltHash', saltHash);
       if (!lockboxProofHash || !saltHash)
         throw new Error('Failed to generate lockbox proof or salt hash.');
       const commitmentHash = CryptoUtils.globalHash(commitment);
       if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
-
-      console.log('Ky - lockboxProofHash', lockboxProofHash);
 
       await this.commitProtect(
         () => this.contractService.claim(_lockboxProof, salt, commitment),

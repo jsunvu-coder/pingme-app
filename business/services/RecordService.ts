@@ -1,7 +1,7 @@
 // services/RecordService.ts
-import { ContractService } from "./ContractService";
-import { RecordEntry } from "business/Types";
-import { PAGINATION, UPDATE_DELAY } from "../Config";
+import { ContractService } from './ContractService';
+import { RecordEntry } from 'business/Types';
+import { PAGINATION, UPDATE_DELAY } from '../Config';
 
 export class RecordService {
   private static instance: RecordService;
@@ -43,7 +43,7 @@ export class RecordService {
       this.records = allRecords;
       return this.records;
     } catch (err) {
-      console.error("[RecordService] Failed to fetch records:", err);
+      console.error('[RecordService] Failed to fetch records:', err);
       return this.records;
     }
   }
@@ -69,7 +69,7 @@ export class RecordService {
         this.records = [...newEvents, ...this.records];
       }
     } catch (err) {
-      console.error("[RecordService] Failed to update records:", err);
+      console.error('[RecordService] Failed to update records:', err);
     }
   }
 

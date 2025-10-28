@@ -1,18 +1,13 @@
 import { BalanceService } from 'business/services/BalanceService';
-import { EventService } from 'business/services/EventService';
 import { ContractService } from 'business/services/ContractService';
-import { BalanceEntry } from 'business/Types';
-import { EventLog } from 'business/models/EventLog';
+import { BalanceEntry, RecordEntry } from 'business/Types';
+import { RecordService } from './RecordService';
 
-/**
- * High-level singleton data manager combining balances + event logs + forwarder.
- * Provides an in-memory cache accessible globally across the app.
- */
 export class AccountDataService {
   private static instance: AccountDataService;
 
   private balances: BalanceEntry[] = [];
-  private records: EventLog[] = [];
+  private records: RecordEntry[] = [];
   private forwarder: string | null = null;
 
   private lastUpdated: number | null = null;
@@ -22,7 +17,7 @@ export class AccountDataService {
   email?: string;
 
   private readonly balanceService = BalanceService.getInstance();
-  private readonly eventService = EventService.getInstance();
+  private readonly recordService = RecordService.getInstance();
   private readonly contractService = ContractService.getInstance();
 
   private constructor() {}
@@ -34,14 +29,11 @@ export class AccountDataService {
     return AccountDataService.instance;
   }
 
-  // ---------------------------------------------------------------------
-  // Public Accessors
-  // ---------------------------------------------------------------------
   getBalances(): BalanceEntry[] {
     return this.balances;
   }
 
-  getRecords(): EventLog[] {
+  getRecords(): RecordEntry[] {
     return this.records;
   }
 
@@ -57,9 +49,6 @@ export class AccountDataService {
     return this.loading;
   }
 
-  // ---------------------------------------------------------------------
-  // Refresh balances + events (cached globally)
-  // ---------------------------------------------------------------------
   async refreshData(force = false): Promise<void> {
     if (this.loading && !force) {
       console.log('⏳ AccountDataService: already loading, skipping duplicate call.');
@@ -76,8 +65,8 @@ export class AccountDataService {
         this.balances = this.balanceService.currentBalances ?? [];
 
         // 2️⃣ Fetch events
-        const events = await this.eventService.getEvents();
-        this.records = this.parseEvents(events);
+        const events = this.recordService.getRecords();
+        this.records.push(...events);
 
         // 3️⃣ Optionally refresh forwarder
         await this.getForwarder(true); // refresh cache silently
@@ -98,12 +87,9 @@ export class AccountDataService {
     return this.refreshPromise;
   }
 
-  /**
-   * Returns cached data if available, otherwise fetches fresh data.
-   */
   async getOrFetchData(): Promise<{
     balances: BalanceEntry[];
-    records: EventLog[];
+    records: RecordEntry[];
     forwarder: string | null;
   }> {
     if (this.records.length > 0 && this.balances.length > 0 && this.forwarder) {
@@ -123,9 +109,6 @@ export class AccountDataService {
     };
   }
 
-  // ---------------------------------------------------------------------
-  // 🔑 Forwarder Management
-  // ---------------------------------------------------------------------
   async getForwarder(force = false): Promise<string | null> {
     // if cached and not forced, return existing
     if (this.forwarder && !force) {
@@ -151,49 +134,11 @@ export class AccountDataService {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Helpers: event parsing + timestamp formatting
-  // ---------------------------------------------------------------------
-  private parseEvents(events: EventLog[]) {
-    return events.map((e) => ({
-      ...e,
-      amountNumber: parseFloat(e.amount ?? '0') / 1_000_000,
-      readableTime: this.formatTimestamp(e.timestamp),
-      direction: this.classifyEvent(e),
-    }));
-  }
-
-  private classifyEvent(e: EventLog): 'sent' | 'received' | 'other' {
-    if (e.action === 9) return 'sent';
-    if (e.action === 0) return 'received';
-    return 'other';
-  }
-
-  private formatTimestamp(timestamp: number): string {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString('en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  // ---------------------------------------------------------------------
-  // Cache utilities
-  // ---------------------------------------------------------------------
-  getCachedEvents(): EventLog[] {
-    return this.eventService.getCachedEvents();
-  }
-
   clearCache(): void {
     this.balances = [];
     this.records = [];
     this.forwarder = null;
     this.lastUpdated = null;
-    this.eventService.clearCache();
     console.log('🧹 AccountDataService cache cleared.');
   }
 }
