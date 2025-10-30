@@ -14,16 +14,18 @@ import OnboardingPager from 'screens/Onboarding/OnboardingPager';
 import SendConfirmationScreen from 'screens/Send/SendConfirmation/SendConfirmationScreen';
 import ClaimPaymentScreen from 'screens/Claim/ClaimPaymentScreen';
 import PaymentLinkCreatedScreen from 'screens/Send/PaymentLinkCreated/PaymentLinkCreatedScreen';
-import PingHistoryScreen from 'screens/Home/History/PingHistoryScreen';
+import PingHistoryScreen from 'screens/Home/History/List/PingHistoryScreen';
 import DepositScreen from 'screens/Home/Deposit/DepositScreen';
 import QRCodeScreen from 'screens/Pay/QrCode/QRCodeScreen';
 import PayQrScreen from 'screens/Pay/QrPayment/PayQrScreen';
 import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
+import ChangePasswordScreen from 'screens/Onboarding/Auth/ChangePasswordScreen';
 import RequestSuccessScreen from 'screens/Request/RequestSuccess/RequestSuccessScreen';
 import AccountRecoveryScreen from 'screens/Recovery/AccountRecoveryScreen';
 import ScanRecoveryScreen from 'screens/Recovery/ScanRecoveryScreen';
 import RecoveryPasswordScreen from 'screens/Recovery/RecoveryPasswordScreen';
+import TransactionDetailsScreen from 'screens/Home/History/Detail/TransactionDetailsScreen';
 
 const Stack = createStackNavigator();
 
@@ -68,12 +70,13 @@ const SCREEN_GROUPS: Array<{
         name: 'MainTab',
         component: MainTab,
         options: ({ route }) => {
-          const entryAnimation =
-            (route?.params as { entryAnimation?: string } | undefined)?.entryAnimation;
+          const entryAnimation = (route?.params as { entryAnimation?: string } | undefined)
+            ?.entryAnimation;
 
           return {
             presentation: 'card',
-            animation: entryAnimation === 'slide_from_right' ? 'slide_from_right' : 'slide_from_left',
+            animation:
+              entryAnimation === 'slide_from_right' ? 'slide_from_right' : 'slide_from_left',
           };
         },
       },
@@ -126,6 +129,7 @@ const SCREEN_GROUPS: Array<{
     screens: [
       { name: 'DepositScreen', component: DepositScreen },
       { name: 'PingHistoryScreen', component: PingHistoryScreen },
+      { name: 'TransactionDetailsScreen', component: TransactionDetailsScreen },
     ],
   },
   {
@@ -179,12 +183,16 @@ const SCREEN_GROUPS: Array<{
         name: 'RecoveryPasswordScreen',
         component: RecoveryPasswordScreen,
       },
+      {
+        name: 'ChangePasswordScreen',
+        component: ChangePasswordScreen,
+      },
     ],
   },
 ];
 
 const RootNavigator = () => {
-  const ENTRY_SCREEN = 'SplashScreen';
+  const ENTRY_SCREEN = 'MainTab';
 
   return (
     <Stack.Navigator

@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
 import { goBack } from 'navigation/Navigation';
 import BackIcon from 'assets/BackIcon';
 

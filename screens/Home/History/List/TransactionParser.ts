@@ -85,6 +85,7 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
     toCommitment: raw.toCommitment ?? raw.to_commitment ?? '',
     token: raw.token ?? '',
     txHash,
+    lockboxCommitment: raw.lockboxCommitment ?? raw.lockbox_commitment ?? '',
     type,
     isPositive,
     direction,

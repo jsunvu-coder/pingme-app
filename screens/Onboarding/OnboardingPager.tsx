@@ -1,14 +1,13 @@
-import { Image, ScrollView, View } from 'react-native';
+import { Image, ScrollView, View, Dimensions } from 'react-native';
 import OnboardingSlide from './OnboardingSlide';
-import SecondaryButton from 'components/ScondaryButton';
-import { push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
+import { push } from 'navigation/Navigation';
 
 const Page1 = require('../../assets/intro_1.png');
 const Page2 = require('../../assets/intro_2.png');
 const Page3 = require('../../assets/intro_3.png');
 
-export default function OnboardingPager({ navigation }: any) {
+export default function OnboardingPager() {
   const slides = [
     {
       text: 'No banks, no borders — just fast, simple transfers.',
@@ -24,20 +23,28 @@ export default function OnboardingPager({ navigation }: any) {
     },
   ];
 
+  const { width, height } = Dimensions.get('window');
+
   return (
     <View className="flex-1 bg-white">
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        className="flex-1">
         {slides.map((slide, idx) => (
           <OnboardingSlide
             key={idx}
-            image={<Image source={slide.image} resizeMode="contain" className="w-full" />}
+            image={slide.image}
             title={slide.text}
             index={idx}
+            width={width}
+            height={height}
           />
         ))}
       </ScrollView>
 
-      <View className="mb-16 h-[15%] px-8 pt-8">
+      <View className="absolute right-0 bottom-32 left-0 px-8">
         <PrimaryButton title="Log In to PingMe" onPress={() => push('AuthScreen')} />
       </View>
     </View>

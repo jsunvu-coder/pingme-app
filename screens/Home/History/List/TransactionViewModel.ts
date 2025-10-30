@@ -28,6 +28,7 @@ export interface TransactionViewModel {
   toCommitment: string;
   token: string;
   txHash: string;
+  lockboxCommitment?: string;
 
   /** Parsed & display-ready fields */
   type: TransactionAction;

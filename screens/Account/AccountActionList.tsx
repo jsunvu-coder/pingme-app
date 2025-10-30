@@ -101,7 +101,7 @@ export default function AccountActionList() {
     },
     {
       label: 'Change Password',
-      action: () => {},
+      action: () => push('ChangePasswordScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },
     {

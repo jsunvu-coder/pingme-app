@@ -1,28 +1,27 @@
+import { View, Text, ImageBackground, Dimensions } from 'react-native';
 import PageIndicator from 'components/PageIndicator';
-import { View, Text, Dimensions } from 'react-native';
 
 type Props = {
-  image?: React.ReactNode;
+  image: any;
   title: string;
   index: number;
+  width: number;
+  height: number;
 };
 
-export default function OnboardingSlide({ image, title, index }: Props) {
-  const { width } = Dimensions.get('window');
+const textHeight = Dimensions.get('window').height * 0.35;
 
+export default function OnboardingSlide({ image, title, index, width, height }: Props) {
   return (
-    <View style={{ width }} className="flex-1 bg-white">
-      {/* Top dark background area */}
-      <View className="flex-1 items-center justify-center bg-[#1D1D1D]">
-        {/* Image stays centered with dark background fill */}
-        <View className="h-full w-full items-center justify-center">{image}</View>
-      </View>
-
-      {/* Bottom content area */}
-      <View className="items-center bg-white p-6">
+    <ImageBackground
+      source={image}
+      resizeMode="cover"
+      style={{ width, height }}
+      className="flex-1 justify-end">
+      <View className="bg-black/40 px-12" style={{ height: textHeight, marginHorizontal: 24 }}>
         <PageIndicator index={index} />
-        <Text className="mt-6 text-center text-3xl font-medium text-[#0F0F0F]">{title}</Text>
+        <Text className="mt-6 text-center text-3xl font-semibold text-white">{title}</Text>
       </View>
-    </View>
+    </ImageBackground>
   );
 }

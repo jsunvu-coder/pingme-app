@@ -2,7 +2,7 @@ import { ScrollView, View, Text, TouchableOpacity, RefreshControl } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, useCallback } from 'react';
-import { goBack } from 'navigation/Navigation';
+import { goBack, push } from 'navigation/Navigation';
 import { HistoryRow } from './HistoryRow';
 import FilterDropdown from './FilterDropDown';
 import { PingHistoryViewModel } from './PingHistoryViewModel';
@@ -79,7 +79,17 @@ export default function PingHistoryScreen() {
                 {Array.isArray(dayEvents) &&
                   dayEvents.map((event, index) => {
                     const key = `${label}-${index}-${event.timestamp}`;
-                    return <HistoryRow key={key} event={event} />;
+                    return (
+                      <HistoryRow
+                        key={key}
+                        event={event}
+                        onPress={() =>
+                          push('TransactionDetailsScreen', {
+                            transaction: event,
+                          })
+                        }
+                      />
+                    );
                   })}
               </View>
             );
