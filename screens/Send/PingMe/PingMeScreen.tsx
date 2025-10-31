@@ -24,12 +24,14 @@ import { BalanceService } from 'business/services/BalanceService';
 import { LOCKBOX_DURATION } from 'business/Constants';
 import ContactPickerModal from './ContactList';
 import { RecentEmailStorage } from './RecentEmailStorage';
+import LockboxDurationView from './LockboxDurationView';
 
 export default function PingMeScreen() {
   const route = useRoute<any>();
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
   const [amount, setAmount] = useState('');
+  const [duration, setDuration] = useState(`${LOCKBOX_DURATION}`);
   const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
 
@@ -146,7 +148,6 @@ export default function PingMeScreen() {
         return;
       }
 
-      // Optional: basic email format validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
         Alert.alert('Invalid email', 'Please enter a valid email address.');
@@ -164,13 +165,20 @@ export default function PingMeScreen() {
       return;
     }
 
-    // --- 3️⃣ Proceed with navigation
+    // --- 3️⃣ Validate duration
+    const numericDuration = parseFloat(duration);
+    if (isNaN(numericDuration) || numericDuration <= 0) {
+      Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in hours).');
+      return;
+    }
+
+    // --- 4️⃣ Proceed with navigation
     const commonParams = {
       amount: numericAmount,
       displayAmount: `$${numericAmount.toFixed(2)}`,
       recipient,
       channel: activeChannel,
-      lockboxDuration: LOCKBOX_DURATION,
+      lockboxDuration: numericDuration, // ✅ pass user-entered duration
       mode,
     };
 
@@ -227,6 +235,8 @@ export default function PingMeScreen() {
               value={amount}
               onChange={setAmount}
             />
+
+            <LockboxDurationView onChange={setDuration} value={duration} />
 
             <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
           </Animated.View>

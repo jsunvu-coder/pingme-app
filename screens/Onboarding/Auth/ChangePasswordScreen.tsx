@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PasswordIcon from 'assets/PasswordIcon';
@@ -8,9 +8,29 @@ import PrimaryButton from 'components/PrimaryButton';
 import BackIcon from 'assets/BackIcon';
 import { goBack } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
+import { showFlashMessage } from 'utils/flashMessage';
 import NavigationBar from 'components/NavigationBar';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+const validatePasswordFields = (password: string, confirm: string) => {
+  const validation: { password?: string; confirm?: string } = {};
+
+  if (!password) {
+    validation.password = 'Password is required';
+  } else if (!passwordRegex.test(password)) {
+    validation.password =
+      'Password must be at least 8 characters and include uppercase, lowercase, and a number';
+  }
+
+  if (!confirm) {
+    validation.confirm = 'Please re-enter password';
+  } else if (password && confirm !== password) {
+    validation.confirm = 'Passwords do not match';
+  }
+
+  return validation;
+};
 
 export default function ChangePasswordScreen() {
   const [password, setPassword] = useState('');
@@ -18,48 +38,51 @@ export default function ChangePasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
 
-  const validateField = (value: string) => {
-    const newErrors = { ...errors };
-    if (!value) {
-      newErrors.password = 'Password is required';
-    } else if (!passwordRegex.test(value)) {
-      newErrors.password =
-        'Password must be at least 8 characters and include uppercase, lowercase, and a number';
-    } else {
-      delete newErrors.password;
-    }
-
-    if (confirm) {
-      if (value !== confirm) newErrors.confirm = 'Passwords do not match';
-      else delete newErrors.confirm;
-    }
-
-    setErrors(newErrors);
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setErrors(validatePasswordFields(value, confirm));
   };
 
-  const hasErrors = Object.keys(errors).length > 0;
-  const isPasswordValid = passwordRegex.test(password);
+  const handleConfirmChange = (value: string) => {
+    setConfirm(value);
+    setErrors(validatePasswordFields(password, value));
+  };
 
-  const isFormValid = !!password && !!confirm && isPasswordValid && !hasErrors;
+  const isPasswordValid = passwordRegex.test(password);
+  const doPasswordsMatch = confirm.length > 0 && confirm === password;
+  const isFormValid =
+    !!password &&
+    !!confirm &&
+    isPasswordValid &&
+    doPasswordsMatch &&
+    Object.keys(errors).length === 0;
 
   const handleUpdatePassword = async () => {
-    validateField(password);
+    const validation = validatePasswordFields(password, confirm);
+    setErrors(validation);
 
-    if (!isFormValid) return;
+    const hasValidationErrors = Object.keys(validation).length > 0;
+    if (hasValidationErrors) return;
 
     setLoading(true);
 
     try {
       await AuthService.getInstance().changePassword(password);
-      Alert.alert('Success', 'Your password has been updated.', [
-        {
-          text: 'OK',
-          onPress: () => goBack(),
-        },
-      ]);
+      showFlashMessage({
+        type: 'success',
+        icon: 'success',
+        title: 'Password updated',
+        message: 'Your password has been updated.',
+        onHide: () => goBack(),
+      });
     } catch (err: any) {
       console.error('Change password error:', err);
-      Alert.alert('Update failed', err?.message || 'Unable to update password');
+      showFlashMessage({
+        type: 'danger',
+        icon: 'danger',
+        title: 'Update failed',
+        message: err?.message || 'Unable to update password',
+      });
     } finally {
       setLoading(false);
     }
@@ -69,22 +92,29 @@ export default function ChangePasswordScreen() {
     <View className="flex-1 bg-white">
       <SafeAreaView edges={['top']} />
 
-      <View className="flex-1">
-        <NavigationBar title="Change Password" />
+      <NavigationBar title="Change password" />
 
-        <View className="mx-6 mt-10">
+      <View className="flex-1 px-6">
+        <View className="mt-10 gap-y-8">
           <AuthInput
             icon={<PasswordIcon />}
             value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              validateField(text);
-            }}
+            onChangeText={handlePasswordChange}
             placeholder="Password"
             secureTextEntry
             customView={<PasswordRules password={password} />}
             error={!!errors.password}
             errorMessage={errors.password}
+          />
+
+          <AuthInput
+            icon={<PasswordIcon />}
+            value={confirm}
+            onChangeText={handleConfirmChange}
+            placeholder="Re-enter password"
+            secureTextEntry
+            error={!!errors.confirm}
+            errorMessage={errors.confirm}
           />
         </View>
       </View>

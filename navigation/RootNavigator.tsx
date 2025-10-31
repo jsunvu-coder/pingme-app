@@ -192,7 +192,7 @@ const SCREEN_GROUPS: Array<{
 ];
 
 const RootNavigator = () => {
-  const ENTRY_SCREEN = 'MainTab';
+  const ENTRY_SCREEN = 'SplashScreen';
 
   return (
     <Stack.Navigator

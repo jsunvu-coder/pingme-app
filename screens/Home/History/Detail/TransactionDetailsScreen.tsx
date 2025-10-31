@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import NavigationBar from 'components/NavigationBar';
@@ -7,6 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryButton from 'components/PrimaryButton';
 import { ContractService } from 'business/services/ContractService';
 import { TransactionViewModel } from '../List/TransactionViewModel';
+import { showFlashMessage } from 'utils/flashMessage';
+import SecondaryButton from 'components/ScondaryButton';
+import GhostButton from 'components/GhostButton';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -115,13 +118,6 @@ export default function TransactionDetailsScreen() {
 
   const statusMeta = STATUS_META[lockboxStatus];
 
-  const counterpartyLabel =
-    transaction?.direction === 'send'
-      ? 'Recipient'
-      : transaction?.direction === 'receive'
-      ? 'Sender'
-      : 'Counterparty';
-
   const createdSeconds =
     Number(lockboxDetail?.createTime ?? 0) > 0
       ? Number(lockboxDetail?.createTime)
@@ -131,23 +127,31 @@ export default function TransactionDetailsScreen() {
   const showReclaim =
     !!lockboxCommitment && (lockboxStatus === 'OPEN' || lockboxStatus === 'EXPIRED');
 
-  const amountPrefix = transaction.isPositive ? '+' : '-';
-  const amountTextClass = transaction.isPositive ? 'text-emerald-600' : 'text-red-600';
-  const amountDisplay = `${amountPrefix} ${formatCurrency(transaction.amount)}`;
+  const amountDisplay = formatCurrency(Math.abs(transaction?.amount ?? 0));
 
   const handleReclaim = useCallback(async () => {
     if (!lockboxCommitment) return;
 
     try {
       setReclaiming(true);
-      await contractService.reclaim(lockboxCommitment);
-      Alert.alert('Reclaimed', 'Payment reclaimed successfully.');
+      await reclaim(lockboxCommitment);
+      showFlashMessage({
+        type: 'success',
+        icon: 'success',
+        title: 'Payment reclaimed',
+        message: 'Funds were returned to your balance.',
+      });
       await fetchLockboxDetail();
     } catch (err: any) {
       console.error('❌ Failed to reclaim payment:', err);
       const message =
         err?.response?.data?.message || err?.message || 'Unable to reclaim this payment.';
-      Alert.alert('Reclaim failed', message);
+      showFlashMessage({
+        type: 'danger',
+        icon: 'danger',
+        title: 'Reclaim failed',
+        message,
+      });
     } finally {
       setReclaiming(false);
     }
@@ -175,16 +179,12 @@ export default function TransactionDetailsScreen() {
           paddingBottom: 40,
         }}>
         <View className="mt-6 rounded-2xl bg-white p-5">
-          <DetailRow label="Type" value={transaction.displayLabel || transaction.type} />
-          <DetailRow
-            label="Amount"
-            value={amountDisplay}
-            valueTextClassName={amountTextClass}
-          />
-          <DetailRow label="Direction" value={capitalize(transaction.direction)} />
-          <DetailRow label={counterpartyLabel} value={transaction.addr || '-'} />
+          <DetailRow label="Amount" value={amountDisplay} />
+          <DetailRow label="Recipient" value={transaction.addr || '-'} />
           <DetailRow label="Created" value={formatTimestamp(createdSeconds)} />
-          <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} />
+          {expirySeconds ? (
+            <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} />
+          ) : null}
           <DetailRow
             label="Status"
             value={statusMeta.label}
@@ -192,10 +192,6 @@ export default function TransactionDetailsScreen() {
             valueTextClassName={statusMeta.textClass}
             icon={<Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />}
           />
-          <DetailRow label="Tx Hash" value={transaction.shortHash || transaction.txHash} />
-          {lockboxCommitment ? (
-            <DetailRow label="Lockbox" value={truncateMiddle(lockboxCommitment)} />
-          ) : null}
         </View>
 
         {fetchingDetail ? (
@@ -213,15 +209,12 @@ export default function TransactionDetailsScreen() {
 
         {showReclaim ? (
           <View className="mt-10">
-            <PrimaryButton
+            <GhostButton
               title="Reclaim Payment"
               onPress={handleReclaim}
               loading={reclaiming}
               loadingText="Reclaiming"
             />
-            <Text className="mt-3 text-center text-xs text-gray-500">
-              Reclaim returns the funds to your balance when the recipient has not claimed them.
-            </Text>
           </View>
         ) : null}
       </ScrollView>
@@ -247,7 +240,12 @@ function DetailRow({
       <Text className="mb-1 text-[15px] text-[#909090]">{label}</Text>
       <View className={`flex-row items-center ${valueClassName}`}>
         {icon && <View className="mr-1">{icon}</View>}
-        <Text className={`text-[16px] text-[#0F0F0F] ${valueTextClassName}`}>{value}</Text>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          className={`max-w-50 text-[16px] text-[#0F0F0F] ${valueTextClassName}`}>
+          {value}
+        </Text>
       </View>
     </View>
   );
@@ -281,17 +279,11 @@ const formatTimestamp = (seconds?: number) => {
   });
 };
 
-const truncateMiddle = (value: string) => {
-  if (value.length <= 16) return value;
-  return `${value.slice(0, 8)}...${value.slice(-6)}`;
-};
-
-const capitalize = (value?: string) => {
-  if (!value) return '-';
-  return value.charAt(0).toUpperCase() + value.slice(1);
-};
-
 const toSeconds = (timestamp?: number) => {
   if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) return undefined;
   return Math.floor(timestamp / 1000);
 };
+
+async function reclaim(lockboxCommitment: string) {
+  return ContractService.getInstance().reclaim(lockboxCommitment);
+}

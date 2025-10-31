@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { linking } from 'business/services/LinkingService';
 import { useEffect } from 'react';
 import { install } from 'react-native-quick-crypto';
+import FlashMessage from 'react-native-flash-message';
 
 export default function App() {
   // Install crypto polyfill
@@ -17,6 +18,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer ref={navigationRef} linking={linking}>
         <RootNavigator />
+        <FlashMessage position="top" />
       </NavigationContainer>
     </SafeAreaProvider>
   );

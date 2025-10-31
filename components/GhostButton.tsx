@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 
-interface SecondaryButtonProps {
+interface GhostButtonProps {
   title: string;
   onPress?: () => void;
   disabled?: boolean;
@@ -10,14 +10,14 @@ interface SecondaryButtonProps {
   className?: string;
 }
 
-export default function SecondaryButton({
+export default function GhostButton({
   title,
   onPress,
   disabled = false,
   loading = false,
   loadingText,
   className = '',
-}: SecondaryButtonProps) {
+}: GhostButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
@@ -25,11 +25,16 @@ export default function SecondaryButton({
       disabled={isDisabled}
       onPress={onPress}
       activeOpacity={0.8}
-      className={`${isDisabled ? 'bg-[#F9F9F9]' : 'bg-[#FFEDE7]'} flex-row items-center justify-center rounded-full border border-transparent px-8 py-4 ${className}`}>
+      className={`flex-row items-center justify-center rounded-full border px-8 py-4 ${
+        isDisabled ? 'border-[#E0E0E0] bg-transparent' : 'border-[#FD4912] bg-transparent'
+      } ${className}`}>
       {loading ? (
         <View className="flex-row items-center justify-center">
-          <ActivityIndicator color="#FD4912" className="mr-2" />
-          <Text className="text-center text-lg font-bold text-[#FD4912]">
+          <ActivityIndicator color={isDisabled ? '#B5B5B5' : '#FD4912'} className="mr-2" />
+          <Text
+            className={`text-center text-lg font-bold ${
+              isDisabled ? 'text-[#B5B5B5]' : 'text-[#FD4912]'
+            }`}>
             {loadingText || 'Processing...'}
           </Text>
         </View>
