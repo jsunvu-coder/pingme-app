@@ -1,5 +1,6 @@
 import { Linking } from 'react-native';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
+import PayQrScreen from 'screens/Pay/QrPayment/PayQrScreen';
 
 export const linking = {
   prefixes: ['https://app.staging.pingme.xyz', 'https://app.pingme.xyz', 'pingme://'],
@@ -7,7 +8,7 @@ export const linking = {
     screens: {
       SendConfirmationScreen: 'pay',
       ClaimPaymentScreen: 'claim',
-      DepositScreen: 'deposit',
+      PayQrScreen: 'deposit',
     },
   },
 

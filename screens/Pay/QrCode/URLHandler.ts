@@ -1,6 +1,8 @@
 import { APP_URL } from 'business/Config';
 import { push } from 'navigation/Navigation';
 import { Alert } from 'react-native';
+import { showLocalizedAlert } from 'components/LocalizedAlert';
+import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
 
 /**
  * Universal deep link and QR handler for PingMe app.
@@ -41,6 +43,22 @@ export const handleUrl = (data: string) => {
     }
 
     console.log('path', path);
+
+    // ---------- Handle /deposit ----------
+    if (path.startsWith('/deposit')) {
+      const { payload, errorKey } = parseDepositLink(data);
+      if (!payload) {
+        void showLocalizedAlert({
+          title: 'Oops',
+          message: errorKey ?? '_ALERT_INVALID_QR_CODE',
+        });
+        return;
+      }
+
+      console.log('🏦 Navigating to PayQrScreen (deposit mode):', payload);
+      push('PayQrScreen', { mode: 'deposit', depositPayload: payload });
+      return;
+    }
 
     // ---------- Handle /send ----------
     if (path.startsWith('/send')) {

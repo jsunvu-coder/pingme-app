@@ -59,10 +59,6 @@ export class LoginViewModel {
 
     if (!email || !password) return { success: false, email: undefined, password: undefined };
 
-    // Just verify login success but don't navigate yet
-    // const ok = await AuthService.getInstance().signin(email, password, lockboxProof);
-
-    // Return credentials to fill the UI first
     return { success: true, email, password };
   }
 

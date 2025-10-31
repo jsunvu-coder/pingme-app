@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Application from 'expo-application';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { push } from 'navigation/Navigation';
+import { push, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -45,7 +45,7 @@ export default function AccountActionList() {
         await SecureStore.deleteItemAsync(key);
       }
 
-      push('SplashScreen');
+      setRootScreen(['SplashScreen']);
     } catch (error) {
       console.error('Logout error:', error);
     }

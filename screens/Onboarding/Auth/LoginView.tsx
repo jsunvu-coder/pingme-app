@@ -23,7 +23,7 @@ export default function LoginView({
   const vm = useMemo(() => new LoginViewModel(), []);
 
   const [email, setEmail] = useState(
-    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme01@test.com'
+    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme02@test.com'
   );
   const [password, setPassword] = useState('12345678');
   const [loading, setLoading] = useState(false);
@@ -46,6 +46,12 @@ export default function LoginView({
         }
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    if (!useBiometric) {
+      vm.clearStoredCredentials();
+    }
   }, []);
 
   const handleLogin = async () => {

@@ -133,7 +133,7 @@ class DeepLinkHandler {
         }
 
         if (path === 'pay') this.navigatePay(params);
-        else this.navigateDeposit(params);
+        else this.navigatePayQr(params);
         return;
 
       default:
@@ -158,9 +158,9 @@ class DeepLinkHandler {
     push('SendConfirmationScreen', params);
   }
 
-  private navigateDeposit(params: Record<string, string>) {
-    console.log('[DeepLinkHandler] Navigating to DepositScreen', params);
-    push('DepositScreen', params);
+  private navigatePayQr(params: Record<string, string>) {
+    console.log('[DeepLinkHandler] Navigating to PayQrScreen', params);
+    push('PayQrScreen', params);
   }
 }
 
