@@ -124,8 +124,7 @@ export default function TransactionDetailsScreen() {
       : toSeconds(transaction?.timestamp);
   const expirySeconds = Number(lockboxDetail?.unlockTime ?? 0) || undefined;
 
-  const showReclaim =
-    !!lockboxCommitment && (lockboxStatus === 'OPEN' || lockboxStatus === 'EXPIRED');
+  const showReclaim = !!lockboxCommitment && lockboxStatus === 'EXPIRED';
 
   const amountDisplay = formatCurrency(Math.abs(transaction?.amount ?? 0));
 
