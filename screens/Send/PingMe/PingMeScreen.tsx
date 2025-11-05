@@ -166,10 +166,14 @@ export default function PingMeScreen() {
     }
 
     // --- 3️⃣ Validate duration
-    const numericDuration = parseFloat(duration);
-    if (isNaN(numericDuration) || numericDuration <= 0) {
-      Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in days).');
-      return;
+    let lockboxDurationDays = LOCKBOX_DURATION;
+    if (mode === 'send') {
+      const numericDuration = parseFloat(duration);
+      if (isNaN(numericDuration) || numericDuration <= 0) {
+        Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in days).');
+        return;
+      }
+      lockboxDurationDays = numericDuration;
     }
 
     // --- 4️⃣ Proceed with navigation
@@ -178,14 +182,17 @@ export default function PingMeScreen() {
       displayAmount: `$${numericAmount.toFixed(2)}`,
       recipient,
       channel: activeChannel,
-      lockboxDuration: numericDuration, // ✅ pass user-entered duration
+      lockboxDuration: lockboxDurationDays,
       mode,
     };
 
     if (mode === 'send') {
       push('SendConfirmationScreen', commonParams);
     } else {
-      push('RequestConfirmationScreen', commonParams);
+      push('RequestConfirmationScreen', {
+        ...commonParams,
+        lockboxDuration: LOCKBOX_DURATION,
+      });
     }
   };
 
@@ -236,7 +243,9 @@ export default function PingMeScreen() {
               onChange={setAmount}
             />
 
-            <LockboxDurationView onChange={setDuration} value={duration} />
+            {mode === 'send' ? (
+              <LockboxDurationView onChange={setDuration} value={duration} />
+            ) : null}
 
             <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
           </Animated.View>
