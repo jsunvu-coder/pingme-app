@@ -4,6 +4,7 @@ import { Linking } from 'react-native';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
+  private initialURLHandled = false;
 
   setPendingURL(url: string) {
     this.pendingURL = url;
@@ -30,8 +31,27 @@ class DeepLinkHandler {
       // Small delay for smoother splash animation
       await new Promise((res) => setTimeout(res, 1000));
 
-      const isLoggedIn = await AuthService.getInstance().isLoggedIn();
-      const url = await Linking.getInitialURL();
+      const auth = AuthService.getInstance();
+      const isLoggedIn = await auth.isLoggedIn();
+
+      if (this.initialURLHandled) {
+        console.log('[DeepLinkHandler] Initial URL already handled → standard startup flow');
+        if (isLoggedIn) {
+          setRootScreen(['MainTab']);
+        } else {
+          setRootScreen(['OnboardingPager']);
+        }
+        return;
+      }
+
+      let url: string | null = null;
+      try {
+        url = await Linking.getInitialURL();
+      } catch (linkError) {
+        console.error('[DeepLinkHandler] getInitialURL error:', linkError);
+      } finally {
+        this.initialURLHandled = true;
+      }
 
       if (url) {
         console.log('[DeepLinkHandler] Cold start URL detected:', url);
