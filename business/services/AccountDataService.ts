@@ -2,6 +2,8 @@ import { BalanceService } from 'business/services/BalanceService';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceEntry, RecordEntry } from 'business/Types';
 import { RecordService } from './RecordService';
+import { Utils } from 'business/Utils';
+import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
 
 export class AccountDataService {
   private static instance: AccountDataService;
@@ -140,5 +142,50 @@ export class AccountDataService {
     this.forwarder = null;
     this.lastUpdated = null;
     console.log('🧹 AccountDataService cache cleared.');
+  }
+
+  async updateForwarderBalance(
+    confirm: (message: string, okOnly?: boolean) => Promise<boolean>
+  ): Promise<void> {
+    try {
+      const forwarder = await this.getForwarder();
+      if (!forwarder) return;
+
+      const ret1 = await this.contractService.getForwarderBalance(forwarder);
+      const sessionGlobals = Utils.getSessionObject(GLOBALS);
+      const minAmountValue = sessionGlobals?.[MIN_AMOUNT];
+      if (minAmountValue === undefined) {
+        console.warn('⚠️ AccountDataService: MIN_AMOUNT missing from session globals.');
+        return;
+      }
+
+      const kMinAmount = BigInt(minAmountValue);
+
+      for (const amountEntry of ret1?.amounts ?? []) {
+        if (BigInt(amountEntry.amount) >= kMinAmount) {
+          try {
+            const cr = this.contractService.getCrypto();
+            if (!cr?.commitment) {
+              console.warn('⚠️ AccountDataService: Missing commitment for retrieve call.');
+              continue;
+            }
+
+            await this.contractService.retrieve(cr.commitment);
+            await this.balanceService.getBalance();
+            await this.recordService.updateRecord();
+
+            const confirmed = await confirm('_ALERT_RECEIVED_TOPUP', false);
+            if (confirmed) return;
+          } catch (err) {
+            console.error('RETRIEVE', err);
+          }
+        }
+      }
+
+      await this.balanceService.getBalance();
+      await this.recordService.updateRecord();
+    } catch (err) {
+      console.error('GET_FORWARDER_BALANCE', err);
+    }
   }
 }

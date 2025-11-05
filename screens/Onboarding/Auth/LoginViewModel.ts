@@ -5,8 +5,13 @@ import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push } from 'navigation/Navigation';
+import { t } from 'i18n';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | null;
+
+export const EMAIL_KEY = 'lastEmail';
+export const PASSWORD_KEY = 'lastPassword';
+export const USE_BIOMETRIC_KEY = 'useBiometric';
 
 export class LoginViewModel {
   biometricType: BiometricType = null;
@@ -16,15 +21,8 @@ export class LoginViewModel {
     biometricType: BiometricType;
     useBiometric: boolean;
   }> {
-    const savedPref = await SecureStore.getItemAsync('useBiometric');
-    if (savedPref === 'true') this.useBiometric = true;
-
-    const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-      this.biometricType = 'Face ID';
-    } else if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      this.biometricType = 'Touch ID';
-    }
+    this.useBiometric = await LoginViewModel.isBiometricEnabled();
+    this.biometricType = await LoginViewModel.detectBiometricType();
 
     return {
       biometricType: this.biometricType,
@@ -52,10 +50,7 @@ export class LoginViewModel {
     });
 
     if (!result.success) return { success: false, email: undefined, password: undefined };
-
-    // ✅ Load credentials after successful biometric authentication
-    const email = await SecureStore.getItemAsync('lastEmail');
-    const password = await SecureStore.getItemAsync('lastPassword');
+    const { email, password } = await LoginViewModel.getStoredCredentials();
 
     if (!email || !password) return { success: false, email: undefined, password: undefined };
 
@@ -68,47 +63,46 @@ export class LoginViewModel {
     useBiometric: boolean,
     biometricType: BiometricType,
     lockboxProof?: string
-  ) {
+  ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     const auth = AuthService.getInstance();
-    const ok = await auth.signin(email, password, lockboxProof);
+    let ok = false;
 
-    if (!ok) {
-      Alert.alert('Login failed', 'Invalid credentials');
-      return false;
+    try {
+      ok = await auth.signin(email, password, lockboxProof);
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message ? err.message : t('AUTH_LOGIN_INVALID_CREDENTIALS');
+      Alert.alert(t('AUTH_LOGIN_FAILED_TITLE'), message);
+      return { success: false, biometricEnabled: this.useBiometric };
     }
 
-    await SecureStore.setItemAsync('lastEmail', email);
-    await SecureStore.setItemAsync('lastPassword', password);
+    if (!ok) {
+      Alert.alert(t('AUTH_LOGIN_FAILED_TITLE'), t('AUTH_LOGIN_INVALID_CREDENTIALS'));
+      return { success: false, biometricEnabled: this.useBiometric };
+    }
+
+    let biometricEnabled = this.useBiometric;
 
     if (useBiometric && !this.useBiometric) {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (hasHardware && enrolled) {
-        const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: `Enable ${biometricType ?? 'biometric login'}?`,
-          cancelLabel: 'Not now',
-        });
-        if (result.success) {
-          await SecureStore.setItemAsync('useBiometric', 'true');
-          this.useBiometric = true;
-        }
-      } else {
-        Alert.alert('Unavailable', 'Biometric authentication not set up on this device.');
+      const result = await this.enableBiometricLogin(email, password, biometricType);
+      biometricEnabled = result.success;
+      if (!result.success && result.message) {
+        Alert.alert('Face ID', result.message);
       }
     } else if (!useBiometric && this.useBiometric) {
-      await SecureStore.setItemAsync('useBiometric', 'false');
-      this.useBiometric = false;
+      await this.disableBiometricLogin();
+      biometricEnabled = false;
+    } else if (useBiometric && this.useBiometric) {
+      await LoginViewModel.saveCredentials(email, password);
+      await LoginViewModel.setUseBiometricPreference(true);
     }
 
     this.handleSuccessfulLogin(email);
-    return true;
+    return { success: true, biometricEnabled };
   }
 
   async clearStoredCredentials() {
-    await SecureStore.deleteItemAsync('lastEmail');
-    await SecureStore.deleteItemAsync('lastPassword');
-    await SecureStore.deleteItemAsync('useBiometric');
-    this.useBiometric = false;
+    await this.disableBiometricLogin();
   }
 
   async logout() {
@@ -126,5 +120,87 @@ export class LoginViewModel {
       console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
       setTimeout(() => deepLinkHandler.resumePendingLink(), 500);
     }
+  }
+
+  private async enableBiometricLogin(
+    email: string,
+    password: string,
+    biometricType: BiometricType
+  ): Promise<{ success: boolean; message?: string }> {
+    const capability = await LoginViewModel.ensureCapability();
+
+    if (!capability.available) {
+      return { success: false, message: 'Biometric authentication not set up on this device.' };
+    }
+
+    const promptMessage = `Enable ${biometricType ?? capability.type ?? 'biometric'} login?`;
+    const authResult = await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      cancelLabel: 'Cancel',
+      fallbackLabel: 'Use Passcode',
+    });
+
+    if (!authResult.success) {
+      return { success: false, message: 'Biometric authentication was cancelled.' };
+    }
+
+    await LoginViewModel.saveCredentials(email, password);
+    await LoginViewModel.setUseBiometricPreference(true);
+    this.useBiometric = true;
+    return { success: true };
+  }
+
+  private async disableBiometricLogin() {
+    await LoginViewModel.clearSavedCredentials();
+    await LoginViewModel.setUseBiometricPreference(false);
+    this.useBiometric = false;
+  }
+
+  // ---------- Static helpers ----------
+  static async detectBiometricType(): Promise<BiometricType> {
+    const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+      return 'Face ID';
+    }
+    if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+      return 'Touch ID';
+    }
+    return null;
+  }
+
+  static async ensureCapability(): Promise<{ available: boolean; type: BiometricType }> {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    const type = await LoginViewModel.detectBiometricType();
+    return { available: hasHardware && enrolled, type };
+  }
+
+  static async saveCredentials(email: string, password: string) {
+    await SecureStore.setItemAsync(EMAIL_KEY, email);
+    await SecureStore.setItemAsync(PASSWORD_KEY, password);
+  }
+
+  static async clearSavedCredentials() {
+    await SecureStore.deleteItemAsync(EMAIL_KEY);
+    await SecureStore.deleteItemAsync(PASSWORD_KEY);
+  }
+
+  static async getStoredCredentials(): Promise<{ email: string | null; password: string | null }> {
+    const email = await SecureStore.getItemAsync(EMAIL_KEY);
+    const password = await SecureStore.getItemAsync(PASSWORD_KEY);
+    return { email, password };
+  }
+
+  static async setUseBiometricPreference(value: boolean) {
+    if (value) {
+      await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, 'true');
+    } else {
+      await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, 'false');
+    }
+  }
+
+  static async isBiometricEnabled(): Promise<boolean> {
+    const savedPref = await SecureStore.getItemAsync(USE_BIOMETRIC_KEY);
+    return savedPref === 'true';
   }
 }

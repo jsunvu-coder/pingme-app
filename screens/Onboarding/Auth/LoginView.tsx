@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Switch, Alert } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
@@ -7,6 +7,7 @@ import PrimaryButton from 'components/PrimaryButton';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { push } from 'navigation/Navigation';
+import { t } from 'i18n';
 import { LoginViewModel, BiometricType } from './LoginViewModel';
 
 export default function LoginView({
@@ -22,19 +23,19 @@ export default function LoginView({
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
 
-  const [email, setEmail] = useState(
-    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme02@test.com'
-  );
-  const [password, setPassword] = useState('12345678');
+  const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
   const [biometricType, setBiometricType] = useState<BiometricType>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     (async () => {
       const init = await vm.initialize();
       setBiometricType(init.biometricType);
       setUseBiometric(init.useBiometric);
+      setInitialized(true);
 
       if (init.useBiometric && init.biometricType) {
         const result = await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
@@ -48,20 +49,24 @@ export default function LoginView({
     })();
   }, []);
 
-  useEffect(() => {
-    if (!useBiometric) {
-      vm.clearStoredCredentials();
-    }
-  }, []);
+  const handleToggleBiometric = useCallback(
+    async (value: boolean) => {
+      setUseBiometric(value);
+      if (!value) {
+        await vm.clearStoredCredentials();
+      }
+    },
+    [vm]
+  );
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+      Alert.alert(t('AUTH_LOGIN_ERROR_TITLE'), t('AUTH_LOGIN_ERROR_MISSING_FIELDS'));
       return;
     }
 
     setLoading(true);
-    await vm.handleLogin(
+    const result = await vm.handleLogin(
       email,
       password,
       useBiometric,
@@ -69,7 +74,18 @@ export default function LoginView({
       lockboxProof ?? route?.params?.lockboxProof
     );
     setLoading(false);
+
+    if (result?.success) {
+      setUseBiometric(result.biometricEnabled);
+    }
   };
+
+  const biometricLabel =
+    biometricType === 'Face ID'
+      ? t('FACE_ID')
+      : biometricType === 'Touch ID'
+        ? t('TOUCH_ID')
+        : t('AUTH_USE_BIOMETRIC_GENERIC');
 
   return (
     <View className="flex-1 bg-white">
@@ -78,7 +94,7 @@ export default function LoginView({
           icon={<EmailIcon />}
           value={email}
           onChangeText={setEmail}
-          placeholder="Email address"
+          placeholder={t('AUTH_EMAIL_PLACEHOLDER')}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -88,13 +104,20 @@ export default function LoginView({
             icon={<PasswordIcon />}
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={t('AUTH_PASSWORD_PLACEHOLDER')}
             secureTextEntry
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={() => {
+              void handleLogin();
+            }}
           />
           <TouchableOpacity
             className="absolute top-3 right-0 flex-row items-center justify-center px-4"
             onPress={() => push('ScanRecoveryScreen')}>
-            <Text className="text-md mr-2 font-semibold text-[#FD4912]">Forgot Password</Text>
+            <Text className="text-md mr-2 font-semibold text-[#FD4912]">
+              {t('FORGOT_PASSWORD')}
+            </Text>
             <Ionicons name="scan-outline" size={22} color="#1D1D1D" />
           </TouchableOpacity>
         </View>
@@ -102,23 +125,28 @@ export default function LoginView({
         <View className="mt-3 flex-row items-center">
           <Switch
             value={useBiometric}
-            onValueChange={setUseBiometric}
+            onValueChange={(value) => {
+              void handleToggleBiometric(value);
+            }}
             trackColor={{ false: '#ccc', true: '#FD4912' }}
             thumbColor={useBiometric ? '#fff' : '#f4f3f4'}
+            disabled={!initialized}
           />
           <Text className="ml-3 text-[15px] text-[#1D1D1D]">
-            Use {biometricType ?? 'Face/Touch ID'} to log in next time
+            {t('AUTH_USE_BIOMETRIC', {
+              method: biometricLabel,
+            })}
           </Text>
         </View>
       </View>
 
       <View className="mt-6 px-6 pb-6">
         <PrimaryButton
-          title="Log In"
+          title={t('AUTH_LOGIN_BUTTON')}
           onPress={handleLogin}
           disabled={loading}
           loading={loading}
-          loadingText="Logging in..."
+          loadingText={t('AUTH_LOGIN_LOADING')}
         />
       </View>
     </View>

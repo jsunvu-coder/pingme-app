@@ -1,11 +1,12 @@
-import CheckCircleIcon from "assets/CheckCircleIcon";
-import { View, Text } from "react-native";
+import CheckCircleIcon from 'assets/CheckCircleIcon';
+import { View, Text } from 'react-native';
+import { t } from 'i18n';
 
 export default function PasswordRules({ password }: { password: string }) {
   const rules = [
-    { text: "8 characters", valid: password.length >= 8 },
-    { text: "1 number", valid: /\d/.test(password) },
-    { text: "1 uppercase letter", valid: /[A-Z]/.test(password) },
+    { text: t('AUTH_PASSWORD_RULE_LENGTH'), valid: password.length >= 8 },
+    { text: t('AUTH_PASSWORD_RULE_NUMBER'), valid: /\d/.test(password) },
+    { text: t('AUTH_PASSWORD_RULE_UPPERCASE'), valid: /[A-Z]/.test(password) },
   ];
 
   return (
@@ -17,7 +18,7 @@ export default function PasswordRules({ password }: { password: string }) {
         >
           <CheckCircleIcon isSelected={rule.valid} />
           <Text
-            className={`ml-2 text-sm ${rule.valid ? "text-green-600" : "text-gray-500"}`}
+            className={`ml-2 text-sm ${rule.valid ? 'text-green-600' : 'text-gray-500'}`}
           >
             {rule.text}
           </Text>

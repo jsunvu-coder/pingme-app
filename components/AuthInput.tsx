@@ -29,6 +29,7 @@ export default function AuthInput({
   autoFocus = false,
   editable = true,
   ref,
+  ...rest
 }: Props & TextInputProps & RefAttributes<any>) {
   const isEmpty = !value || value.trim() === '';
 
@@ -49,6 +50,7 @@ export default function AuthInput({
         autoCapitalize={autoCapitalize ?? 'none'}
         secureTextEntry={secureTextEntry}
         className="h-12 px-1 text-xl text-[#0F0F0F]"
+        {...rest}
       />
 
       <View

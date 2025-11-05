@@ -7,7 +7,6 @@ import {
   CREDENTIALS_ALREADY_EXISTS,
   GLOBALS,
   GLOBAL_SALT,
-  INVALID_CREDENTIALS,
   ZERO_BYTES32,
   SIGNIN_ERROR,
   SIGNUP_ERROR,
@@ -16,6 +15,7 @@ import { EXPIRY_MS } from 'business/Config';
 import { ContractService } from './ContractService';
 import { BalanceService } from './BalanceService';
 import { RecordService } from './RecordService';
+import { t } from 'i18n';
 
 export class AuthService {
   private static instance: AuthService;
@@ -32,7 +32,7 @@ export class AuthService {
     this.contractService.onSessionExpired(async () => {
       console.warn('⚠️ Session expired — logging out.');
       await this.logout();
-      Alert.alert('Session Expired', 'Your session has expired. Please sign in again.');
+      Alert.alert(t('SESSION_EXPIRED_TITLE'), t('SESSION_EXPIRED_MESSAGE'));
     });
   }
 
@@ -111,7 +111,7 @@ export class AuthService {
 
       if (!commitment) throw new Error('Failed to generate commitment.');
       const ret2 = await this.contractService.hasBalance(commitment);
-      if (!ret2.has_balance) throw new Error(INVALID_CREDENTIALS);
+      if (!ret2.has_balance) throw new Error(t('AUTH_LOGIN_INVALID_CREDENTIALS'));
 
       const cr = {
         username,

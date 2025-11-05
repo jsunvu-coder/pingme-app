@@ -135,6 +135,13 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           secureTextEntry
           error={!!errors.confirm}
           errorMessage={errors.confirm}
+          returnKeyType="done"
+          blurOnSubmit
+          onSubmitEditing={() => {
+            if (!loading && isFormValid) {
+              void handleRegister();
+            }
+          }}
         />
 
         <TouchableWithoutFeedback onPress={() => setAgreeToC(!agreeToC)}>

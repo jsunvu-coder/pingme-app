@@ -168,7 +168,7 @@ export default function PingMeScreen() {
     // --- 3️⃣ Validate duration
     const numericDuration = parseFloat(duration);
     if (isNaN(numericDuration) || numericDuration <= 0) {
-      Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in hours).');
+      Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in days).');
       return;
     }
 

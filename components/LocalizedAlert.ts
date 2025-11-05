@@ -1,9 +1,9 @@
 import { Alert, AlertButton } from 'react-native';
-import enUS from 'i18n/en-US.json';
+import { t } from 'i18n';
 
 export function showLocalizedAlert({
   message,
-  title = 'Confirmation',
+  title = 'CONFIRMATION_TITLE',
   buttons,
 }: {
   message: string;
@@ -11,24 +11,30 @@ export function showLocalizedAlert({
   buttons?: AlertButton[];
 }): Promise<boolean> {
   return new Promise((resolve) => {
-    const displayMessage = Object.prototype.hasOwnProperty.call(enUS, message)
-      ? enUS[message as keyof typeof enUS]
-      : message;
+    const displayMessage = t(message, undefined, message);
+    const displayTitle = t(title, undefined, title);
 
-    const defaultButtons: AlertButton[] = [{ text: 'OK', onPress: () => resolve(true) }];
+    const defaultButtons: AlertButton[] = [
+      { text: t('OK_BUTTON', undefined, 'OK'), onPress: () => resolve(true) },
+    ];
+
+    const candidates = buttons && buttons.length > 0 ? buttons : defaultButtons;
 
     Alert.alert(
-      title,
+      displayTitle,
       displayMessage,
-      buttons && buttons.length > 0
-        ? buttons.map((btn) => ({
-            ...btn,
-            onPress: () => {
-              btn.onPress?.();
-              resolve(btn.text === 'OK' || btn.text === 'Confirm');
-            },
-          }))
-        : defaultButtons
+      candidates.map((btn) => {
+        const displayText = btn.text ? t(btn.text, undefined, btn.text) : btn.text;
+        return {
+          ...btn,
+          text: displayText,
+          onPress: () => {
+            btn.onPress?.();
+            const normalizedText = (displayText ?? '').toUpperCase();
+            resolve(normalizedText === 'OK' || normalizedText === 'CONFIRM');
+          },
+        };
+      })
     );
   });
 }

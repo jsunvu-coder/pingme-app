@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderView from 'components/HeaderView';
@@ -7,15 +7,32 @@ import QuickActionsView from './QuickActionView';
 import PingHistoryView from './PingHistoryView';
 import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
+import { AccountDataService } from 'business/services/AccountDataService';
+import { showLocalizedAlert } from 'components/LocalizedAlert';
 
 export default function HomeScreen() {
+  const balanceService = useMemo(() => BalanceService.getInstance(), []);
+  const accountDataService = useMemo(() => AccountDataService.getInstance(), []);
+
   const [balances, setBalances] = useState<BalanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalBalance, setTotalBalance] = useState('0.00');
 
-  useEffect(() => {
-    const balanceService = BalanceService.getInstance();
+  const confirmTopUp = useCallback((message: string, okOnly = false) => {
+    if (okOnly) {
+      return showLocalizedAlert({ message });
+    }
 
+    return showLocalizedAlert({
+      message,
+      buttons: [
+        { text: 'Cancel', style: 'cancel', onPress: () => {} },
+        { text: 'Confirm', onPress: () => {} },
+      ],
+    });
+  }, []);
+
+  useEffect(() => {
     const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
       setTotalBalance(balanceService.totalBalance);
@@ -24,20 +41,21 @@ export default function HomeScreen() {
 
     balanceService.onBalanceChange(onUpdate);
     void balanceService.getBalance();
+    void accountDataService.updateForwarderBalance(confirmTopUp);
 
     return () => {
       balanceService.offBalanceChange(onUpdate);
     };
-  }, []);
+  }, [accountDataService, balanceService, confirmTopUp]);
 
-  const handleRefresh = async () => {
-    const balanceService = BalanceService.getInstance();
+  const handleRefresh = useCallback(async () => {
     setLoading(true);
     await balanceService.getBalance();
+    await accountDataService.updateForwarderBalance(confirmTopUp);
     setBalances(balanceService.currentBalances);
     setTotalBalance(balanceService.totalBalance);
     setLoading(false);
-  };
+  }, [accountDataService, balanceService, confirmTopUp]);
 
   return (
     <View className="flex-1 bg-[#FD4912]">
