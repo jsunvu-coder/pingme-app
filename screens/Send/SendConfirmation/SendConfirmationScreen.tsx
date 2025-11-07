@@ -17,6 +17,7 @@ import { showLocalizedAlert } from 'components/LocalizedAlert';
 import enUS from 'i18n/en-US.json';
 import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
 import { AccountDataService } from 'business/services/AccountDataService';
+import LockboxDurationView from '../PingMe/LockboxDurationView';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -35,6 +36,14 @@ type RootStackParamList = {
 export default function SendConfirmationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'SendConfirmationScreen'>>();
   const params = route.params || {};
+  const {
+    amount: paramAmount,
+    displayAmount: paramDisplayAmount,
+    recipient: paramRecipient,
+    requester: paramRequester,
+    token: paramToken,
+    lockboxDuration: paramLockboxDuration,
+  } = params;
 
   const [usePassphrase, setUsePassphrase] = useState(false);
   const [passphrase, setPassphrase] = useState('');
@@ -44,6 +53,12 @@ export default function SendConfirmationScreen() {
   const [recipient, setRecipient] = useState<string>('');
   const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
   const [token, setToken] = useState<string | undefined>(undefined);
+  const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
+  const [lockboxDurationInput, setLockboxDurationInput] = useState<string>(
+    String(LOCKBOX_DURATION)
+  );
+  const allowLockboxEdit =
+    paramLockboxDuration === undefined || paramLockboxDuration === null;
 
   const balanceService = BalanceService.getInstance();
 
@@ -86,17 +101,30 @@ export default function SendConfirmationScreen() {
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
-    const parseAmount = (amount?: number | string) => {
-      const num = Number(amount) || 0;
+    const parseAmount = (incoming?: number | string) => {
+      const num = Number(incoming) || 0;
       return num >= 1e5 ? num / 1_000_000 : num;
     };
 
-    const rawAmount = parseAmount(params.amount);
+    const rawAmount = parseAmount(paramAmount);
     setAmount(rawAmount);
-    setDisplayAmount(params.displayAmount ?? `$${rawAmount.toFixed(2)}`);
-    setRecipient(params.recipient || params.requester || '');
-    setToken(params.token);
-  }, [params]);
+    setDisplayAmount(paramDisplayAmount ?? `$${rawAmount.toFixed(2)}`);
+    setRecipient(paramRecipient || paramRequester || '');
+    setToken(paramToken);
+    const initialDuration =
+      typeof paramLockboxDuration === 'number' && Number.isFinite(paramLockboxDuration)
+        ? paramLockboxDuration
+        : LOCKBOX_DURATION;
+    setLockboxDuration(initialDuration);
+    setLockboxDurationInput(String(initialDuration));
+  }, [
+    paramAmount,
+    paramDisplayAmount,
+    paramRecipient,
+    paramRequester,
+    paramToken,
+    paramLockboxDuration,
+  ]);
 
   // ✅ Fetch balances and set token entry
   useEffect(() => {
@@ -130,6 +158,14 @@ export default function SendConfirmationScreen() {
   }, [balanceService]);
 
   // ✅ Main payment handler
+  const handleDurationChange = (value: string) => {
+    setLockboxDurationInput(value);
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric)) {
+      setLockboxDuration(numeric);
+    }
+  };
+
   const pay = async () => {
     if (!amount || Number(amount) <= 0) {
       await showLocalizedAlert({
@@ -147,6 +183,15 @@ export default function SendConfirmationScreen() {
       return;
     }
 
+    const durationDays = Number(lockboxDuration);
+    if (!Number.isFinite(durationDays) || durationDays <= 0) {
+      await showLocalizedAlert({
+        title: 'Invalid duration',
+        message: 'Lockbox duration must be greater than 0 days.',
+      });
+      return;
+    }
+
     console.log('💳 Starting payment...', {
       token,
       amount,
@@ -155,6 +200,7 @@ export default function SendConfirmationScreen() {
       usePassphrase,
       passphrase,
       entry,
+      lockboxDuration: durationDays,
     });
 
     try {
@@ -169,7 +215,7 @@ export default function SendConfirmationScreen() {
         username: recipient,
         amount: amount.toString(),
         passphrase: passphrase,
-        days: params.lockboxDuration || LOCKBOX_DURATION,
+        days: durationDays,
 
         // ✅ flexible confirm handler
         confirm: async (msg: string) => {
@@ -228,7 +274,7 @@ export default function SendConfirmationScreen() {
               passphrase,
               txHash: hash,
               channel: params.channel || 'Link',
-              duration: params.lockboxDuration || LOCKBOX_DURATION,
+              duration: durationDays,
             });
 
             const userEmail = AccountDataService.getInstance().email ?? '';
@@ -249,7 +295,7 @@ export default function SendConfirmationScreen() {
               amount,
               passphrase,
               payLink,
-              duration: params.lockboxDuration || LOCKBOX_DURATION,
+              duration: durationDays,
             });
           }
         },
@@ -291,8 +337,17 @@ export default function SendConfirmationScreen() {
               <PaymentSummaryCard
                 amount={displayAmount}
                 recipient={recipient}
-                lockboxDuration={params.lockboxDuration ?? LOCKBOX_DURATION}
+                lockboxDuration={
+                  Number.isFinite(lockboxDuration) ? lockboxDuration : LOCKBOX_DURATION
+                }
               />
+
+              {allowLockboxEdit ? (
+                <LockboxDurationView
+                  value={lockboxDurationInput}
+                  onChange={handleDurationChange}
+                />
+              ) : null}
 
               <PassphraseSection
                 usePassphrase={usePassphrase}

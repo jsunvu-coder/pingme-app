@@ -9,24 +9,27 @@ import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
  * Supports:
  *  - https://app.pingme.xyz/claim?lockboxSalt=0x...
  *  - https://app.pingme.xyz/send?token=...&amount=...&requester=...
+ *  - https://app.pingme.xyz/deposit?commitment=...
  */
-export const handleUrl = (data: string) => {
+export const handleUrl = (rawData: string) => {
   try {
-    if (!data) {
+    if (!rawData) {
       console.warn('⚠️ No data provided to handleUrl');
       return;
     }
 
-    console.log('🔍 [handleUrl] Incoming URL:', data);
+    // ✅ Decode if the string is encoded
+    const decodedData = decodeURIComponent(rawData.trim());
+    console.log('🔍 [handleUrl] Incoming URL (decoded):', decodedData);
 
-    // Ensure URL starts with the configured base
-    if (!data?.startsWith(APP_URL)) {
-      console.warn('❌ Unsupported URL:', data);
+    // ✅ Normalize and validate base URL
+    if (!decodedData.startsWith(APP_URL)) {
+      console.warn('❌ Unsupported URL base:', decodedData);
       Alert.alert('Oops', 'The provided URL is not supported');
       return;
     }
 
-    const url = new URL(data);
+    const url = new URL(decodedData);
     const path = url.pathname; // e.g. "/claim" or "/send"
 
     // ---------- Handle /claim ----------
@@ -42,11 +45,9 @@ export const handleUrl = (data: string) => {
       return;
     }
 
-    console.log('path', path);
-
     // ---------- Handle /deposit ----------
     if (path.startsWith('/deposit')) {
-      const { payload, errorKey } = parseDepositLink(data);
+      const { payload, errorKey } = parseDepositLink(decodedData);
       if (!payload) {
         void showLocalizedAlert({
           title: 'Oops',
@@ -63,22 +64,25 @@ export const handleUrl = (data: string) => {
     // ---------- Handle /send ----------
     if (path.startsWith('/send')) {
       const token = url.searchParams.get('token');
-
       let amount = url.searchParams.get('amount');
       let requester = url.searchParams.get('requester') ?? url.searchParams.get('email');
 
+      // Try parsing from path if query params missing
       if (!requester) {
         const emailMatch = path.match(/\/send\/email=([^/]+)/);
         if (emailMatch?.[1]) requester = decodeURIComponent(emailMatch[1]);
       }
-
       if (!amount) {
         const amountMatch = path.match(/\/send\/amount=([^/]+)/);
         if (amountMatch?.[1]) amount = amountMatch[1];
       }
 
       if (!token || !amount || !requester) {
-        console.warn('⚠️ Missing params in send URL', { token, amount, requester });
+        console.warn('⚠️ Missing params in send URL', {
+          token,
+          amount,
+          requester,
+        });
 
         const fallbackParams: Record<string, unknown> = {
           mode: 'send',
@@ -113,7 +117,6 @@ export const handleUrl = (data: string) => {
         recipient: requester,
         channel: 'Email',
       });
-
       return;
     }
 

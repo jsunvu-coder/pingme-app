@@ -105,6 +105,11 @@ export default function AccountActionList() {
 
   const items: ItemProps[] = [
     {
+      label: 'Withdraw',
+      action: () => push('WithdrawScreen'),
+      rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+    },
+    {
       label: 'Password Recovery',
       action: () => push('AccountRecoveryScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,

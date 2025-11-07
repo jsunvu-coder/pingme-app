@@ -24,10 +24,7 @@ export default function AccountScreen() {
           onHowToEarn={() => console.log('Go to HowToEarn')}
         />
 
-        <AccountInfoCard
-          email={AccountDataService.getInstance().email || ''}
-          balance={`$${BalanceService.getInstance().totalBalance || '$0.00'}`}
-        />
+        <AccountInfoCard email={AccountDataService.getInstance().email || ''} />
 
         <AccountActionList />
       </ScrollView>

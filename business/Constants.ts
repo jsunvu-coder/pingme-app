@@ -45,3 +45,7 @@ export const TOKENS = {
 export const TOKEN_NAMES = {
   USDT: 'USDT',
 };
+
+export const EMAIL_KEY = 'lastEmail';
+export const PASSWORD_KEY = 'lastPassword';
+export const USE_BIOMETRIC_KEY = 'useBiometric';

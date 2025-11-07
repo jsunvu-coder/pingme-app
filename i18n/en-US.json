@@ -199,5 +199,6 @@
   "_WAITING_CLAIM": "payment waiting to be claimed",
   "_WITHDRAWAL1": "Your Withdrawal is being processed",
   "_WITHDRAWAL2": "We're securely processing your withdrawal right now. This usually takes a few seconds but may take longer if the network is busy.",
-  "_WITHDRAWAL3": "*This screen will automatically close once the withdrawal is completed."
+  "_WITHDRAWAL3": "*This screen will automatically close once the withdrawal is completed.",
+  "WITHDRAW_WALLET_PLACEHOLDER": "Enter wallet address"
 }

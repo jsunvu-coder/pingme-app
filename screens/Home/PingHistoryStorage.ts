@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = 'ping_history';
 const USER_KEY = 'ping_history_user';
+const HISTORY_PREFIX = 'ping_history_';
 const MAX_HISTORY = 5;
 
 export type PingHistoryItem = {
@@ -12,10 +12,13 @@ export type PingHistoryItem = {
 };
 
 export const PingHistoryStorage = {
-  /** Load history for the currently saved user */
+  /** Load history for the currently logged-in user */
   async load(): Promise<PingHistoryItem[]> {
     try {
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
+      const currentUser = await AsyncStorage.getItem(USER_KEY);
+      if (!currentUser) return [];
+
+      const json = await AsyncStorage.getItem(`${HISTORY_PREFIX}${currentUser}`);
       return json ? JSON.parse(json) : [];
     } catch (e) {
       console.error('❌ Failed to load ping history:', e);
@@ -23,47 +26,53 @@ export const PingHistoryStorage = {
     }
   },
 
-  /** Save new history item — auto-clears if a different user logs in */
+  /** Save new history item for the current user */
   async save(currentUserEmail: string, newItem: PingHistoryItem): Promise<void> {
     try {
-      const savedUser = await AsyncStorage.getItem(USER_KEY);
-
-      // 🧹 If this is a different user → clear previous history
-      if (savedUser && savedUser !== currentUserEmail) {
-        console.log(
-          `🔄 Detected user change (${savedUser} → ${currentUserEmail}), clearing history...`
-        );
-        await AsyncStorage.multiRemove([STORAGE_KEY, USER_KEY]);
-      }
-
-      // Set current user as the active history owner
+      // 🧩 Set current user
       await AsyncStorage.setItem(USER_KEY, currentUserEmail);
 
-      // Load current list (after potential clear)
-      const existingJson = await AsyncStorage.getItem(STORAGE_KEY);
+      // Load existing history for this user
+      const key = `${HISTORY_PREFIX}${currentUserEmail}`;
+      const existingJson = await AsyncStorage.getItem(key);
       const existing = existingJson ? JSON.parse(existingJson) : [];
 
       // Build updated list
       const updated = [newItem, ...existing].slice(0, MAX_HISTORY);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
 
-      console.log(`✅ Saved ping transaction for ${currentUserEmail}:`, newItem);
+      console.log(`✅ Saved ping history for ${currentUserEmail}:`, newItem);
     } catch (e) {
       console.error('❌ Failed to save ping history:', e);
     }
   },
 
-  /** Optional: manually clear everything */
-  async clear(): Promise<void> {
+  /** Clear all stored histories (optional, for logout cleanup) */
+  async clearAll(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([STORAGE_KEY, USER_KEY]);
-      console.log('🧹 Cleared ping history.');
+      const allKeys = await AsyncStorage.getAllKeys();
+      const userKeys = allKeys.filter((k) => k.startsWith(HISTORY_PREFIX) || k === USER_KEY);
+      await AsyncStorage.multiRemove(userKeys);
+      console.log('🧹 Cleared all ping histories.');
     } catch (e) {
-      console.error('❌ Failed to clear ping history:', e);
+      console.error('❌ Failed to clear all ping histories:', e);
     }
   },
 
-  /** Helper: get the currently saved user */
+  /** Clear only current user's history */
+  async clearCurrent(): Promise<void> {
+    try {
+      const currentUser = await AsyncStorage.getItem(USER_KEY);
+      if (currentUser) {
+        await AsyncStorage.removeItem(`${HISTORY_PREFIX}${currentUser}`);
+        console.log(`🧹 Cleared ping history for ${currentUser}.`);
+      }
+    } catch (e) {
+      console.error('❌ Failed to clear current user history:', e);
+    }
+  },
+
+  /** Get current active user email */
   async getSavedUser(): Promise<string | null> {
     return AsyncStorage.getItem(USER_KEY);
   },

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -13,10 +13,6 @@ import { showFlashMessage } from 'utils/flashMessage';
 import { submitDepositTransaction } from 'business/services/DepositQrService';
 import enUS from 'i18n/en-US.json';
 import { push } from 'navigation/Navigation';
-import DollarIcon from 'assets/DollarIcon';
-import AuthInput from 'components/AuthInput';
-import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
-import { BalanceService } from 'business/services/BalanceService';
 import PayStaticQrView from './PayStaticQrView';
 
 type PayQrScreenParams = {

@@ -22,6 +22,7 @@ export default function LoginView({
 }) {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
+  const routeLockboxProof = route?.params?.lockboxProof;
 
   const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
   const [password, setPassword] = useState('');
@@ -31,23 +32,31 @@ export default function LoginView({
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       const init = await vm.initialize();
+      if (cancelled) return;
+
       setBiometricType(init.biometricType);
       setUseBiometric(init.useBiometric);
       setInitialized(true);
 
-      if (init.useBiometric && init.biometricType) {
-        const result = await vm.tryBiometricAutoLogin(lockboxProof ?? route?.params?.lockboxProof);
+      // ✅ Only auto trigger Face ID — DO NOT auto login
+      if (!(init.useBiometric && init.biometricType)) return;
 
-        if (result.success && result.email && result.password) {
-          // ✅ Fill UI with stored credentials; user will submit manually
-          setEmail(result.email);
-          setPassword(result.password);
-        }
-      }
+      const result = await vm.autoTriggerBiometric(); // new safe method
+      if (!result.success || !result.email || !result.password || cancelled) return;
+
+      // Fill credentials but don't login automatically
+      setEmail(result.email);
+      setPassword(result.password);
     })();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [vm]);
 
   const handleToggleBiometric = useCallback(
     async (value: boolean) => {
@@ -71,7 +80,7 @@ export default function LoginView({
       password,
       useBiometric,
       biometricType,
-      lockboxProof ?? route?.params?.lockboxProof
+      lockboxProof ?? routeLockboxProof // 🔒 Keep proof logic intact
     );
     setLoading(false);
 

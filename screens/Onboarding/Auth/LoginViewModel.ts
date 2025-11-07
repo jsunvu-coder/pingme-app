@@ -6,24 +6,17 @@ import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push } from 'navigation/Navigation';
 import { t } from 'i18n';
+import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | null;
-
-export const EMAIL_KEY = 'lastEmail';
-export const PASSWORD_KEY = 'lastPassword';
-export const USE_BIOMETRIC_KEY = 'useBiometric';
 
 export class LoginViewModel {
   biometricType: BiometricType = null;
   useBiometric = false;
 
-  async initialize(): Promise<{
-    biometricType: BiometricType;
-    useBiometric: boolean;
-  }> {
+  async initialize(): Promise<{ biometricType: BiometricType; useBiometric: boolean }> {
     this.useBiometric = await LoginViewModel.isBiometricEnabled();
     this.biometricType = await LoginViewModel.detectBiometricType();
-
     return {
       biometricType: this.biometricType,
       useBiometric: this.useBiometric,
@@ -31,30 +24,48 @@ export class LoginViewModel {
   }
 
   /**
-   * Authenticate with biometric → load credentials → return them for UI
-   * Let the view call `resumeAfterBiometricLogin()` to continue navigation
+   * 🔐 Automatically trigger biometric auth
+   * - Runs Face ID / Touch ID prompt immediately
+   * - On success → returns stored credentials
+   * - Does NOT auto-login
    */
-  async tryBiometricAutoLogin(
-    lockboxProof?: string
-  ): Promise<{ success: boolean; email?: string; password?: string }> {
-    if (!this.useBiometric) return { success: false, email: undefined, password: undefined };
+  async autoBiometricAuthenticate(): Promise<{
+    success: boolean;
+    email?: string;
+    password?: string;
+  }> {
+    try {
+      const isEnabled = await LoginViewModel.isBiometricEnabled();
+      if (!isEnabled) return { success: false };
 
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!hasHardware || !enrolled) return { success: false, email: undefined, password: undefined };
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!hasHardware || !enrolled) return { success: false };
 
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: `Log in with ${this.biometricType ?? 'biometric'}`,
-      fallbackLabel: 'Use Passcode',
-      disableDeviceFallback: false,
-    });
+      const type = await LoginViewModel.detectBiometricType();
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: `Authenticate with ${type ?? 'biometric'}`,
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
 
-    if (!result.success) return { success: false, email: undefined, password: undefined };
-    const { email, password } = await LoginViewModel.getStoredCredentials();
+      if (!result.success) {
+        console.log('❌ Biometric authentication cancelled or failed');
+        return { success: false };
+      }
 
-    if (!email || !password) return { success: false, email: undefined, password: undefined };
+      const { email, password } = await LoginViewModel.getStoredCredentials();
+      if (!email || !password) {
+        Alert.alert(t('NOTICE'), t('No saved credentials found. Please log in manually.'));
+        return { success: false };
+      }
 
-    return { success: true, email, password };
+      console.log('✅ Biometric authenticated. Returning saved credentials.');
+      return { success: true, email, password };
+    } catch (err) {
+      console.error('❌ autoBiometricAuthenticate error:', err);
+      return { success: false };
+    }
   }
 
   async handleLogin(
@@ -114,7 +125,6 @@ export class LoginViewModel {
   handleSuccessfulLogin(email: string) {
     AccountDataService.getInstance().email = email;
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
-
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {
       console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
@@ -159,12 +169,9 @@ export class LoginViewModel {
   // ---------- Static helpers ----------
   static async detectBiometricType(): Promise<BiometricType> {
     const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+    if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION))
       return 'Face ID';
-    }
-    if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      return 'Touch ID';
-    }
+    if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) return 'Touch ID';
     return null;
   }
 
@@ -192,15 +199,52 @@ export class LoginViewModel {
   }
 
   static async setUseBiometricPreference(value: boolean) {
-    if (value) {
-      await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, 'true');
-    } else {
-      await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, 'false');
-    }
+    await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, value ? 'true' : 'false');
   }
 
   static async isBiometricEnabled(): Promise<boolean> {
     const savedPref = await SecureStore.getItemAsync(USE_BIOMETRIC_KEY);
     return savedPref === 'true';
+  }
+
+  /**
+   * Automatically trigger Face ID / Touch ID when the Login screen opens.
+   * If success → return saved credentials (email, password)
+   * If fail or cancelled → return { success: false }
+   * Never auto-login.
+   */
+  async autoTriggerBiometric(): Promise<{ success: boolean; email?: string; password?: string }> {
+    try {
+      const enabled = await LoginViewModel.isBiometricEnabled();
+      if (!enabled) return { success: false };
+
+      const { email, password } = await LoginViewModel.getStoredCredentials();
+      if (!email || !password) {
+        console.log('⚠️ No stored credentials, skipping Face ID auto trigger.');
+        return { success: false };
+      }
+
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!hasHardware || !enrolled) return { success: false };
+
+      const type = await LoginViewModel.detectBiometricType();
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: `Authenticate with ${type ?? 'biometric'}`,
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
+
+      if (!result.success) {
+        console.log('❌ Biometric cancelled or failed');
+        return { success: false };
+      }
+
+      console.log('✅ Face ID success — returning saved credentials.');
+      return { success: true, email, password };
+    } catch (err) {
+      console.error('❌ autoTriggerBiometric error:', err);
+      return { success: false };
+    }
   }
 }

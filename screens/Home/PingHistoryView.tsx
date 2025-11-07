@@ -9,7 +9,6 @@ import { PingHistoryItem, PingHistoryStorage } from './PingHistoryStorage';
 export default function PingHistoryView() {
   const [history, setHistory] = useState<PingHistoryItem[]>([]);
   const screenWidth = Dimensions.get('window').width;
-  const itemWidth = screenWidth * 0.5;
 
   const handleOpenHistory = () => {
     push('PingHistoryScreen');
