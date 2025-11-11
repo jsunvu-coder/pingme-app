@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "scheme": "pingme",
     "web": {
-      "favicon": "./assets/intro-1.png"
+      "favicon": "./assets/intro_1.png"
     },
     "experiments": {
       "tsconfigPaths": true
@@ -35,16 +35,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#FD4912"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "buildNumber": "2",
       "bundleIdentifier": "com.hailstonelab.pingme",
-      "associatedDomains": [
-        "applinks:app.pingme.xyz"
-      ],
+      "associatedDomains": ["applinks:app.pingme.xyz"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -60,13 +56,10 @@
     "android": {
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/intro-1.png",
+        "foregroundImage": "./assets/intro_1.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ],
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
       "package": "com.hailstonelab.pingme",
       "intentFilters": [
         {
@@ -78,10 +71,7 @@
               "pathPrefix": "/"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
