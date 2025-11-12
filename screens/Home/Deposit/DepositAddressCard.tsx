@@ -1,8 +1,9 @@
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Platform, ToastAndroid } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import CopyIcon from 'assets/CopyIcon';
 import WarningBox from './WarningBox';
+import { showFlashMessage } from 'utils/flashMessage';
 
 interface Props {
   address: string;
@@ -12,7 +13,9 @@ export default function DepositAddressCard({ address }: Props) {
   const handleCopy = async () => {
     try {
       await Clipboard.setStringAsync(address);
-      Alert.alert('Copied', 'Deposit address copied to clipboard.');
+      if (Platform.OS === 'ios') {
+        showFlashMessage({ message: 'Deposit address copied to clipboard.' });
+      }
     } catch (err) {
       console.error('Clipboard copy failed:', err);
       Alert.alert('Copy failed', 'Unable to copy the deposit address.');

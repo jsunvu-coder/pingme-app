@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StatusBar, View } from 'react-native';
 import HeaderView from 'components/HeaderView';
 import AccountTierView from './AccountTierView';
 import AccountInfoCard from './AccountInfoCard';
@@ -13,6 +13,7 @@ export default function AccountScreen() {
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} />
 
       <HeaderView title="Account" variant="light" />

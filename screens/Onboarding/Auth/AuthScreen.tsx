@@ -10,6 +10,7 @@ import {
   Platform,
   Easing,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,6 +105,7 @@ export default function AuthScreen() {
 
   return (
     <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} />
 
       <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>

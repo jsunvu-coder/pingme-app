@@ -39,7 +39,6 @@ export default function OnboardingPager() {
             title={slide.text}
             index={idx}
             width={width}
-            height={height}
           />
         ))}
       </ScrollView>

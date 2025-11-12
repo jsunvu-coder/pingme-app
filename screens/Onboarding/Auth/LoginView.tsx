@@ -151,7 +151,7 @@ export default function LoginView({
         </View>
       </View>
 
-      <View className="mt-6 px-6 pb-6">
+      <View className="mt-6 px-6 pb-12">
         <PrimaryButton
           title={t('AUTH_LOGIN_BUTTON')}
           onPress={handleLogin}

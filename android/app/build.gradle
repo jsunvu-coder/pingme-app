@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+def node = "/opt/homebrew/bin/node"
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 /**
@@ -97,6 +98,9 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    project.ext.react = [
+            nodeExecutableAndArgs: ["/usr/local/bin/node"]
+    ]
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
