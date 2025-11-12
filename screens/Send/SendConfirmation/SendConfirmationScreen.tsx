@@ -54,9 +54,6 @@ export default function SendConfirmationScreen() {
   const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
   const [token, setToken] = useState<string | undefined>(undefined);
   const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
-  const [lockboxDurationInput, setLockboxDurationInput] = useState<string>(
-    String(LOCKBOX_DURATION)
-  );
   const allowLockboxEdit =
     paramLockboxDuration === undefined || paramLockboxDuration === null;
 
@@ -116,7 +113,6 @@ export default function SendConfirmationScreen() {
         ? paramLockboxDuration
         : LOCKBOX_DURATION;
     setLockboxDuration(initialDuration);
-    setLockboxDurationInput(String(initialDuration));
   }, [
     paramAmount,
     paramDisplayAmount,
@@ -158,11 +154,9 @@ export default function SendConfirmationScreen() {
   }, [balanceService]);
 
   // ✅ Main payment handler
-  const handleDurationChange = (value: string) => {
-    setLockboxDurationInput(value);
-    const numeric = Number(value);
-    if (!Number.isNaN(numeric)) {
-      setLockboxDuration(numeric);
+  const handleDurationChange = (value: number) => {
+    if (Number.isFinite(value)) {
+      setLockboxDuration(value);
     }
   };
 
@@ -343,10 +337,7 @@ export default function SendConfirmationScreen() {
               />
 
               {allowLockboxEdit ? (
-                <LockboxDurationView
-                  value={lockboxDurationInput}
-                  onChange={handleDurationChange}
-                />
+                <LockboxDurationView value={lockboxDuration} onChange={handleDurationChange} />
               ) : null}
 
               <PassphraseSection

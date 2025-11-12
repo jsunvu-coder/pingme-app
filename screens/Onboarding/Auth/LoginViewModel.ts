@@ -81,8 +81,20 @@ export class LoginViewModel {
     try {
       ok = await auth.signin(email, password, lockboxProof);
     } catch (err) {
-      const message =
-        err instanceof Error && err.message ? err.message : t('AUTH_LOGIN_INVALID_CREDENTIALS');
+      const fallbackMessage = t('AUTH_LOGIN_INVALID_CREDENTIALS');
+      let message = fallbackMessage;
+
+      if (err instanceof Error && err.message) {
+        const responseStatus = (err as any)?.response?.status;
+        const isServerError =
+          typeof responseStatus === 'number'
+            ? responseStatus >= 500
+            : /status code 500/i.test(err.message);
+        if (!isServerError) {
+          message = err.message;
+        }
+      }
+
       Alert.alert(t('AUTH_LOGIN_FAILED_TITLE'), message);
       return { success: false, biometricEnabled: this.useBiometric };
     }

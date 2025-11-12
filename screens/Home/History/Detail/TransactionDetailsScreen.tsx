@@ -117,6 +117,7 @@ export default function TransactionDetailsScreen() {
   }, [lockboxDetail]);
 
   const statusMeta = STATUS_META[lockboxStatus];
+  const showStatusRow = !!lockboxDetail && !error;
 
   const createdSeconds =
     Number(lockboxDetail?.createTime ?? 0) > 0
@@ -184,25 +185,23 @@ export default function TransactionDetailsScreen() {
           {expirySeconds ? (
             <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} />
           ) : null}
-          <DetailRow
-            label="Status"
-            value={statusMeta.label}
-            valueClassName="flex-row items-center"
-            valueTextClassName={statusMeta.textClass}
-            icon={<Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />}
-          />
+          {showStatusRow ? (
+            <DetailRow
+              label="Status"
+              value={statusMeta.label}
+              valueClassName="flex-row items-center"
+              valueTextClassName={statusMeta.textClass}
+              icon={
+                <Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />
+              }
+            />
+          ) : null}
         </View>
 
         {fetchingDetail ? (
           <View className="mt-6 flex-row items-center justify-center space-x-3">
             <ActivityIndicator color="#FD4912" />
             <Text className="text-sm text-gray-500">Refreshing transaction status…</Text>
-          </View>
-        ) : null}
-
-        {error ? (
-          <View className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-            <Text className="text-sm text-red-600">{error}</Text>
           </View>
         ) : null}
 

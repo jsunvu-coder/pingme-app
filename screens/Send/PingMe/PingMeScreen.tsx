@@ -32,7 +32,7 @@ export default function PingMeScreen() {
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
   const [amount, setAmount] = useState('');
-  const [duration, setDuration] = useState(`${LOCKBOX_DURATION}`);
+  const [duration, setDuration] = useState<number>(LOCKBOX_DURATION);
   const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
 
@@ -169,12 +169,11 @@ export default function PingMeScreen() {
     // --- 3️⃣ Validate duration
     let lockboxDurationDays = LOCKBOX_DURATION;
     if (mode === 'send') {
-      const numericDuration = parseFloat(duration);
-      if (isNaN(numericDuration) || numericDuration <= 0) {
-        Alert.alert('Invalid duration', 'Please enter a valid lockbox duration (in days).');
+      if (!Number.isFinite(duration) || duration < 1 || duration > 30) {
+        Alert.alert('Invalid duration', 'Lockbox duration must be between 1 and 30 days.');
         return;
       }
-      lockboxDurationDays = numericDuration;
+      lockboxDurationDays = Math.round(duration);
     }
 
     // --- 4️⃣ Proceed with navigation
