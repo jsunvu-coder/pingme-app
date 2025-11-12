@@ -310,7 +310,7 @@ export class ContractService {
         lockbox_commitment,
         username,
         lockbox_salt,
-        token_name: token_name ?? TOKEN_NAMES.USDT,
+        token_name: token_name ?? TOKEN_NAMES.USDC,
       })
     );
   }

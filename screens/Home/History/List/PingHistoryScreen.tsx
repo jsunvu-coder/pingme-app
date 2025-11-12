@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { goBack, push } from 'navigation/Navigation';
 import { HistoryRow } from './HistoryRow';
 import FilterDropdown from './FilterDropDown';
-import { PingHistoryViewModel } from './PingHistoryViewModel';
+import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
 import { TransactionViewModel } from './TransactionViewModel';
 
 const vm = new PingHistoryViewModel();
@@ -14,7 +14,7 @@ export default function PingHistoryScreen() {
   const [transactions, setTransactions] = useState<TransactionViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'send' | 'receive'>('all');
+  const [filterType, setFilterType] = useState<HistoryFilter>('all');
 
   const loadData = async () => {
     setLoading(true);
@@ -57,8 +57,11 @@ export default function PingHistoryScreen() {
             onChange={setFilterType}
             options={[
               { label: 'All', value: 'all' },
-              { label: 'Sent', value: 'send' },
-              { label: 'Received', value: 'receive' },
+              { label: 'Sent', value: 'sent' },
+              { label: 'Received', value: 'received' },
+              { label: 'Deposit', value: 'deposit' },
+              { label: 'Withdraw', value: 'withdraw' },
+              { label: 'Reclaim', value: 'reclaim' },
             ]}
           />
         </View>

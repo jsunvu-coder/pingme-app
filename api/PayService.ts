@@ -227,7 +227,7 @@ export class PayService {
       nextCommitment,
       duration,
       lockboxCommitment,
-      ...(isEmail ? { username, lockboxSalt, tokenType: 'USDT' } : {}),
+      ...(isEmail ? { username, lockboxSalt, tokenType: 'USDC' } : {}),
     };
 
     this.logRequest(apiName, payload);
@@ -245,7 +245,7 @@ export class PayService {
           lockboxCommitment,
           username,
           lockboxSalt,
-          TOKEN_NAMES.USDT
+          TOKEN_NAMES.USDC
         );
       } else {
         ret = await contractService.withdrawAndSend(

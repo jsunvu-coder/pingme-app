@@ -58,7 +58,7 @@ export default function RequestConfirmationScreen() {
         const balances = balanceService.balances;
         console.log('🔄 Balance update received:', balances);
         if (balances && balances.length > 0) {
-          const matched = balances.find((b) => b.token === TOKENS.USDT) || balances[0];
+          const matched = balances.find((b) => b.token === TOKENS.USDC) || balances[0];
           setEntry(matched);
           console.log('🔗 Active token entry:', matched);
         }

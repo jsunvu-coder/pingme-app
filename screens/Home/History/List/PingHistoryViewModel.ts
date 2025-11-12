@@ -4,6 +4,8 @@ import { ContractService } from 'business/services/ContractService';
 import { parseTransaction } from './TransactionParser';
 import { TransactionViewModel } from './TransactionViewModel';
 
+export type HistoryFilter = 'all' | 'sent' | 'received' | 'deposit' | 'withdraw' | 'reclaim';
+
 export class PingHistoryViewModel {
   private recordService = RecordService.getInstance();
   private contractService = ContractService.getInstance();
@@ -63,16 +65,23 @@ export class PingHistoryViewModel {
   }
 
   /** Filter events by direction */
-  filterTransactions(
-    events: TransactionViewModel[],
-    filter: 'all' | 'send' | 'receive'
-  ): TransactionViewModel[] {
+  filterTransactions(events: TransactionViewModel[], filter: HistoryFilter): TransactionViewModel[] {
     if (filter === 'all') return events;
     return events.filter((e) => {
-      if (!e.direction) return false;
-      if (filter === 'send') return e.direction === 'send';
-      if (filter === 'receive') return e.direction === 'receive';
-      return true;
+      switch (filter) {
+        case 'sent':
+          return e.direction === 'send';
+        case 'received':
+          return e.direction === 'receive';
+        case 'deposit':
+          return ['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type);
+        case 'withdraw':
+          return e.type === 'Withdrawal';
+        case 'reclaim':
+          return e.type === 'Reclaim';
+        default:
+          return true;
+      }
     });
   }
 }

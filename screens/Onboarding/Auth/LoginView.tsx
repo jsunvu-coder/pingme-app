@@ -25,7 +25,7 @@ export default function LoginView({
   const routeLockboxProof = route?.params?.lockboxProof;
 
   const [email, setEmail] = useState(
-    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme07@test.com'
+    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme08@test.com'
   );
   const [password, setPassword] = useState('12345678');
   const [loading, setLoading] = useState(false);

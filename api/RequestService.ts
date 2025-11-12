@@ -104,7 +104,7 @@ export class RequestService {
         sender: cr.username,
         receiver: safeRequestee,
         token: entry.token,
-        tokenSymbol: TOKEN_NAMES.USDT,
+        tokenSymbol: TOKEN_NAMES.USDC,
         customMessage: customMessage ?? '',
       };
 

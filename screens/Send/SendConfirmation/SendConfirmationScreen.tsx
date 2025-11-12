@@ -54,8 +54,7 @@ export default function SendConfirmationScreen() {
   const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
   const [token, setToken] = useState<string | undefined>(undefined);
   const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
-  const allowLockboxEdit =
-    paramLockboxDuration === undefined || paramLockboxDuration === null;
+  const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
 
   const balanceService = BalanceService.getInstance();
 
@@ -136,7 +135,7 @@ export default function SendConfirmationScreen() {
 
         if (balances && balances.length > 0) {
           const matched =
-            balances.find((b) => b.token === TOKENS.USDT && parseFloat(b.amount) > 0.0) ||
+            balances.find((b) => b.token === TOKENS.USDC && parseFloat(b.amount) > 0.0) ||
             balances.find((b) => parseFloat(b.amount) > 0.0) ||
             balances[0];
           setEntry(matched);
