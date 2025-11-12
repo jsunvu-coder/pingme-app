@@ -50,7 +50,7 @@ function Header() {
         <LinkIcon />
       </View>
 
-      <Text className="mt-6 text-center text-3xl font-bold text-black">Payment Link Created</Text>
+      <Text className="mt-6 text-center text-3xl font-bold text-black">Request Link Created</Text>
     </View>
   );
 }

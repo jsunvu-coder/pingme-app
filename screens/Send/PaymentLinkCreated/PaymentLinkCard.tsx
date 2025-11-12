@@ -40,7 +40,7 @@ export default function PaymentLinkCard({
 			<View className="flex-row pr-10">
 				<View className="flex-1">
 					<Text className="text-2xl font-semibold text-gray-800 mb-3">
-						Your Payment Link is ready to share
+						Your Request Link is ready to share
 					</Text>
 					<View className="flex-row items-center">
 						<Text className="text-2xl" numberOfLines={1} ellipsizeMode="middle">
