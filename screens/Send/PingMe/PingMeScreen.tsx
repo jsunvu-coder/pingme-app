@@ -199,20 +199,20 @@ export default function PingMeScreen() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
-      <View className="z-40 bg-white pb-6">
+      <View className="z-40 bg-white pb-4">
         <SafeAreaView edges={['top']} />
         <HeaderView title="Ping Now" variant="light" />
       </View>
 
       <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
         <ScrollView
-          className="flex-1 px-6 pt-5"
+          className="flex-1 px-6"
           contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <SendRequestTab mode={mode} onChange={setMode} />
           <ChannelSelectView active={activeChannel} onChange={setActiveChannel} />
 
-          {/* Animated Email Section */}
           <Animated.View
             style={{
               opacity: emailOpacity,
@@ -242,6 +242,7 @@ export default function PingMeScreen() {
               balance={`$${BalanceService.getInstance().totalBalance}`}
               value={amount}
               onChange={setAmount}
+              mode={mode}
             />
 
             {mode === 'send' ? (
@@ -250,6 +251,8 @@ export default function PingMeScreen() {
 
             <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
           </Animated.View>
+
+          <SafeAreaView />
         </ScrollView>
       </Animated.View>
     </View>

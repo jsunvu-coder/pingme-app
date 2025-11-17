@@ -14,6 +14,7 @@ import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
@@ -151,15 +152,15 @@ export default function WithdrawScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <SafeAreaView edges={['top']} />
       <NavigationBar title={t('WITHDRAW')} />
 
-      <View className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6">
         <View className="mt-10 gap-y-8">
           <PaymentAmountView
             balance={`$${balanceService.totalBalance}`}
             value={amount}
             onChange={setAmount}
+            mode="send"
           />
 
           <AuthInput
@@ -169,7 +170,7 @@ export default function WithdrawScreen() {
             placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
           />
         </View>
-      </View>
+      </ScrollView>
 
       <View className="px-6 pb-6">
         <PrimaryButton

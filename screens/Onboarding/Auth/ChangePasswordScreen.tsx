@@ -10,6 +10,7 @@ import { AuthService } from 'business/services/AuthService';
 import { showFlashMessage } from 'utils/flashMessage';
 import NavigationBar from 'components/NavigationBar';
 import { t } from 'i18n';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -84,11 +85,9 @@ export default function ChangePasswordScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <SafeAreaView edges={['top']} />
-
       <NavigationBar title={t('CHANGE_PASSWORD')} />
 
-      <View className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6">
         <View className="mt-10 gap-y-8">
           <AuthInput
             icon={<PasswordIcon />}
@@ -111,7 +110,7 @@ export default function ChangePasswordScreen() {
             errorMessage={errors.confirm}
           />
         </View>
-      </View>
+      </ScrollView>
 
       <View className="px-6 pb-6">
         <PrimaryButton

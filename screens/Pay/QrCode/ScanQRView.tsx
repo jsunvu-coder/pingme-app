@@ -16,7 +16,6 @@ export default function ScanQRView() {
   }, []);
 
   const handleQRCode = (data: string) => {
-    console.log('Scanned QR Code:', data);
     handleUrl(data);
   };
 

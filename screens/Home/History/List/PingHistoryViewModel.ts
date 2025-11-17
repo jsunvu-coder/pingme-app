@@ -9,15 +9,19 @@ export type HistoryFilter = 'all' | 'sent' | 'received' | 'deposit' | 'withdraw'
 export class PingHistoryViewModel {
   private recordService = RecordService.getInstance();
   private contractService = ContractService.getInstance();
+  private static cachedTransactions: TransactionViewModel[] = [];
+  private static inflight: Promise<TransactionViewModel[]> | null = null;
 
   async getTransactions(): Promise<TransactionViewModel[]> {
     try {
       const records = await this.recordService.getRecord();
       const commitment = this.contractService.getCrypto()?.commitment ?? '';
-      return this.parseTransactions(records || [], commitment);
+      const parsed = this.parseTransactions(records || [], commitment);
+      PingHistoryViewModel.cachedTransactions = parsed;
+      return parsed;
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to load transactions', err);
-      return [];
+      return PingHistoryViewModel.cachedTransactions;
     }
   }
 
@@ -83,5 +87,24 @@ export class PingHistoryViewModel {
           return true;
       }
     });
+  }
+
+  static getCachedTransactions(): TransactionViewModel[] {
+    return this.cachedTransactions;
+  }
+
+  static async prefetchTransactions(): Promise<TransactionViewModel[]> {
+    if (this.inflight) return this.inflight;
+    const vm = new PingHistoryViewModel();
+    this.inflight = vm
+      .getTransactions()
+      .catch((err) => {
+        console.error('[PingHistoryViewModel] Prefetch failed', err);
+        return this.cachedTransactions;
+      })
+      .finally(() => {
+        this.inflight = null;
+      });
+    return this.inflight;
   }
 }

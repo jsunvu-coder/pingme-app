@@ -171,7 +171,6 @@ export default function TransactionDetailsScreen() {
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">
-      <SafeAreaView edges={['top']} />
       <NavigationBar title="Transaction Details" />
       <ScrollView
         className="flex-1 px-6"

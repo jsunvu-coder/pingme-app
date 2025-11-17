@@ -6,14 +6,18 @@ type Props = {
   value: string;
   onChange: (text: string) => void;
   balance: string;
+  mode: 'send' | 'request';
 };
 
-export default function PaymentAmountView({ value, onChange, balance }: Props) {
+export default function PaymentAmountView({ value, onChange, balance, mode }: Props) {
+  const balanceLabel = mode === 'request' ? 'Current' : 'Available';
   return (
     <View className="mt-6">
       <View className="mb-2 flex-row items-center justify-between">
         <DollarIcon />
-        <Text className="text-xl text-gray-900">Available {balance}</Text>
+        <Text className="text-xl text-gray-900">
+          {balanceLabel}: {balance}
+        </Text>
       </View>
 
       <AuthInput

@@ -10,7 +10,7 @@ export default function PaymentRecipientCard({
 }) {
   return (
     <View className="rounded-2xl bg-white px-6 py-8">
-      <Text className="text-3xl text-gray-800">
+      <Text className="text-xl text-gray-800">
         You've sent payment to <Text className="font-semibold">{recipient}</Text>
       </Text>
 

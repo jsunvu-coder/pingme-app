@@ -13,8 +13,8 @@ export default function DepositHeader() {
         </Text>
 
         <Text className="mt-6 text-center text-xl leading-6 text-gray-500">
-          Please deposit <Text className="font-semibold">USDC (Tether)</Text> on the{' '}
-          <Text className="font-semibold">Ethereum network</Text> to the exact wallet address shown.
+          Please deposit <Text className="font-semibold">USD Coin (USDC)</Text> on the{' '}
+          <Text className="font-semibold">Monad network</Text> to the exact wallet address shown.
         </Text>
       </View>
     </View>

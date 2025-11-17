@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import CopyIcon from 'assets/CopyIcon';
 import { showLocalizedAlert } from './LocalizedAlert';
 import * as Clipboard from 'expo-clipboard';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export default function PaymentClaimCard({
   content,
@@ -12,10 +13,7 @@ export default function PaymentClaimCard({
 }) {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(passphrase);
-    await showLocalizedAlert({
-      title: 'Success',
-      message: 'Copied',
-    });
+    showFlashMessage({ message: 'Copied' });
   };
 
   return (
@@ -26,9 +24,7 @@ export default function PaymentClaimCard({
         <Text className="text-xl text-gray-500">Passphrase</Text>
 
         <Text className="mr-2 text-xl">{passphrase}</Text>
-        <TouchableOpacity
-          className="flex-row items-center active:opacity-80"
-          onPress={() => handleCopy}>
+        <TouchableOpacity className="flex-row items-center active:opacity-80" onPress={handleCopy}>
           <CopyIcon />
         </TouchableOpacity>
       </View>

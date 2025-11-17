@@ -38,9 +38,7 @@ export default function AuthScreen() {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
   const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
   const [showTabs, setShowTabs] = useState(false);
-
-  // 👇 Animations
-  const spacerHeight = useRef(new Animated.Value(0)).current;
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -53,47 +51,33 @@ export default function AuthScreen() {
     }
   }, [route.params]);
 
-  // ✅ Keyboard animation only if (small screen && showTabs)
   useEffect(() => {
-    if (!(IS_SMALL_SCREEN && showTabs)) return;
-
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
-        Animated.parallel([
-          Animated.timing(spacerHeight, {
-            toValue: 150,
-            duration: 250,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: false,
-          }),
-          Animated.timing(translateY, {
-            toValue: -100,
-            duration: 250,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]).start();
+      (event) => {
+        const kbHeight = event.endCoordinates?.height ?? 0;
+        const offset = Math.min(kbHeight / 2.2, 180); // center-ish, not too high
+        setKeyboardVisible(true);
+
+        Animated.timing(translateY, {
+          toValue: -offset,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
       }
     );
 
     const hideSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
-        Animated.parallel([
-          Animated.timing(spacerHeight, {
-            toValue: 0,
-            duration: 200,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: false,
-          }),
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 200,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]).start();
+        setKeyboardVisible(false);
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
       }
     );
 
@@ -101,7 +85,7 @@ export default function AuthScreen() {
       showSub.remove();
       hideSub.remove();
     };
-  }, [spacerHeight, translateY, showTabs]);
+  }, [translateY]);
 
   return (
     <View className="flex-1 bg-white">
@@ -134,8 +118,7 @@ export default function AuthScreen() {
               />
             )}
 
-            {/* Spacer only active on small screen with tabs */}
-            {IS_SMALL_SCREEN && showTabs && <Animated.View style={{ height: spacerHeight }} />}
+            {keyboardVisible && <Animated.View style={{ height: 150 }} />}
           </View>
         </ScrollView>
       </Animated.View>

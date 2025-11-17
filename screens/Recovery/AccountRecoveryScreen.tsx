@@ -16,6 +16,7 @@ import { CryptoUtils } from 'business/CryptoUtils';
 import { Utils } from 'business/Utils';
 import { GLOBALS, GLOBAL_SALT, ZERO_BYTES32 } from 'business/Constants';
 import { AuthService } from 'business/services/AuthService';
+import NavigationBar from 'components/NavigationBar';
 
 export default function AccountRecoveryScreen() {
   const [isCompleted, setIsCompleted] = useState(false);

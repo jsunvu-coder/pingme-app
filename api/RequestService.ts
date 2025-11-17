@@ -182,7 +182,8 @@ export class RequestService {
       this.logRequest('requestPay', payload);
 
       // ---------- Execute Contract ----------
-      const url = `${APP_URL}/pay?token=${entry.token}&amount=${safeAmount}&requester=${cr.username}`;
+      const encodedRequester = encodeURIComponent(cr.username);
+      const url = `${APP_URL}/pay?token=${entry.token}&amount=${kAmount.toString()}&requester=${encodedRequester}`;
 
       setPayLink(url);
       console.log('🎉 [RequestService] Payment request sent successfully.');

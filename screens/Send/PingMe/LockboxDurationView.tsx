@@ -18,7 +18,7 @@ function DurationDisplay({ value, onOpen }: { value: number; onOpen: () => void 
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-lg font-semibold text-[#0F0F0F]">
-            {value} {value === 1 ? 'Day' : 'Days'}
+            {value} {value === 1 ? 'day' : 'days'}
           </Text>
           <Text className="text-sm text-[#6B7280]">Recipient must claim within this time</Text>
         </View>
@@ -41,7 +41,7 @@ function DurationOption({
   return (
     <Pressable
       onPress={() => onSelect(day)}
-      className={`mb-2 flex-row items-center justify-between px-4 py-3 ${
+      className={`mb-2 flex-row items-center justify-between rounded-xl px-4 py-3 ${
         selected ? 'bg-[#FFF3EC]' : 'bg-white'
       }`}>
       <Text className={`text-base ${selected ? 'font-semibold text-[#FD4912]' : 'text-[#0F0F0F]'}`}>
@@ -72,24 +72,22 @@ function DurationModal({
         {/* Card */}
         <View className="w-full rounded-xl bg-white p-5 shadow-lg">
           <Text className="mb-4 text-center text-lg font-semibold text-[#0F0F0F]">
-            Select Duration
+            Select duration
           </Text>
 
-          <View className="mx-6 bg-white">
-            <ScrollView
-              className="max-h-[360px] w-full"
-              contentContainerStyle={{ paddingBottom: 4 }}
-              showsVerticalScrollIndicator={false}>
-              {DAY_OPTIONS.map((day) => (
-                <DurationOption
-                  key={day}
-                  day={day}
-                  selected={day === selectedValue}
-                  onSelect={onSelect}
-                />
-              ))}
-            </ScrollView>
-          </View>
+          <ScrollView
+            className="max-h-[360px] w-full"
+            contentContainerStyle={{ paddingBottom: 4 }}
+            showsVerticalScrollIndicator={false}>
+            {DAY_OPTIONS.map((day) => (
+              <DurationOption
+                key={day}
+                day={day}
+                selected={day === selectedValue}
+                onSelect={onSelect}
+              />
+            ))}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -115,7 +113,7 @@ export default function LockboxDurationView({ value, onChange }: Props) {
 
   return (
     <View className="mt-6">
-      <Text className="mb-2 text-base font-semibold text-[#0F0F0F]">Lockbox Duration</Text>
+      <Text className="mb-2 text-lg text-[#0F0F0F]">Lockbox duration</Text>
       <DurationDisplay value={selectedValue} onOpen={() => setVisible(true)} />
       <DurationModal
         visible={visible}

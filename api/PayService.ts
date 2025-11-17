@@ -8,6 +8,7 @@ import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
 import { SKIP_PASSPHRASE, APP_URL } from 'business/Config';
 import { RecordService } from 'business/services/RecordService';
+import { AccountDataService } from 'business/services/AccountDataService';
 
 export class PayService {
   private static instance: PayService;
@@ -158,6 +159,7 @@ export class PayService {
       if (!nextCommitmentHash) throw new Error('Failed to generate next commitment hash.');
       const lockboxCommitmentHash = CryptoUtils.globalHash(lockboxCommitment);
       if (!lockboxCommitmentHash) throw new Error('Failed to generate lockbox commitment hash.');
+      const sender = AccountDataService.getInstance().email;
       await authService.commitProtect(
         async () => {
           const { txHash, payLink } = await this._pay(
@@ -170,7 +172,8 @@ export class PayService {
             lockboxSalt,
             nextCurrentSalt,
             nextProof,
-            nextCommitment
+            nextCommitment,
+            sender ?? ''
           );
 
           setTxHash(txHash);
@@ -212,7 +215,8 @@ export class PayService {
     lockboxSalt: string,
     nextCurrentSalt: string,
     nextProof: string,
-    nextCommitment: string
+    nextCommitment: string,
+    sender: string
   ): Promise<{ txHash: string; payLink?: string }> {
     const duration = days * 86400; // seconds per day
     const contractService = ContractService.getInstance();
@@ -245,7 +249,8 @@ export class PayService {
           lockboxCommitment,
           username,
           lockboxSalt,
-          TOKEN_NAMES.USDC
+          TOKEN_NAMES.USDC,
+          sender
         );
       } else {
         ret = await contractService.withdrawAndSend(

@@ -7,6 +7,7 @@ import { HistoryRow } from './HistoryRow';
 import FilterDropdown from './FilterDropDown';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
 import { TransactionViewModel } from './TransactionViewModel';
+import NavigationBar from 'components/NavigationBar';
 
 const vm = new PingHistoryViewModel();
 
@@ -16,20 +17,25 @@ export default function PingHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const allTransactions = await vm.getTransactions();
       setTransactions(allTransactions);
     } catch (err) {
       console.error('❌ Failed to load ping history:', err);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    const cached = PingHistoryViewModel.getCachedTransactions();
+    if (cached.length) {
+      setTransactions(cached);
+      setLoading(false);
+    }
+    loadData(!cached.length);
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -43,8 +49,8 @@ export default function PingHistoryScreen() {
   const groupedTransactions = vm.groupByDate(filteredTransactions);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAFA]">
-      <Header />
+    <View className="flex-1 bg-[#FAFAFA]">
+      <NavigationBar title="Ping History" />
 
       <ScrollView
         className="px-6"
@@ -99,7 +105,7 @@ export default function PingHistoryScreen() {
           })
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

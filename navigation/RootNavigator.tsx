@@ -159,7 +159,7 @@ const SCREEN_GROUPS: Array<{
             },
             shadowOpacity: 0,
             shadowRadius: 0,
-            height: 120,
+            height: 64,
           },
           headerTitleStyle: {
             color: '#444444',

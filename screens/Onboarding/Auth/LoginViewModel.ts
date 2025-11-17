@@ -7,6 +7,7 @@ import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
+import { PingHistoryViewModel } from 'screens/Home/History/List/PingHistoryViewModel';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | null;
 
@@ -121,6 +122,9 @@ export class LoginViewModel {
     }
 
     this.handleSuccessfulLogin(email);
+    PingHistoryViewModel.prefetchTransactions().catch((err) =>
+      console.warn('⚠️ Failed to prefetch ping history', err)
+    );
     return { success: true, biometricEnabled };
   }
 

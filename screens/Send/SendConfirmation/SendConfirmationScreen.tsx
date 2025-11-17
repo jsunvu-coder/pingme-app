@@ -307,18 +307,16 @@ export default function SendConfirmationScreen() {
   return (
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
-        {/* Close Button */}
-        <View className="absolute top-6 right-6 z-10">
+        <View className="absolute top-0 right-0 left-0 z-10 bg-[#fafafa] pt-4 pr-4">
           <CloseButton />
         </View>
 
-        {/* Smooth keyboard animation wrapper */}
         <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
           <ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <View className="px-6 pt-10 pb-8">
+            <View className="px-6 pt-20 pb-8">
               <View className="mt-2 mb-6 items-center">
                 <WalletSendIcon />
               </View>

@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { goBack } from 'navigation/Navigation';
 import BackIcon from 'assets/BackIcon';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NavigationBar({ title, onBack }: { title: string; onBack?: () => void }) {
   const handleBack = () => {
@@ -11,15 +12,18 @@ export default function NavigationBar({ title, onBack }: { title: string; onBack
     }
   };
   return (
-    <View className="flex-row items-center justify-between">
-      <View className="w-16 items-center">
-        <BackIcon onPress={handleBack} />
+    <>
+      <SafeAreaView />
+      <View className="mt-2 flex-row items-center justify-between">
+        <View className="w-16 items-center">
+          <BackIcon onPress={handleBack} />
+        </View>
+
+        <Text className="flex-1 text-center text-xl font-semibold text-gray-800">{title}</Text>
+
+        {/* Placeholder for balancing layout (same width as BackIcon) */}
+        <View className="w-10" />
       </View>
-
-      <Text className="flex-1 text-center text-2xl font-semibold text-gray-800">{title}</Text>
-
-      {/* Placeholder for balancing layout (same width as BackIcon) */}
-      <View className="w-10" />
-    </View>
+    </>
   );
 }

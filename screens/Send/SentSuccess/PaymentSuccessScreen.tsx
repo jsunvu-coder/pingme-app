@@ -70,7 +70,7 @@ export default function PaymentSuccessScreen() {
         )}
       </ScrollView>
 
-      <View className="mx-6 mb-12">
+      <View className="mx-6 my-12">
         <SecondaryButton title="Back to Homepage" onPress={handleBackToHome} />
       </View>
     </View>
@@ -82,7 +82,7 @@ const Header = () => {
     <View className="mt-16 items-center">
       <EnvelopIcon />
 
-      <Text className="mt-6 text-4xl font-bold text-black">Payment Successful</Text>
+      <Text className="mt-6 text-3xl font-bold text-black">Payment Successful</Text>
     </View>
   );
 };
