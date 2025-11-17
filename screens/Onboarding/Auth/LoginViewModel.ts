@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
@@ -133,6 +134,11 @@ export class LoginViewModel {
 
   async logout() {
     await this.clearStoredCredentials();
+    try {
+      await AsyncStorage.clear();
+    } catch (err) {
+      console.warn('⚠️ Failed to clear AsyncStorage on logout', err);
+    }
     AuthService.getInstance().logout();
     push('SplashScreen');
   }
