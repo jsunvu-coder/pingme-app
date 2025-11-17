@@ -2,6 +2,8 @@
   "ACCOUNT_BALANCE": "Account balance",
   "ACCOUNT_HISTORY": "Account history",
   "AVAILABLE": "Available",
+  "AUTH_BIOMETRIC_NOT_ENROLLED": "Biometric authentication is not set up on this device.",
+  "AUTH_BIOMETRIC_NOT_SUPPORTED": "Biometric authentication is not supported on this device.",
   "AUTH_EMAIL_PLACEHOLDER": "Email address",
   "AUTH_LOGIN_BUTTON": "Log In",
   "AUTH_LOGIN_ERROR_MISSING_FIELDS": "Please enter email and password",

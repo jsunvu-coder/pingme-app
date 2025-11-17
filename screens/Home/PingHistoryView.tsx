@@ -29,7 +29,7 @@ export default function PingHistoryView() {
         onPress={handleOpenHistory}
         activeOpacity={0.7}
         className="mb-4 flex-row items-center">
-        <Text className="mr-1 text-lg text-gray-400">Ping History</Text>
+        <Text className="mr-1 h-6 text-lg text-gray-400">Ping History</Text>
         <ArrowRightIcon />
       </TouchableOpacity>
 

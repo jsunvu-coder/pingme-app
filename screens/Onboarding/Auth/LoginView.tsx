@@ -25,9 +25,9 @@ export default function LoginView({
   const routeLockboxProof = route?.params?.lockboxProof;
 
   const [email, setEmail] = useState(
-    prefillUsername ?? route?.params?.prefillUsername ?? 'pingme08@test.com'
+    prefillUsername ?? route?.params?.prefillUsername ?? 'test_email35412@test.com'
   );
-  const [password, setPassword] = useState('12345678');
+  const [password, setPassword] = useState('test_pass_74282');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
   const [biometricType, setBiometricType] = useState<BiometricType>(null);
@@ -63,8 +63,19 @@ export default function LoginView({
   const handleToggleBiometric = useCallback(
     async (value: boolean) => {
       setUseBiometric(value);
+
       if (!value) {
         await vm.clearStoredCredentials();
+        return;
+      }
+
+      const capability = await LoginViewModel.ensureCapability();
+      if (!capability.available) {
+        const message = capability.needsEnrollment
+          ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
+          : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
+        Alert.alert(t('NOTICE'), message);
+        setUseBiometric(false);
       }
     },
     [vm]

@@ -289,6 +289,7 @@ export default function SendConfirmationScreen() {
               passphrase,
               payLink,
               duration: durationDays,
+              linkType: 'payment',
             });
           }
         },

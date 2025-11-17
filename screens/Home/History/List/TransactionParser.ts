@@ -4,6 +4,7 @@ import { TransactionAction, TransactionViewModel } from './TransactionViewModel'
 
 const ACTION_MAP: Record<number, TransactionAction> = {
   0: 'Claim',
+  1: 'Security Update',
   2: 'New Balance',
   3: 'Deposit',
   4: 'Wallet Deposit',
@@ -14,9 +15,16 @@ const ACTION_MAP: Record<number, TransactionAction> = {
   9: 'Payment',
 };
 
-export function parseTransaction(raw: any, currentCommitment?: string): TransactionViewModel {
+const HIDDEN_ACTIONS = new Set<number>([1]); // e.g., password change / maintenance events
+
+export function parseTransaction(raw: any, currentCommitment?: string): TransactionViewModel | null {
   const action = Number(raw.action ?? -1);
   let type: TransactionAction = ACTION_MAP[action] ?? 'Unknown';
+
+  if (HIDDEN_ACTIONS.has(action)) {
+    // Skip non-monetary events entirely from the history UI.
+    return null;
+  }
 
   const amountMicro = raw.amount ?? '0';
   const amountNumeric = Number(amountMicro);
@@ -36,6 +44,9 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
     else if (fromCommitment) type = 'Payment';
   }
 
+  const isSelfDirected =
+    fromCommitment.length > 0 && fromCommitment === toCommitment && toCommitment.length > 0;
+
   const positiveTypes: TransactionAction[] = [
     'Claim',
     'Reclaim',
@@ -44,6 +55,12 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
     'New Balance',
     'QR Receive',
   ];
+  const neutralizeSelfActions: TransactionAction[] = ['Withdrawal', 'Send', 'Payment'];
+
+  if (isSelfDirected && neutralizeSelfActions.includes(type)) {
+    // Self-directed payouts (sender === receiver) should not create a duplicate negative entry.
+    return null;
+  }
 
   let direction: 'send' | 'receive' | 'other' = 'other';
   if (normalizedCommitment) {

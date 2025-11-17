@@ -4,15 +4,19 @@ import CopyIcon from 'assets/CopyIcon';
 import * as Clipboard from 'expo-clipboard';
 import { showFlashMessage } from 'utils/flashMessage';
 
+type CardProps = {
+  payLink: string;
+  amount: number;
+  openLinkVisible: boolean;
+  linkType: 'payment' | 'request';
+};
+
 export default function PaymentLinkCard({
   payLink,
   amount,
   openLinkVisible = false,
-}: {
-  payLink: string;
-  amount: number;
-  openLinkVisible: boolean;
-}) {
+  linkType,
+}: CardProps) {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(payLink);
     if (Platform.OS === 'ios') {
@@ -39,7 +43,9 @@ export default function PaymentLinkCard({
       <View className="flex-row pr-10">
         <View className="flex-1">
           <Text className="mb-3 text-2xl font-semibold text-gray-800">
-            Your Request Link is ready to share
+            {linkType === 'payment'
+              ? 'Your payment link is ready to share'
+              : 'Your request link is ready to share'}
           </Text>
           <View className="flex-row items-center">
             <Text className="text-2xl" numberOfLines={1} ellipsizeMode="middle">

@@ -67,16 +67,23 @@
                 <data android:scheme="pingme" />
                 <data android:scheme="exp+pingme" />
             </intent-filter>
-            <intent-filter data-generated="true">
+            <intent-filter
+                android:autoVerify="true"
+                data-generated="true">
                 <action android:name="android.intent.action.VIEW" />
-
-                <data android:scheme="https" />
-                <data android:host="app.pingme.xyz" />
-                <data android:pathPrefix="/" />
-                <data android:scheme="exp+pingme" />
 
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:host="app.pingme.xyz"
+                    android:pathPrefix="/"
+                    android:scheme="https" />
+
+                    <data
+                    android:host="app.staging.pingme.xyz"
+                    android:pathPrefix="/pay"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
     </application>

@@ -5,19 +5,20 @@ import { setRootScreen } from "navigation/Navigation";
 import { Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function PaymentLinkButtons({
-	payLink,
-	passphrase,
-}: {
-	payLink: string;
-	passphrase: string;
-}) {
+type ButtonProps = {
+  payLink: string;
+  passphrase?: string;
+  linkType: 'payment' | 'request';
+};
+
+export default function PaymentLinkButtons({ payLink, passphrase, linkType }: ButtonProps) {
 	const handleShare = async () => {
 		try {
-			let message = `Here's your PingMe payment link:\n\n${payLink}`
-			if (passphrase) {
-				message += `\n\nPassphrase: ${passphrase}`
-			}
+      const descriptor = linkType === 'payment' ? 'payment' : 'payment request';
+      let message = `Here's your PingMe ${descriptor} link:\n\n${payLink}`;
+      if (passphrase) {
+        message += `\n\nPassphrase: ${passphrase}`;
+      }
 			await Share.share({ message: message, });
 		} catch (err) {
 			console.error("Share error:", err);

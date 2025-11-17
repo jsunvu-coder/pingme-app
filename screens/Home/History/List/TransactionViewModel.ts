@@ -15,6 +15,7 @@ export type TransactionAction =
   | 'QR Pay'
   | 'QR Receive'
   | 'Payment'
+  | 'Security Update'
   | 'Unknown';
 
 export interface TransactionViewModel {

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { goBack } from 'navigation/Navigation';
 import BackIcon from 'assets/BackIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,8 +13,8 @@ export default function NavigationBar({ title, onBack }: { title: string; onBack
   };
   return (
     <>
-      <SafeAreaView />
-      <View className="mt-2 flex-row items-center justify-between">
+      <StatusBar barStyle="dark-content" />
+      <View className="mt-10 flex-row items-center justify-between">
         <View className="w-16 items-center">
           <BackIcon onPress={handleBack} />
         </View>

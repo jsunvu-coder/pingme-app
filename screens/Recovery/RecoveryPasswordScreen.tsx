@@ -41,8 +41,6 @@ export default function RecoveryPasswordScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <SafeAreaView edges={['top']} />
-
       <View className="mt-12 items-center">
         <LockIcon />
       </View>

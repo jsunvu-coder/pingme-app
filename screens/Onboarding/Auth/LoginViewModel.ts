@@ -39,11 +39,10 @@ export class LoginViewModel {
       const isEnabled = await LoginViewModel.isBiometricEnabled();
       if (!isEnabled) return { success: false };
 
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!hasHardware || !enrolled) return { success: false };
+      const capability = await LoginViewModel.ensureCapability();
+      if (!capability.available) return { success: false };
 
-      const type = await LoginViewModel.detectBiometricType();
+      const type = capability.type;
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: `Authenticate with ${type ?? 'biometric'}`,
         fallbackLabel: 'Use Passcode',
@@ -156,7 +155,10 @@ export class LoginViewModel {
     const capability = await LoginViewModel.ensureCapability();
 
     if (!capability.available) {
-      return { success: false, message: 'Biometric authentication not set up on this device.' };
+      const message = capability.needsEnrollment
+        ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
+        : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
+      return { success: false, message };
     }
 
     const promptMessage = `Enable ${biometricType ?? capability.type ?? 'biometric'} login?`;
@@ -167,7 +169,8 @@ export class LoginViewModel {
     });
 
     if (!authResult.success) {
-      return { success: false, message: 'Biometric authentication was cancelled.' };
+      // User cancelled - don't show an error message, just return failure silently
+      return { success: false };
     }
 
     await LoginViewModel.saveCredentials(email, password);
@@ -191,11 +194,21 @@ export class LoginViewModel {
     return null;
   }
 
-  static async ensureCapability(): Promise<{ available: boolean; type: BiometricType }> {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    const type = await LoginViewModel.detectBiometricType();
-    return { available: hasHardware && enrolled, type };
+  static async ensureCapability(): Promise<{
+    available: boolean;
+    type: BiometricType;
+    needsEnrollment: boolean;
+  }> {
+    const [hasHardware, enrolled, type] = await Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+      LoginViewModel.detectBiometricType(),
+    ]);
+
+    const needsEnrollment = hasHardware && !enrolled;
+    const available = hasHardware && enrolled;
+
+    return { available, type, needsEnrollment };
   }
 
   static async saveCredentials(email: string, password: string) {
@@ -240,11 +253,10 @@ export class LoginViewModel {
         return { success: false };
       }
 
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!hasHardware || !enrolled) return { success: false };
+      const capability = await LoginViewModel.ensureCapability();
+      if (!capability.available) return { success: false };
 
-      const type = await LoginViewModel.detectBiometricType();
+      const type = capability.type;
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: `Authenticate with ${type ?? 'biometric'}`,
         fallbackLabel: 'Use Passcode',

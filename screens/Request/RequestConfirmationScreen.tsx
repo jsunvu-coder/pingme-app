@@ -166,6 +166,7 @@ export default function RequestConfirmationScreen() {
           payLink: url,
           amount,
           duration: durationInDays,
+          linkType: 'request',
         });
       },
     });

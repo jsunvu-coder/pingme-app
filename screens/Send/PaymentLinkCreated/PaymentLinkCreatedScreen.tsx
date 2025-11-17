@@ -10,24 +10,29 @@ type PaymentLinkParams = {
   payLink: string;
   amount: number;
   duration: number;
-  passphrase: string;
+  passphrase?: string;
+  linkType?: 'payment' | 'request';
 };
 
 export default function PaymentLinkCreatedScreen() {
   const route = useRoute();
-  const { payLink, amount, duration, passphrase } = (route.params as PaymentLinkParams) || {};
+  const { payLink, amount, duration, passphrase, linkType: rawLinkType } =
+    (route.params as PaymentLinkParams) || {};
+  const linkType: 'payment' | 'request' =
+    rawLinkType ?? (passphrase !== undefined ? 'payment' : 'request');
 
   return (
     <View className="flex-1 bg-[#FAFAFA] px-6">
       <SafeAreaView edges={['top']} />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <Header />
+        <Header linkType={linkType} />
         <View className="my-6">
           <PaymentLinkCard
             payLink={payLink}
             amount={amount}
             openLinkVisible={passphrase !== undefined}
+            linkType={linkType}
           />
         </View>
         {passphrase && (
@@ -38,19 +43,20 @@ export default function PaymentLinkCreatedScreen() {
         )}
       </ScrollView>
 
-      <PaymentLinkButtons payLink={payLink} passphrase={passphrase} />
+      <PaymentLinkButtons payLink={payLink} passphrase={passphrase} linkType={linkType} />
     </View>
   );
 }
 
-function Header() {
+function Header({ linkType }: { linkType: 'payment' | 'request' }) {
+  const heading = linkType === 'payment' ? 'Payment Link Created' : 'Request Link Created';
   return (
     <View className="mt-10 items-center">
       <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50">
         <LinkIcon />
       </View>
 
-      <Text className="mt-6 text-center text-3xl font-bold text-black">Request Link Created</Text>
+      <Text className="mt-6 text-center text-3xl font-bold text-black">{heading}</Text>
     </View>
   );
 }

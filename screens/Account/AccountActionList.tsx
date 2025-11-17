@@ -69,7 +69,10 @@ export default function AccountActionList() {
       setUseBiometric(true);
       const capability = await LoginViewModel.ensureCapability();
       if (!capability.available) {
-        Alert.alert('Unavailable', 'Biometric authentication not set up on this device.');
+        const reason = capability.needsEnrollment
+          ? 'Biometric authentication not set up on this device.'
+          : 'Biometric authentication is not supported on this device.';
+        Alert.alert('Unavailable', reason);
         setUseBiometric(false);
         return;
       }

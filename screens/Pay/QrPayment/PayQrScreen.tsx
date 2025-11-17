@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -8,15 +8,14 @@ import PrimaryButton from 'components/PrimaryButton';
 import WalletSendIcon from 'assets/WalletSendIcon';
 import CloseButton from 'components/CloseButton';
 import { useDepositFlow, type DepositPayload } from 'screens/Home/Deposit/hooks/useDepositFlow';
-import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { showFlashMessage } from 'utils/flashMessage';
-import { submitDepositTransaction } from 'business/services/DepositQrService';
-import enUS from 'i18n/en-US.json';
 import { push } from 'navigation/Navigation';
 import PayStaticQrView from './PayStaticQrView';
 
 type PayQrScreenParams = {
   depositPayload?: DepositPayload;
+  commitment?: string;
+  amount?: string;
+  token?: string;
 };
 
 const SAMPLE_DEPOSIT_PAYLOAD: DepositPayload = {
@@ -29,91 +28,46 @@ const normalizeDecimal = (value: string) => value.replace(/,/g, '').trim();
 
 export default function PayQrScreen() {
   const route = useRoute<RouteProp<Record<string, PayQrScreenParams>, string>>();
-  const depositPayload = route.params?.depositPayload ?? SAMPLE_DEPOSIT_PAYLOAD;
+  const depositPayload = useMemo(() => {
+    if (route.params?.depositPayload) {
+      return route.params.depositPayload;
+    }
+    if (route.params?.commitment) {
+      return {
+        commitment: route.params.commitment,
+        amount: route.params.amount,
+        token: route.params.token,
+      };
+    }
+    return SAMPLE_DEPOSIT_PAYLOAD;
+  }, [route.params]);
 
-  const {
-    balances,
-    selectedBalance,
-    selectBalance,
-    amount,
-    setAmount,
-    handleAmountBlur,
-    commitment,
-    setCommitment,
-    formatMicroToUsd,
-  } = useDepositFlow(depositPayload);
+  const { amount, setAmount, commitment, withdrawAndDeposit, loading, txHash } =
+    useDepositFlow(depositPayload);
 
-  const [submitting, setSubmitting] = useState(false);
-
-  const showToast = useCallback((messageKey: string) => {
-    const resolved =
-      messageKey in enUS
-        ? (enUS as Record<string, string>)[messageKey as keyof typeof enUS]
-        : messageKey;
-    showFlashMessage({
-      type: 'danger',
-      icon: 'danger',
-      title: 'Deposit failed',
-      message: resolved,
-    });
-  }, []);
+  const [acknowledgedHash, setAcknowledgedHash] = useState<string | null>(null);
 
   const handlePayNow = useCallback(async () => {
-    const balance = selectedBalance;
-    if (!balance) {
-      showToast('Please select a balance before continuing.');
-      return;
-    }
+    await withdrawAndDeposit();
+  }, [withdrawAndDeposit]);
+
+  useEffect(() => {
+    if (!txHash || txHash === acknowledgedHash) return;
 
     const normalizedAmount = normalizeDecimal(amount);
-    if (!normalizedAmount) {
-      showToast('_ALERT_ENTER_AMOUNT');
-      return;
-    }
-
     const numericAmount = Number(normalizedAmount);
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      showToast('_ALERT_ENTER_AMOUNT');
-      return;
-    }
+    const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
 
-    const commitmentValue = commitment.trim();
-    if (!commitmentValue) {
-      showToast('_ALERT_MISSING_COMMITMENT');
-      return;
-    }
-
-    const confirmed = await showLocalizedAlert({
-      title: 'Confirmation',
-      message: '_CONFIRM_PAYMENT',
-      buttons: [{ text: 'Cancel', style: 'cancel' }, { text: 'Confirm' }],
+    setAcknowledgedHash(txHash);
+    push('PaymentSuccessScreen', {
+      recipient: commitment.trim() || 'unknown@pingme.io',
+      amount: safeAmount,
+      passphrase: '',
+      txHash,
+      channel: 'Deposit',
+      duration: 0,
     });
-    if (!confirmed) return;
-
-    try {
-      setSubmitting(true);
-      const { txHash } = await submitDepositTransaction({
-        token: balance.token,
-        commitment: commitmentValue,
-        amountDecimal: normalizedAmount,
-        availableBalance: balance.amount,
-      });
-
-      push('PaymentSuccessScreen', {
-        recipient: commitmentValue,
-        amount: numericAmount,
-        passphrase: '',
-        txHash,
-        channel: 'Deposit',
-        duration: 0,
-      });
-    } catch (error) {
-      const message = (error as Error)?.message ?? 'Unable to process deposit.';
-      showToast(message);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [amount, commitment, selectedBalance, showToast]);
+  }, [amount, commitment, txHash, acknowledgedHash]);
 
   return (
     <ModalContainer>
@@ -145,7 +99,7 @@ export default function PayQrScreen() {
             onPress={() => {
               void handlePayNow();
             }}
-            loading={submitting}
+            loading={loading}
             loadingText="Processing"
           />
         </View>
