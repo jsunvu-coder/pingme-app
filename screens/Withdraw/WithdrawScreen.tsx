@@ -141,7 +141,7 @@ export default function WithdrawScreen() {
       await balanceService.getBalance();
       await recordService.updateRecord();
 
-      Alert.alert(t('SUCCESS'), t('WITHDRAW_SUCCESS'));
+      Alert.alert(t('SUCCESS'), 'Withdrawal successful');
     } catch (err) {
       console.error('Withdraw failed:', err);
       await confirm('_ALERT_WITHDRAW_FAILED', false);

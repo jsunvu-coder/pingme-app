@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "BMN9N6C39P.xyz.pingme.app",
+        "paths": [
+          "/claim*",
+          "/deposit*",
+          "/pay*"
+        ]
+      }
+    ]
+  }
+}

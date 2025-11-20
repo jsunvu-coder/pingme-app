@@ -24,8 +24,10 @@ export default function LoginView({
   const vm = useMemo(() => new LoginViewModel(), []);
   const routeLockboxProof = route?.params?.lockboxProof;
 
-  const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(
+    prefillUsername ?? route?.params?.prefillUsername ?? 'test_email35412@test.com'
+  );
+  const [password, setPassword] = useState('test_pass_74282');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
   const [biometricType, setBiometricType] = useState<BiometricType>(null);

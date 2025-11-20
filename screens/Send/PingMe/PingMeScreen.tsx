@@ -22,7 +22,7 @@ import PaymentAmountView from './PaymentAmountView';
 import PrimaryButton from 'components/PrimaryButton';
 import HeaderView from 'components/HeaderView';
 import { BalanceService } from 'business/services/BalanceService';
-import { LOCKBOX_DURATION } from 'business/Constants';
+import { LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_PAYMENT_AMOUNT } from 'business/Constants';
 import ContactPickerModal from './ContactList';
 import { RecentEmailStorage } from './RecentEmailStorage';
 import LockboxDurationView from './LockboxDurationView';
@@ -166,6 +166,23 @@ export default function PingMeScreen() {
       return;
     }
 
+    const normalizedAmount = Math.round(numericAmount * 100) / 100;
+    if (normalizedAmount < MIN_PAYMENT_AMOUNT) {
+      Alert.alert('Amount too low', `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`);
+      return;
+    }
+
+    if (normalizedAmount > MAX_PAYMENT_AMOUNT) {
+      Alert.alert(
+        'Amount too high',
+        `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}.`
+      );
+      return;
+    }
+
     // --- 3️⃣ Validate duration
     let lockboxDurationDays = LOCKBOX_DURATION;
     if (mode === 'send') {
@@ -178,8 +195,8 @@ export default function PingMeScreen() {
 
     // --- 4️⃣ Proceed with navigation
     const commonParams = {
-      amount: numericAmount,
-      displayAmount: `$${numericAmount.toFixed(2)}`,
+      amount: normalizedAmount,
+      displayAmount: `$${normalizedAmount.toFixed(2)}`,
       recipient,
       channel: activeChannel,
       lockboxDuration: lockboxDurationDays,

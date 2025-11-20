@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { View, Text, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, Platform, KeyboardAvoidingView, TextInput } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
 import ModalContainer from 'components/ModalContainer';
 import PrimaryButton from 'components/PrimaryButton';
-import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
+import { LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_PAYMENT_AMOUNT, TOKENS } from 'business/Constants';
 import CloseButton from 'components/CloseButton';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import WalletRequestIcon from 'assets/WalletRequestIcon';
@@ -44,6 +44,7 @@ export default function RequestConfirmationScreen() {
 
   const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState<any | null>(null);
+  const [note, setNote] = useState('');
 
   const requestService = RequestService.getInstance();
 
@@ -88,10 +89,45 @@ export default function RequestConfirmationScreen() {
   };
 
   const handleSendingRequest = async () => {
-    if (!amount || Number(amount) <= 0) {
+    const rawAmount: number | string = amount as number | string;
+    const isAmountMissing =
+      rawAmount === undefined ||
+      rawAmount === null ||
+      (typeof rawAmount === 'string' && rawAmount.trim() === '');
+
+    if (isAmountMissing) {
+      await showLocalizedAlert({
+        title: 'Amount required',
+        message: 'Please input an amount.',
+      });
+      return;
+    }
+
+    const numericAmount = Number(rawAmount);
+    if (!Number.isFinite(numericAmount)) {
       await showLocalizedAlert({
         title: 'Invalid amount',
-        message: 'Payment amount must be greater than 0.',
+        message: 'Please enter a valid payment amount.',
+      });
+      return;
+    }
+
+    const roundedAmount = Math.round(numericAmount * 100) / 100;
+    if (roundedAmount < MIN_PAYMENT_AMOUNT) {
+      await showLocalizedAlert({
+        title: 'Amount too low',
+        message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
+      });
+      return;
+    }
+
+    if (roundedAmount > MAX_PAYMENT_AMOUNT) {
+      await showLocalizedAlert({
+        title: 'Amount too high',
+        message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}.`,
       });
       return;
     }
@@ -110,9 +146,9 @@ export default function RequestConfirmationScreen() {
       console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
 
       if (channel === 'Email') {
-        await sendByEmail();
+        await sendByEmail(roundedAmount);
       } else {
-        await sendByLink();
+        await sendByLink(roundedAmount);
       }
 
       console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
@@ -127,12 +163,13 @@ export default function RequestConfirmationScreen() {
     }
   };
 
-  const sendByEmail = async () => {
+  const sendByEmail = async (validatedAmount: number) => {
+    const amountString = validatedAmount.toFixed(2);
     await requestService.requestPayment({
       entry,
       requestee: recipient,
-      amount: amount.toString(),
-      customMessage: '',
+      amount: amountString,
+      customMessage: note.trim(),
       confirm,
       setLoading,
       setSent: (sent) => {
@@ -140,8 +177,8 @@ export default function RequestConfirmationScreen() {
           console.log('✅ Request sent successfully!');
 
           push('RequestSuccessScreen', {
-            amount,
-            displayAmount,
+            amount: validatedAmount,
+            displayAmount: `$${validatedAmount.toFixed(2)}`,
             recipient,
             channel,
             lockboxDuration,
@@ -151,12 +188,13 @@ export default function RequestConfirmationScreen() {
     });
   };
 
-  const sendByLink = async () => {
+  const sendByLink = async (validatedAmount: number) => {
+    const amountString = validatedAmount.toFixed(2);
     await requestService.requestPaymentByLink({
       entry,
       requestee: recipient,
-      amount: amount.toString(),
-      customMessage: '',
+      amount: amountString,
+      customMessage: note.trim(),
       confirm,
       setLoading,
       setPayLink: (url) => {
@@ -164,7 +202,7 @@ export default function RequestConfirmationScreen() {
         const durationInDays = Math.ceil(lockboxDuration / 86400);
         push('PaymentLinkCreatedScreen', {
           payLink: url,
-          amount,
+          amount: validatedAmount,
           duration: durationInDays,
           linkType: 'request',
         });
@@ -201,6 +239,24 @@ export default function RequestConfirmationScreen() {
                 recipient={recipient}
                 lockboxDuration={lockboxDuration}
               />
+
+              {channel === 'Email' ? (
+                <View className="mt-1">
+                  <Text className="mb-2 text-xs font-semibold tracking-[1px] text-gray-500">
+                    ENTER NOTE
+                  </Text>
+                  <TextInput
+                    placeholder="Add an optional message for your request"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    textAlignVertical="top"
+                    maxLength={240}
+                    className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
+                    value={note}
+                    onChangeText={setNote}
+                  />
+                </View>
+              ) : null}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

@@ -66,8 +66,50 @@ export class PingHistoryViewModel {
       if (tx) parsed.push(tx);
     }
 
+    const cleaned = this.removeClaimPaymentPairs(parsed);
+
     // sort newest → oldest
-    return parsed.sort((a, b) => b.timestamp - a.timestamp);
+    return cleaned.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  /**
+   * Hide redundant Payment entries that correspond to the same blockchain event
+   * as a Claim. Claiming a pay link emits both a Payment (debit) and Claim
+   * (credit) event with identical metadata, which looked like duplicates in the UI.
+   */
+  private removeClaimPaymentPairs(events: TransactionViewModel[]): TransactionViewModel[] {
+    if (!events.length) return events;
+
+    const claimHashes = new Set<string>();
+    const claimLockboxes = new Set<string>();
+    const claimTimeAmountKeys = new Set<string>();
+
+    for (const tx of events) {
+      if (tx.type !== 'Claim') continue;
+
+      if (tx.txHash) claimHashes.add(tx.txHash.toLowerCase());
+      if (tx.lockboxCommitment) claimLockboxes.add(tx.lockboxCommitment.toLowerCase());
+      if (tx.timestamp) {
+        claimTimeAmountKeys.add(`${tx.timestamp}-${tx.amount}`);
+      }
+    }
+
+    return events.filter((tx) => {
+      if (tx.type !== 'Payment') return true;
+      if (tx.direction === 'send' || !tx.isPositive) return true;
+
+      const txHash = tx.txHash?.toLowerCase();
+      if (txHash && claimHashes.has(txHash)) return false;
+
+      const lockbox = tx.lockboxCommitment?.toLowerCase();
+      if (lockbox && claimLockboxes.has(lockbox)) return false;
+
+      if (tx.timestamp && claimTimeAmountKeys.has(`${tx.timestamp}-${tx.amount}`)) {
+        return false;
+      }
+
+      return true;
+    });
   }
 
   /** Group parsed events by calendar day (e.g. 2025-10-28) */
@@ -92,9 +134,12 @@ export class PingHistoryViewModel {
     return events.filter((e) => {
       switch (filter) {
         case 'sent':
-          return e.direction === 'send';
+          return e.direction === 'send' && e.type !== 'Withdrawal';
         case 'received':
-          return e.direction === 'receive';
+          return (
+            e.direction === 'receive' &&
+            !['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type)
+          );
         case 'deposit':
           return ['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type);
         case 'withdraw':

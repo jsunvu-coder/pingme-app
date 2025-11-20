@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, Alert, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, Alert, ActivityIndicator, View, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,9 +14,11 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
   const handleUpload = async () => {
     if (loading) return; // Prevent multiple presses
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow photo access to upload.');
+    if (Platform.OS === 'android' && Platform.Version < 33) {
+      Alert.alert(
+        'Not supported',
+        'Photo uploads require the Android Photo Picker (Android 13+). Please update your device.'
+      );
       return;
     }
 
@@ -25,6 +27,8 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 1,
+      selectionLimit: 1,
+      allowsMultipleSelection: false,
     });
 
     if (result.canceled) return;

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "xyz.pingme.app",
+      "sha256_cert_fingerprints": [
+        "54:6A:48:74:38:7C:A4:58:9C:17:1D:33:15:5D:4C:58:14:AB:8B:0D:28:95:5F:3E:E1:22:04:52:A6:A5:2E:A5"
+      ]
+    }
+  }
+]
