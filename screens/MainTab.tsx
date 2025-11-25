@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import HomeScreen from './Home/HomeScreen';
@@ -6,10 +7,21 @@ import AccountScreen from './Account/AccountScreen';
 import HomeIcon from 'assets/HomeIcon';
 import PingIcon from 'assets/PingIcon';
 import UserIcon from 'assets/UserIcon';
+import { PingHistoryViewModel } from './Home/History/List/PingHistoryViewModel';
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      PingHistoryViewModel.prefetchTransactions().catch((err) =>
+        console.warn('⚠️ Failed to prefetch ping history', err)
+      );
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

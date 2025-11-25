@@ -21,11 +21,13 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PingMe/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PingMe/Info.plist; sourceTree = "<group>"; };
 		1D77F8A7BD8039D4FFA9C74C /* libPods-PingMe.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PingMe.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		32E8FF4A68F6BB31923561F9 /* Pods-PingMe.developdebug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developdebug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developdebug.xcconfig"; sourceTree = "<group>"; };
 		536C5CCC72781D9AE71717DA /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-PingMe/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = PingMe/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C063E0F0EDE23960F0B7992D /* Pods-PingMe.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.debug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.debug.xcconfig"; sourceTree = "<group>"; };
 		D1E2B28F95E25CA29EFE5386 /* Pods-PingMe.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.release.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.release.xcconfig"; sourceTree = "<group>"; };
+		E353C6C47B8B5630FFA5BDC5 /* Pods-PingMe.developrelease.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developrelease.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developrelease.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = PingMe/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* PingMe-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "PingMe-Bridging-Header.h"; path = "PingMe/PingMe-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -72,6 +74,8 @@
 			children = (
 				C063E0F0EDE23960F0B7992D /* Pods-PingMe.debug.xcconfig */,
 				D1E2B28F95E25CA29EFE5386 /* Pods-PingMe.release.xcconfig */,
+				32E8FF4A68F6BB31923561F9 /* Pods-PingMe.developdebug.xcconfig */,
+				E353C6C47B8B5630FFA5BDC5 /* Pods-PingMe.developrelease.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -410,74 +414,6 @@
 			};
 			name = Release;
 		};
-		F8D4A1B42F0A4C1D00CD8B11 /* DevelopDebug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = C063E0F0EDE23960F0B7992D /* Pods-PingMe.debug.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 698L9G9LDH;
-				ENABLE_BITCODE = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"FB_SONARKIT_ENABLED=1",
-				);
-				INFOPLIST_FILE = PingMe/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
-				PRODUCT_NAME = PingMe;
-				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = DevelopDebug;
-		};
-		F8D4A1B52F0A4C1D00CD8B11 /* DevelopRelease */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D1E2B28F95E25CA29EFE5386 /* Pods-PingMe.release.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 698L9G9LDH;
-				INFOPLIST_FILE = PingMe/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
-				PRODUCT_NAME = PingMe;
-				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = DevelopRelease;
-		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -595,6 +531,74 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		F8D4A1B42F0A4C1D00CD8B11 /* DevelopDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 32E8FF4A68F6BB31923561F9 /* Pods-PingMe.developdebug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 698L9G9LDH;
+				ENABLE_BITCODE = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"FB_SONARKIT_ENABLED=1",
+				);
+				INFOPLIST_FILE = PingMe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
+				PRODUCT_NAME = PingMe;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = DevelopDebug;
+		};
+		F8D4A1B52F0A4C1D00CD8B11 /* DevelopRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E353C6C47B8B5630FFA5BDC5 /* Pods-PingMe.developrelease.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 698L9G9LDH;
+				INFOPLIST_FILE = PingMe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
+				PRODUCT_NAME = PingMe;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = DevelopRelease;
 		};
 		F8D4A1B62F0A4C1D00CD8B11 /* DevelopDebug */ = {
 			isa = XCBuildConfiguration;

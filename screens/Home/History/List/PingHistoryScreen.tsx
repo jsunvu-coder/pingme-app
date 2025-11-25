@@ -8,6 +8,7 @@ import FilterDropdown from './FilterDropDown';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
 import { TransactionViewModel } from './TransactionViewModel';
 import NavigationBar from 'components/NavigationBar';
+import { ContractService } from 'business/services/ContractService';
 
 const vm = new PingHistoryViewModel();
 
@@ -20,8 +21,10 @@ export default function PingHistoryScreen() {
   const loadData = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
     try {
-      const allTransactions = await vm.getTransactions();
-      setTransactions(allTransactions);
+      const firstPage = await vm.getTransactions({
+        onPhaseUpdate: (txs) => setTransactions(txs),
+      });
+      setTransactions(firstPage);
     } catch (err) {
       console.error('❌ Failed to load ping history:', err);
     } finally {
@@ -30,7 +33,8 @@ export default function PingHistoryScreen() {
   };
 
   useEffect(() => {
-    const cached = PingHistoryViewModel.getCachedTransactions();
+    const commitment = ContractService.getInstance().getCrypto()?.commitment;
+    const cached = PingHistoryViewModel.getCachedTransactions(commitment ?? undefined);
     if (cached.length) {
       setTransactions(cached);
       setLoading(false);

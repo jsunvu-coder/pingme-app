@@ -15,26 +15,67 @@ export class PingHistoryViewModel {
   private static cachedTransactions: TransactionViewModel[] = [];
   private static inflight: Promise<TransactionViewModel[]> | null = null;
   private static localCacheLoaded = false;
+  private static cacheKey: string | null = null;
 
-  async getTransactions(): Promise<TransactionViewModel[]> {
+  private getCacheKey(commitment?: string): string {
+    const normalized = (commitment ?? '').toLowerCase();
+    return `${PING_HISTORY_CACHE_KEY}::${normalized || 'default'}`;
+  }
+
+  private static resetCache(newKey: string) {
+    this.cacheKey = newKey;
+    this.cachedTransactions = [];
+    this.localCacheLoaded = false;
+  }
+
+  async getTransactions(options?: {
+    pageSize?: number;
+    onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
+  }): Promise<TransactionViewModel[]> {
+    const pageSize = options?.pageSize ?? 20;
     try {
-      const records = await this.recordService.getRecord();
       const commitment = this.contractService.getCrypto()?.commitment ?? '';
+      const cacheKey = this.getCacheKey(commitment);
+
+      if (PingHistoryViewModel.cacheKey !== cacheKey) {
+        PingHistoryViewModel.resetCache(cacheKey);
+      }
+
+      if (!PingHistoryViewModel.localCacheLoaded) {
+        await PingHistoryViewModel.loadFromLocalCache(cacheKey);
+      }
+
+      const records = await this.recordService.getRecord();
       const parsed = this.parseTransactions(records || [], commitment);
 
+      // Phase 1: if we already have cache and nothing new, return cached
       if (!parsed.length && PingHistoryViewModel.cachedTransactions.length) {
         console.warn('[PingHistoryViewModel] Empty fetch, using cached history');
         return PingHistoryViewModel.cachedTransactions;
       }
 
-      PingHistoryViewModel.cachedTransactions = parsed;
+      const firstPage = parsed.slice(0, pageSize);
 
-      // Save to local cache asynchronously (don't block)
-      PingHistoryViewModel.saveToLocalCache(parsed).catch((err) =>
-        console.warn('[PingHistoryViewModel] Failed to save to local cache', err)
-      );
+      // Phase 1: return first page immediately and cache it
+      if (firstPage.length) {
+        PingHistoryViewModel.cachedTransactions = firstPage;
+        options?.onPhaseUpdate?.(firstPage);
+        void PingHistoryViewModel.saveToLocalCache(firstPage, cacheKey);
+      }
 
-      return parsed;
+      // Phase 2: asynchronously update with the rest and cache
+      if (parsed.length > firstPage.length) {
+        Promise.resolve().then(async () => {
+          PingHistoryViewModel.cachedTransactions = parsed;
+          options?.onPhaseUpdate?.(parsed);
+          await PingHistoryViewModel.saveToLocalCache(parsed, cacheKey);
+        });
+      } else {
+        // If only one page, keep cache in sync
+        await PingHistoryViewModel.saveToLocalCache(parsed, cacheKey);
+      }
+
+      return firstPage.length ? firstPage : parsed;
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to load transactions', err);
       return PingHistoryViewModel.cachedTransactions;
@@ -96,10 +137,12 @@ export class PingHistoryViewModel {
 
     return events.filter((tx) => {
       if (tx.type !== 'Payment') return true;
-      if (tx.direction === 'send' || !tx.isPositive) return true;
 
       const txHash = tx.txHash?.toLowerCase();
       if (txHash && claimHashes.has(txHash)) return false;
+
+      // Only hide inbound/positive payments that duplicate a Claim.
+      if (tx.direction === 'send' || !tx.isPositive) return true;
 
       const lockbox = tx.lockboxCommitment?.toLowerCase();
       if (lockbox && claimLockboxes.has(lockbox)) return false;
@@ -152,21 +195,46 @@ export class PingHistoryViewModel {
     });
   }
 
-  static getCachedTransactions(): TransactionViewModel[] {
+  static getCachedTransactions(commitment?: string): TransactionViewModel[] {
+    const cacheKey = `${PING_HISTORY_CACHE_KEY}::${(commitment ?? '').toLowerCase() || 'default'}`;
+    if (this.cacheKey !== cacheKey) return [];
+    return this.cachedTransactions;
+  }
+
+  /**
+   * Ensure local cache for the current commitment is loaded and return it.
+   * Safe to call before rendering previews.
+   */
+  static async loadCachedTransactions(commitment?: string): Promise<TransactionViewModel[]> {
+    const cacheKey = `${PING_HISTORY_CACHE_KEY}::${(commitment ?? '').toLowerCase() || 'default'}`;
+    if (this.cacheKey !== cacheKey) {
+      this.resetCache(cacheKey);
+    }
+
+    if (!this.localCacheLoaded) {
+      await this.loadFromLocalCache(cacheKey);
+    }
+
     return this.cachedTransactions;
   }
 
   /**
    * Load cached transactions from local storage
    */
-  static async loadFromLocalCache(): Promise<TransactionViewModel[]> {
+  static async loadFromLocalCache(cacheKey: string): Promise<TransactionViewModel[]> {
     try {
-      const cached = await AsyncStorage.getItem(PING_HISTORY_CACHE_KEY);
+      const cached = await AsyncStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached) as TransactionViewModel[];
         this.cachedTransactions = parsed;
         this.localCacheLoaded = true;
-        console.log('[PingHistoryViewModel] Loaded', parsed.length, 'transactions from local cache');
+        this.cacheKey = cacheKey;
+        console.log(
+          '[PingHistoryViewModel] Loaded',
+          parsed.length,
+          'transactions from local cache for key',
+          cacheKey
+        );
         return parsed;
       }
     } catch (err) {
@@ -178,10 +246,18 @@ export class PingHistoryViewModel {
   /**
    * Save transactions to local storage
    */
-  static async saveToLocalCache(transactions: TransactionViewModel[]): Promise<void> {
+  static async saveToLocalCache(
+    transactions: TransactionViewModel[],
+    cacheKey: string
+  ): Promise<void> {
     try {
-      await AsyncStorage.setItem(PING_HISTORY_CACHE_KEY, JSON.stringify(transactions));
-      console.log('[PingHistoryViewModel] Saved', transactions.length, 'transactions to local cache');
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(transactions));
+      console.log(
+        '[PingHistoryViewModel] Saved',
+        transactions.length,
+        'transactions to local cache for key',
+        cacheKey
+      );
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to save to local cache', err);
     }
@@ -191,9 +267,16 @@ export class PingHistoryViewModel {
     // If already fetching, return the inflight promise
     if (this.inflight) return this.inflight;
 
+    const commitment = ContractService.getInstance().getCrypto()?.commitment ?? '';
+    const cacheKey = `${PING_HISTORY_CACHE_KEY}::${commitment.toLowerCase() || 'default'}`;
+
+    if (this.cacheKey !== cacheKey) {
+      this.resetCache(cacheKey);
+    }
+
     // Load from local cache first if not already loaded
     if (!this.localCacheLoaded) {
-      await this.loadFromLocalCache();
+      await this.loadFromLocalCache(cacheKey);
     }
 
     // Start fetching fresh data in the background

@@ -160,7 +160,13 @@ export default function PingMeScreen() {
     }
 
     // --- 2️⃣ Validate amount
-    const numericAmount = parseFloat(amount);
+    const trimmedAmount = amount.trim();
+    if (!trimmedAmount) {
+      Alert.alert('Amount required', 'Please input an amount.');
+      return;
+    }
+
+    const numericAmount = parseFloat(trimmedAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       Alert.alert('Invalid amount', 'Please enter a valid payment amount.');
       return;

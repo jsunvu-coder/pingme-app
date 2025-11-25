@@ -122,9 +122,6 @@ export class LoginViewModel {
     }
 
     this.handleSuccessfulLogin(email);
-    PingHistoryViewModel.prefetchTransactions().catch((err) =>
-      console.warn('⚠️ Failed to prefetch ping history', err)
-    );
     return { success: true, biometricEnabled };
   }
 

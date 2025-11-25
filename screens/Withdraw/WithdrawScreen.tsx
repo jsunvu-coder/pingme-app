@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
@@ -15,6 +15,8 @@ import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
+import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
@@ -36,10 +38,16 @@ export default function WithdrawScreen() {
     loadBalance();
   }, []);
 
-  const confirm = async (message: string, cancel = true): Promise<boolean> => {
+  const confirm = async (
+    message: string,
+    options: { cancel?: boolean; variant?: 'confirm' | 'error' } = {}
+  ): Promise<boolean> => {
+    const { cancel = true, variant = 'confirm' } = options;
+    const title = variant === 'error' ? t('ERROR', undefined, 'Error') : t('CONFIRM');
+
     return new Promise((resolve) => {
       Alert.alert(
-        t('CONFIRM'),
+        title,
         t(message),
         cancel
           ? [
@@ -78,15 +86,24 @@ export default function WithdrawScreen() {
     return ret;
   };
 
+  const handlePasteWallet = async () => {
+    try {
+      const txt = await Clipboard.getStringAsync();
+      if (txt) setWallet(txt.trim());
+    } catch (err) {
+      console.error('Failed to paste wallet address:', err);
+    }
+  };
+
   const handleWithdraw = async () => {
     try {
       // --- Validation ---
       if (!entry?.amount) {
-        await confirm('_ALERT_SELECT_BALANCE', false);
+        await confirm('_ALERT_SELECT_BALANCE', { cancel: false });
         return;
       }
       if (!amount) {
-        await confirm('_ALERT_ENTER_AMOUNT', false);
+        await confirm('_ALERT_ENTER_AMOUNT', { cancel: false });
         return;
       }
 
@@ -95,15 +112,15 @@ export default function WithdrawScreen() {
       const k_entry = BigInt(entry.amount);
 
       if (k_amount < k_min_amount) {
-        await confirm('_ALERT_BELOW_MINIMUM', false);
+        await confirm('_ALERT_BELOW_MINIMUM', { cancel: false });
         return;
       } else if (k_amount > k_entry) {
-        await confirm('_ALERT_ABOVE_AVAILABLE', false);
+        await confirm('_ALERT_ABOVE_AVAILABLE', { cancel: false, variant: 'error' });
         return;
       }
 
       if (!CryptoUtils.isAddr(wallet)) {
-        await confirm('_ALERT_INVALID_ADDRESS', false);
+        await confirm('_ALERT_INVALID_ADDRESS', { cancel: false, variant: 'error' });
         return;
       }
 
@@ -141,10 +158,10 @@ export default function WithdrawScreen() {
       await balanceService.getBalance();
       await recordService.updateRecord();
 
-      Alert.alert(t('SUCCESS'), 'Withdrawal successful');
+      Alert.alert(t('SUCCESS'), 'Withdrawal was successful');
     } catch (err) {
       console.error('Withdraw failed:', err);
-      await confirm('_ALERT_WITHDRAW_FAILED', false);
+      await confirm('_ALERT_WITHDRAW_FAILED', { cancel: false });
     } finally {
       setLoading(false);
     }
@@ -168,6 +185,13 @@ export default function WithdrawScreen() {
             value={wallet}
             onChangeText={setWallet}
             placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
+            customView={
+              <TouchableOpacity
+                onPress={handlePasteWallet}
+                className="self-end h-8 w-8 items-center justify-center rounded-full bg-[#F2F2F2]">
+                <Ionicons name="clipboard-outline" size={18} color="#FD4912" />
+              </TouchableOpacity>
+            }
           />
         </View>
       </ScrollView>

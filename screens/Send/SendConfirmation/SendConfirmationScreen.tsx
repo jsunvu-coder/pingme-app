@@ -216,6 +216,16 @@ export default function SendConfirmationScreen() {
             ? enUS[msg as keyof typeof enUS]
             : msg;
 
+          const errorMessages = ['_ALERT_ABOVE_AVAILABLE'];
+          if (errorMessages.includes(msg)) {
+            await showLocalizedAlert({
+              title: 'Error',
+              message,
+              buttons: [{ text: 'OK' }],
+            });
+            return true;
+          }
+
           // Show OK-only alerts for info messages
           if (
             !message.toLowerCase().includes('confirm') &&

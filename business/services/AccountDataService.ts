@@ -174,7 +174,7 @@ export class AccountDataService {
             await this.balanceService.getBalance();
             await this.recordService.updateRecord();
 
-            const confirmed = await confirm('_ALERT_RECEIVED_TOPUP', false);
+            const confirmed = await confirm('_ALERT_RECEIVED_TOPUP', true);
             if (confirmed) return;
           } catch (err) {
             console.error('RETRIEVE', err);

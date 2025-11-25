@@ -1,7 +1,7 @@
 // services/RecordService.ts
 import { ContractService } from './ContractService';
 import { RecordEntry } from 'business/Types';
-import { PAGINATION, UPDATE_DELAY } from '../Config';
+import { PAGINATION } from '../Config';
 
 export class RecordService {
   private static instance: RecordService;
@@ -73,11 +73,9 @@ export class RecordService {
     }
   }
 
-  /** Public method with delay */
-  updateRecord(): void {
-    setTimeout(() => {
-      this._updateRecord();
-    }, UPDATE_DELAY);
+  /** Public method without artificial delay */
+  async updateRecord(): Promise<void> {
+    await this._updateRecord();
   }
 
   /** Clear memory */

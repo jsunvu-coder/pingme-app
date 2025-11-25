@@ -6,7 +6,12 @@ import type { RouteProp } from '@react-navigation/native';
 
 import ModalContainer from 'components/ModalContainer';
 import PrimaryButton from 'components/PrimaryButton';
-import { LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_PAYMENT_AMOUNT, TOKENS } from 'business/Constants';
+import {
+  LOCKBOX_DURATION,
+  MAX_PAYMENT_AMOUNT,
+  MIN_PAYMENT_AMOUNT,
+  TOKENS,
+} from 'business/Constants';
 import CloseButton from 'components/CloseButton';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import WalletRequestIcon from 'assets/WalletRequestIcon';
