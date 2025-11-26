@@ -5,6 +5,8 @@ import * as Application from 'expo-application';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { push, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
+import { AccountDataService } from 'business/services/AccountDataService';
+import { ENV_STORAGE_KEY, getEnv, loadEnvFromStorage, setEnv } from 'business/Config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginViewModel } from 'screens/Onboarding/Auth/LoginViewModel';
 
@@ -20,6 +22,9 @@ type ItemProps = {
 export default function AccountActionList() {
   const [biometricType, setBiometricType] = useState<'Face ID' | 'Touch ID' | null>(null);
   const [useBiometric, setUseBiometric] = useState(false);
+  const [env, setEnvState] = useState<'staging' | 'production'>(getEnv());
+  const email = AccountDataService.getInstance().email ?? '';
+  const canChangeEnvironment = /@hailstonelabs\.com$/i.test(email);
 
   // === Load saved preference and detect device biometric type
   useEffect(() => {
@@ -28,13 +33,19 @@ export default function AccountActionList() {
       const init = await vm.initialize();
       setUseBiometric(init.useBiometric);
       setBiometricType(init.biometricType);
+      const storedEnv = await loadEnvFromStorage();
+      setEnvState(storedEnv);
     })();
   }, []);
 
   const handleLogout = async () => {
     try {
+      const preservedEnv = await AsyncStorage.getItem(ENV_STORAGE_KEY);
       await AuthService.getInstance().logout();
       await AsyncStorage.clear();
+      if (preservedEnv) {
+        await AsyncStorage.setItem(ENV_STORAGE_KEY, preservedEnv);
+      }
       await LoginViewModel.clearSavedCredentials();
       await LoginViewModel.setUseBiometricPreference(false);
 
@@ -106,6 +117,62 @@ export default function AccountActionList() {
     }
   };
 
+  const clearHistoryCache = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const historyKeys = keys.filter((k) => k.startsWith('@ping_history_cache::'));
+      if (historyKeys.length) {
+        await AsyncStorage.multiRemove(historyKeys);
+      }
+    } catch (err) {
+      console.warn('⚠️ Failed to clear history cache', err);
+    }
+  };
+
+  const handleEnvSwitch = (nextEnv: 'staging' | 'production') => {
+    if (nextEnv === env) return;
+
+    Alert.alert(
+      'Switch environment',
+      `Change to ${nextEnv}?\nYou will be logged out and need to sign in again.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          style: 'destructive',
+          onPress: async () => {
+            setEnvState(nextEnv);
+            await setEnv(nextEnv);
+            await clearHistoryCache();
+            await LoginViewModel.clearSavedCredentials();
+            await LoginViewModel.setUseBiometricPreference(false);
+            await AuthService.getInstance().logout();
+            await AsyncStorage.setItem(ENV_STORAGE_KEY, nextEnv);
+            setRootScreen(['SplashScreen']);
+          },
+        },
+      ]
+    );
+  };
+
+  const envSwitcher: ItemProps | null = canChangeEnvironment
+    ? {
+        label: 'Environment',
+        action: () => {
+          Alert.alert('Environment', 'Select backend environment', [
+            { text: 'Production', onPress: () => handleEnvSwitch('production') },
+            { text: 'Staging', onPress: () => handleEnvSwitch('staging') },
+            { text: 'Cancel', style: 'cancel' },
+          ]);
+        },
+        rightView: (
+          <Text className="text-lg text-gray-400">
+            {env === 'production' ? 'Production' : 'Staging'}
+          </Text>
+        ),
+      }
+    : null;
+
   const items: ItemProps[] = [
     {
       label: 'Withdraw',
@@ -132,7 +199,8 @@ export default function AccountActionList() {
       action: () => {},
       rightView: (
         <Text className="text-lg text-gray-400">
-          v{version} ({build})
+          v{version} - {build}
+          {env === 'staging' ? ' - staging' : ''}
         </Text>
       ),
     },
@@ -140,6 +208,8 @@ export default function AccountActionList() {
 
   return (
     <View className="mt-6 overflow-hidden rounded-2xl">
+      {envSwitcher && <Item {...envSwitcher} />}
+
       {/* 🔐 Biometric Login Toggle (now FIRST) */}
       <View className="mb-3 flex-row items-center justify-between rounded-2xl bg-white p-6">
         <Text className="text-lg text-black">Login with {biometricType ?? 'Face/Touch ID'}</Text>

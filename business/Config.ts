@@ -1,5 +1,10 @@
 // config.ts
-const ENV = 'staging'; // or "production"
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+type EnvHost = { process?: { env?: Record<string, string | undefined> } };
+type EnvName = 'staging' | 'production';
+
+export const ENV_STORAGE_KEY = '@pingme_env';
 
 const CONFIG = {
   staging: {
@@ -12,8 +17,41 @@ const CONFIG = {
   },
 };
 
-export const API_URL = CONFIG[ENV].API_URL;
-export const APP_URL = CONFIG[ENV].APP_URL;
+const rawEnv = ((globalThis as EnvHost).process?.env?.EXPO_PUBLIC_ENV ?? '').trim();
+let ENV: EnvName = rawEnv === 'production' ? 'production' : 'staging';
+
+export let API_URL = CONFIG[ENV].API_URL;
+export let APP_URL = CONFIG[ENV].APP_URL;
+
+const applyEnv = (env: EnvName) => {
+  ENV = env;
+  API_URL = CONFIG[ENV].API_URL;
+  APP_URL = CONFIG[ENV].APP_URL;
+};
+
+export const getEnv = (): EnvName => ENV;
+
+export const setEnv = async (env: EnvName): Promise<EnvName> => {
+  applyEnv(env);
+  try {
+    await AsyncStorage.setItem(ENV_STORAGE_KEY, env);
+  } catch (err) {
+    console.warn('[Config] Failed to persist env', err);
+  }
+  return ENV;
+};
+
+export const loadEnvFromStorage = async (): Promise<EnvName> => {
+  try {
+    const stored = (await AsyncStorage.getItem(ENV_STORAGE_KEY)) as EnvName | null;
+    if (stored === 'production' || stored === 'staging') {
+      applyEnv(stored);
+    }
+  } catch (err) {
+    console.warn('[Config] Failed to load stored env', err);
+  }
+  return ENV;
+};
 
 export const EXPIRY_MS = 60 * 60 * 1000;
 export const MIN_PASSWORD_LENGTH = 8;

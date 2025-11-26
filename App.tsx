@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { install } from 'react-native-quick-crypto';
 import FlashMessage from 'react-native-flash-message';
 import { checkFirstRunAndClear } from 'screens/Claim/utils/AppLaunchCheck';
+import { loadEnvFromStorage } from 'business/Config';
 
 export default function App() {
   // Install crypto polyfill
@@ -17,6 +18,10 @@ export default function App() {
 
   useEffect(() => {
     void checkFirstRunAndClear();
+  }, []);
+
+  useEffect(() => {
+    void loadEnvFromStorage();
   }, []);
 
   return (
