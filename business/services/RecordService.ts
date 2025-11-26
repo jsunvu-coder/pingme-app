@@ -7,6 +7,7 @@ export class RecordService {
   private static instance: RecordService;
 
   private records: RecordEntry[] = [];
+  private currentCommitment: string | null = null;
   private contractService: ContractService;
 
   private constructor() {
@@ -29,15 +30,24 @@ export class RecordService {
   async getRecord(): Promise<RecordEntry[]> {
     try {
       const cr = this.contractService.getCrypto();
-      if (!cr?.commitment) return this.records;
+      const commitment = cr?.commitment?.toLowerCase();
+      if (!commitment) return this.records;
+
+      if (commitment !== this.currentCommitment) {
+        // New account/session → reset cache to avoid mixing histories
+        this.records = [];
+        this.currentCommitment = commitment;
+      }
 
       const allRecords: RecordEntry[] = [];
-      let nextCommitment: string | undefined = cr.commitment;
+      let nextCommitment: string | undefined = commitment;
+      let guard = 0;
 
       while (nextCommitment && !/^0x0+$/.test(nextCommitment)) {
         const ret = await this.contractService.getEvents(nextCommitment, PAGINATION);
         allRecords.push(...ret.events);
         nextCommitment = ret.commitment;
+        if (++guard > 200) break; // safety to avoid infinite loop
       }
 
       this.records = allRecords;
@@ -52,17 +62,36 @@ export class RecordService {
   async _updateRecord(): Promise<void> {
     try {
       const cr = this.contractService.getCrypto();
-      if (!cr?.commitment) return;
+      const commitment = cr?.commitment?.toLowerCase();
+      if (!commitment) return;
 
-      const latest = await this.contractService.getEvents(cr.commitment, 2);
-      let newEvents = latest.events;
+      if (commitment !== this.currentCommitment) {
+        this.records = [];
+        this.currentCommitment = commitment;
+      }
 
-      if (this.records.length > 0) {
-        const txHash = this.records[0].txHash;
-        const idx = newEvents.findIndex((e: any) => e.txHash === txHash);
-        if (idx >= 0) {
-          newEvents = newEvents.slice(0, idx);
+      const existingTopHash = this.records[0]?.txHash;
+      let nextCommitment: string | undefined = commitment;
+      const newEvents: RecordEntry[] = [];
+      let guard = 0;
+
+      while (nextCommitment && !/^0x0+$/.test(nextCommitment)) {
+        const ret = await this.contractService.getEvents(nextCommitment, PAGINATION);
+        const batch = ret.events ?? [];
+
+        // Stop once we reach a transaction we already have
+        const overlapIdx = existingTopHash
+          ? batch.findIndex((e: any) => e.txHash === existingTopHash)
+          : -1;
+        if (overlapIdx > 0) {
+          newEvents.push(...batch.slice(0, overlapIdx));
+          break;
         }
+        if (overlapIdx === 0) break;
+
+        newEvents.push(...batch);
+        nextCommitment = ret.commitment;
+        if (++guard > 50) break; // safety guard
       }
 
       if (newEvents.length > 0) {
@@ -81,5 +110,6 @@ export class RecordService {
   /** Clear memory */
   clear(): void {
     this.records = [];
+    this.currentCommitment = null;
   }
 }

@@ -339,6 +339,7 @@ export class AuthService {
     try {
       this.log('Logging out...');
       this.balanceService.clear();
+      this.recordService.clear();
       this.contractService.clearCrypto();
       this.log('Logout complete');
     } catch (err) {
