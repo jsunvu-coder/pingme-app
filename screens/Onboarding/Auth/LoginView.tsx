@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
 import PasswordIcon from 'assets/PasswordIcon';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { LoginViewModel, BiometricType } from './LoginViewModel';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export default function LoginView({
   lockboxProof,
@@ -72,7 +73,7 @@ export default function LoginView({
         const message = capability.needsEnrollment
           ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
           : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
-        Alert.alert(t('NOTICE'), message);
+        showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
         setUseBiometric(false);
       }
     },
@@ -81,7 +82,11 @@ export default function LoginView({
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(t('AUTH_LOGIN_ERROR_TITLE'), t('AUTH_LOGIN_ERROR_MISSING_FIELDS'));
+      showFlashMessage({
+        title: t('AUTH_LOGIN_ERROR_TITLE'),
+        message: t('AUTH_LOGIN_ERROR_MISSING_FIELDS'),
+        type: 'warning',
+      });
       return;
     }
 

@@ -1,7 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
@@ -9,6 +8,7 @@ import { setRootScreen, push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { PingHistoryViewModel } from 'screens/Home/History/List/PingHistoryViewModel';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | null;
 
@@ -57,7 +57,11 @@ export class LoginViewModel {
 
       const { email, password } = await LoginViewModel.getStoredCredentials();
       if (!email || !password) {
-        Alert.alert(t('NOTICE'), t('No saved credentials found. Please log in manually.'));
+        showFlashMessage({
+          title: t('NOTICE'),
+          message: t('No saved credentials found. Please log in manually.'),
+          type: 'warning',
+        });
         return { success: false };
       }
 
@@ -96,12 +100,20 @@ export class LoginViewModel {
         }
       }
 
-      Alert.alert(t('AUTH_LOGIN_FAILED_TITLE'), message);
+      showFlashMessage({
+        title: t('AUTH_LOGIN_FAILED_TITLE'),
+        message,
+        type: 'danger',
+      });
       return { success: false, biometricEnabled: this.useBiometric };
     }
 
     if (!ok) {
-      Alert.alert(t('AUTH_LOGIN_FAILED_TITLE'), t('AUTH_LOGIN_INVALID_CREDENTIALS'));
+      showFlashMessage({
+        title: t('AUTH_LOGIN_FAILED_TITLE'),
+        message: t('AUTH_LOGIN_INVALID_CREDENTIALS'),
+        type: 'danger',
+      });
       return { success: false, biometricEnabled: this.useBiometric };
     }
 
@@ -111,7 +123,11 @@ export class LoginViewModel {
       const result = await this.enableBiometricLogin(email, password, biometricType);
       biometricEnabled = result.success;
       if (!result.success && result.message) {
-        Alert.alert('Face ID', result.message);
+        showFlashMessage({
+          title: 'Face ID',
+          message: result.message,
+          type: 'warning',
+        });
       }
     } else if (!useBiometric && this.useBiometric) {
       await this.disableBiometricLogin();
