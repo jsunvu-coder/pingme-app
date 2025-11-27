@@ -45,15 +45,38 @@ export class RecordService {
 
       while (nextCommitment && !/^0x0+$/.test(nextCommitment)) {
         const ret = await this.contractService.getEvents(nextCommitment, PAGINATION);
-        allRecords.push(...ret.events);
+        allRecords.push(...(ret.events ?? []));
         nextCommitment = ret.commitment;
-        if (++guard > 200) break; // safety to avoid infinite loop
+        if (!ret.events || ret.events.length === 0) break; // stop if nothing returned
+        if (++guard > 400) break; // safety to avoid infinite loop
       }
 
       this.records = allRecords;
       return this.records;
     } catch (err) {
       console.error('[RecordService] Failed to fetch records:', err);
+      return this.records;
+    }
+  }
+
+  /** Fetch only the first page of history */
+  async getFirstPage(): Promise<RecordEntry[]> {
+    try {
+      const cr = this.contractService.getCrypto();
+      const commitment = cr?.commitment?.toLowerCase();
+      if (!commitment) return this.records;
+
+      if (commitment !== this.currentCommitment) {
+        this.records = [];
+        this.currentCommitment = commitment;
+      }
+
+      const ret = await this.contractService.getEvents(commitment, PAGINATION);
+      const firstPage = ret.events ?? [];
+      this.records = firstPage;
+      return this.records;
+    } catch (err) {
+      console.error('[RecordService] Failed to fetch first page of records:', err);
       return this.records;
     }
   }
@@ -91,7 +114,8 @@ export class RecordService {
 
         newEvents.push(...batch);
         nextCommitment = ret.commitment;
-        if (++guard > 50) break; // safety guard
+        if (!batch.length) break;
+        if (++guard > 120) break; // safety guard
       }
 
       if (newEvents.length > 0) {

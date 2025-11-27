@@ -41,6 +41,6 @@ function formatDate(timestamp?: number): string {
       minute: '2-digit',
     });
   } catch {
-    return isoString;
+    return '';
   }
 }

@@ -13,9 +13,13 @@ export class PingHistoryViewModel {
   private recordService = RecordService.getInstance();
   private contractService = ContractService.getInstance();
   private static cachedTransactions: TransactionViewModel[] = [];
+  private static parsedTransactions: TransactionViewModel[] = [];
   private static inflight: Promise<TransactionViewModel[]> | null = null;
   private static localCacheLoaded = false;
   private static cacheKey: string | null = null;
+  private static nextIndex = 0;
+  private static pageSize = 20;
+  private static subscribers = new Set<(transactions: TransactionViewModel[]) => void>();
 
   private getCacheKey(commitment?: string): string {
     const normalized = (commitment ?? '').toLowerCase();
@@ -25,61 +29,87 @@ export class PingHistoryViewModel {
   private static resetCache(newKey: string) {
     this.cacheKey = newKey;
     this.cachedTransactions = [];
+    this.parsedTransactions = [];
     this.localCacheLoaded = false;
+    this.nextIndex = 0;
+    this.pageSize = 20;
+  }
+
+  static subscribe(listener: (transactions: TransactionViewModel[]) => void): () => void {
+    this.subscribers.add(listener);
+    return () => {
+      this.subscribers.delete(listener);
+    };
+  }
+
+  private static notify(transactions: TransactionViewModel[]) {
+    if (!transactions) return;
+    this.subscribers.forEach((listener) => listener(transactions));
   }
 
   async getTransactions(options?: {
     pageSize?: number;
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
+    force?: boolean;
   }): Promise<TransactionViewModel[]> {
     const pageSize = options?.pageSize ?? 20;
-    try {
-      const commitment = this.contractService.getCrypto()?.commitment ?? '';
-      const cacheKey = this.getCacheKey(commitment);
+    PingHistoryViewModel.pageSize = pageSize;
+    const commitment = this.contractService.getCrypto()?.commitment ?? '';
+    const cacheKey = this.getCacheKey(commitment);
 
-      if (PingHistoryViewModel.cacheKey !== cacheKey) {
-        PingHistoryViewModel.resetCache(cacheKey);
-      }
-
-      if (!PingHistoryViewModel.localCacheLoaded) {
-        await PingHistoryViewModel.loadFromLocalCache(cacheKey);
-      }
-
-      const records = await this.recordService.getRecord();
-      const parsed = this.parseTransactions(records || [], commitment);
-
-      // Phase 1: if we already have cache and nothing new, return cached
-      if (!parsed.length && PingHistoryViewModel.cachedTransactions.length) {
-        console.warn('[PingHistoryViewModel] Empty fetch, using cached history');
-        return PingHistoryViewModel.cachedTransactions;
-      }
-
-      const firstPage = parsed.slice(0, pageSize);
-
-      // Phase 1: return first page immediately and cache it
-      if (firstPage.length) {
-        PingHistoryViewModel.cachedTransactions = firstPage;
-        options?.onPhaseUpdate?.(firstPage);
-        void PingHistoryViewModel.saveToLocalCache(firstPage, cacheKey);
-      }
-
-      // Phase 2: asynchronously update with the rest and cache
-      if (parsed.length > firstPage.length) {
-        Promise.resolve().then(async () => {
-          PingHistoryViewModel.cachedTransactions = parsed;
-          options?.onPhaseUpdate?.(parsed);
-          await PingHistoryViewModel.saveToLocalCache(parsed, cacheKey);
-        });
-      } else {
-        // If only one page, keep cache in sync
-        await PingHistoryViewModel.saveToLocalCache(parsed, cacheKey);
-      }
-
-      return firstPage.length ? firstPage : parsed;
-    } catch (err) {
-      console.error('[PingHistoryViewModel] Failed to load transactions', err);
-      return PingHistoryViewModel.cachedTransactions;
+    if (PingHistoryViewModel.cacheKey !== cacheKey) {
+      PingHistoryViewModel.resetCache(cacheKey);
     }
+
+    if (!PingHistoryViewModel.localCacheLoaded) {
+      await PingHistoryViewModel.loadFromLocalCache(cacheKey);
+    }
+
+    // If data already parsed for this commitment and no force refresh, return cached view
+    if (
+      !options?.force &&
+      PingHistoryViewModel.parsedTransactions.length &&
+      PingHistoryViewModel.cacheKey === cacheKey
+    ) {
+      const slice = this.getCachedSlice(pageSize);
+      if (slice.length) {
+        options?.onPhaseUpdate?.(slice);
+        return slice;
+      }
+    }
+
+    const cachedSlice = PingHistoryViewModel.cachedTransactions.slice(0, pageSize);
+    if (cachedSlice.length) {
+      options?.onPhaseUpdate?.(cachedSlice);
+    }
+
+    const ensureFetch = () => {
+      if (!PingHistoryViewModel.inflight) {
+        PingHistoryViewModel.inflight = this.fetchAndHydrate({
+          cacheKey,
+          commitment,
+          pageSize,
+          onPhaseUpdate: options?.onPhaseUpdate,
+        }).finally(() => {
+          PingHistoryViewModel.inflight = null;
+        });
+      } else if (options?.onPhaseUpdate) {
+        // forward inflight updates to new callers
+        const unsubscribe = PingHistoryViewModel.subscribe((txs) => {
+          options.onPhaseUpdate?.(txs.slice(0, pageSize));
+        });
+        PingHistoryViewModel.inflight.finally(() => unsubscribe());
+      }
+      return PingHistoryViewModel.inflight;
+    };
+
+    // If we already have cached data, return immediately while fetching in background
+    if (cachedSlice.length) {
+      void ensureFetch();
+      return cachedSlice;
+    }
+
+    return ensureFetch();
   }
 
   /**
@@ -218,6 +248,24 @@ export class PingHistoryViewModel {
     return this.cachedTransactions;
   }
 
+  /** Load and append the next N pages (default 3) */
+  async loadNextPages(pages = 3): Promise<TransactionViewModel[]> {
+    if (!PingHistoryViewModel.parsedTransactions.length) return PingHistoryViewModel.cachedTransactions;
+    const cacheKey = PingHistoryViewModel.cacheKey ?? '';
+    const next = this.takePages(pages);
+    if (next.length !== PingHistoryViewModel.cachedTransactions.length) {
+      PingHistoryViewModel.cachedTransactions = next;
+      PingHistoryViewModel.notify(next);
+      await PingHistoryViewModel.saveToLocalCache(next, cacheKey);
+    }
+    return PingHistoryViewModel.cachedTransactions;
+  }
+
+  /** Whether there are more parsed transactions to paginate */
+  static hasMore(): boolean {
+    return this.parsedTransactions.length > this.nextIndex;
+  }
+
   /**
    * Load cached transactions from local storage
    */
@@ -229,6 +277,7 @@ export class PingHistoryViewModel {
         this.cachedTransactions = parsed;
         this.localCacheLoaded = true;
         this.cacheKey = cacheKey;
+        this.notify(parsed);
         console.log(
           '[PingHistoryViewModel] Loaded',
           parsed.length,
@@ -252,6 +301,7 @@ export class PingHistoryViewModel {
   ): Promise<void> {
     try {
       await AsyncStorage.setItem(cacheKey, JSON.stringify(transactions));
+      this.notify(transactions);
       console.log(
         '[PingHistoryViewModel] Saved',
         transactions.length,
@@ -264,34 +314,110 @@ export class PingHistoryViewModel {
   }
 
   static async prefetchTransactions(): Promise<TransactionViewModel[]> {
-    // If already fetching, return the inflight promise
-    if (this.inflight) return this.inflight;
-
-    const commitment = ContractService.getInstance().getCrypto()?.commitment ?? '';
-    const cacheKey = `${PING_HISTORY_CACHE_KEY}::${commitment.toLowerCase() || 'default'}`;
-
-    if (this.cacheKey !== cacheKey) {
-      this.resetCache(cacheKey);
-    }
-
-    // Load from local cache first if not already loaded
-    if (!this.localCacheLoaded) {
-      await this.loadFromLocalCache(cacheKey);
-    }
-
-    // Start fetching fresh data in the background
     const vm = new PingHistoryViewModel();
-    this.inflight = vm
-      .getTransactions()
-      .catch((err) => {
-        console.error('[PingHistoryViewModel] Prefetch failed', err);
-        return this.cachedTransactions;
-      })
-      .finally(() => {
-        this.inflight = null;
+    try {
+      const commitment = ContractService.getInstance().getCrypto()?.commitment ?? '';
+      const cacheKey = `${PING_HISTORY_CACHE_KEY}::${commitment.toLowerCase() || 'default'}`;
+
+      if (this.cacheKey !== cacheKey) {
+        this.resetCache(cacheKey);
+      }
+
+      if (!this.localCacheLoaded) {
+        await this.loadFromLocalCache(cacheKey);
+      }
+
+      const cached = this.cachedTransactions;
+      const fetchPromise = vm
+        .getTransactions()
+        .catch((err) => {
+          console.error('[PingHistoryViewModel] Prefetch failed', err);
+          return this.cachedTransactions;
+        });
+
+      return cached.length > 0 ? cached : fetchPromise;
+    } catch (err) {
+      console.error('[PingHistoryViewModel] Prefetch error', err);
+      return this.cachedTransactions;
+    }
+  }
+
+  /** Internal helper to extend cachedTransactions by N pages */
+  private takePages(pages: number): TransactionViewModel[] {
+    const end = Math.min(
+      PingHistoryViewModel.parsedTransactions.length,
+      PingHistoryViewModel.nextIndex + pages * PingHistoryViewModel.pageSize
+    );
+    if (end <= PingHistoryViewModel.nextIndex) return PingHistoryViewModel.cachedTransactions;
+
+    PingHistoryViewModel.nextIndex = end;
+    return PingHistoryViewModel.parsedTransactions.slice(0, end);
+  }
+
+  private getCachedSlice(limit: number): TransactionViewModel[] {
+    if (PingHistoryViewModel.parsedTransactions.length) {
+      const end = Math.min(limit, PingHistoryViewModel.parsedTransactions.length);
+      PingHistoryViewModel.nextIndex = end;
+      return PingHistoryViewModel.parsedTransactions.slice(0, end);
+    }
+    const end = Math.min(limit, PingHistoryViewModel.cachedTransactions.length);
+    return PingHistoryViewModel.cachedTransactions.slice(0, end);
+  }
+
+  private async fetchAndHydrate(opts: {
+    cacheKey: string;
+    commitment: string;
+    pageSize: number;
+    onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
+  }): Promise<TransactionViewModel[]> {
+    try {
+      const { cacheKey, commitment, pageSize, onPhaseUpdate } = opts;
+
+      // Fetch first page quickly, then hydrate the rest in background
+      const firstBatch = await this.recordService.getFirstPage();
+      const parsedFirst = this.parseTransactions(firstBatch || [], commitment);
+      PingHistoryViewModel.parsedTransactions = parsedFirst;
+      PingHistoryViewModel.nextIndex = 0;
+
+      if (!parsedFirst.length && PingHistoryViewModel.cachedTransactions.length) {
+        console.warn('[PingHistoryViewModel] Empty fetch, using cached history');
+        return PingHistoryViewModel.cachedTransactions.slice(0, pageSize);
+      }
+
+      const firstPage = this.takePages(1);
+
+      if (firstPage.length) {
+        PingHistoryViewModel.cachedTransactions = firstPage;
+        onPhaseUpdate?.(firstPage);
+        PingHistoryViewModel.notify(firstPage);
+        void PingHistoryViewModel.saveToLocalCache(firstPage, cacheKey);
+      }
+
+      // Load the rest in background so the UI isn't blocked
+      Promise.resolve().then(async () => {
+        const records = await this.recordService.getRecord();
+        const parsed = this.parseTransactions(records || [], commitment);
+        PingHistoryViewModel.parsedTransactions = parsed;
+        PingHistoryViewModel.nextIndex = Math.max(
+          PingHistoryViewModel.nextIndex,
+          firstPage.length
+        );
+
+        const updated = this.takePages(3);
+        if (updated.length !== PingHistoryViewModel.cachedTransactions.length) {
+          PingHistoryViewModel.cachedTransactions = updated;
+          onPhaseUpdate?.(updated);
+          PingHistoryViewModel.notify(updated);
+          await PingHistoryViewModel.saveToLocalCache(updated, cacheKey);
+        } else if (!firstPage.length) {
+          await PingHistoryViewModel.saveToLocalCache(updated, cacheKey);
+        }
       });
 
-    // Return cached data immediately (if available), fresh data will update in background
-    return this.cachedTransactions.length > 0 ? this.cachedTransactions : this.inflight;
+      return (firstPage.length ? firstPage : parsedFirst).slice(0, pageSize);
+    } catch (err) {
+      console.error('[PingHistoryViewModel] Failed to load transactions', err);
+      return PingHistoryViewModel.cachedTransactions.slice(0, PingHistoryViewModel.pageSize);
+    }
   }
 }

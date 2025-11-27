@@ -17,11 +17,13 @@ export default function PingHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadData = async (showSpinner = true) => {
+  const loadData = async (showSpinner = true, force = false) => {
     if (showSpinner) setLoading(true);
     try {
       const firstPage = await vm.getTransactions({
+        force,
         onPhaseUpdate: (txs) => setTransactions(txs),
       });
       setTransactions(firstPage);
@@ -32,6 +34,32 @@ export default function PingHistoryScreen() {
     }
   };
 
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || !PingHistoryViewModel.hasMore()) return;
+    setLoadingMore(true);
+    try {
+      const next = await vm.loadNextPages(3);
+      setTransactions(next);
+    } catch (err) {
+      console.warn('⚠️ Failed to load more history', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore]);
+
+  const onScroll = useCallback(
+    (event: any) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      if (!contentSize?.height) return;
+      const visibleBottom = contentOffset.y + layoutMeasurement.height;
+      const ratio = visibleBottom / contentSize.height;
+      if (ratio >= 0.66) {
+        void handleLoadMore();
+      }
+    },
+    [handleLoadMore]
+  );
+
   useEffect(() => {
     const commitment = ContractService.getInstance().getCrypto()?.commitment;
     const cached = PingHistoryViewModel.getCachedTransactions(commitment ?? undefined);
@@ -39,12 +67,17 @@ export default function PingHistoryScreen() {
       setTransactions(cached);
       setLoading(false);
     }
-    loadData(!cached.length);
+    loadData(!cached.length, true);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = PingHistoryViewModel.subscribe((txs) => setTransactions(txs));
+    return unsubscribe;
   }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData();
+    await loadData(true, true);
     setRefreshing(false);
   }, []);
 
@@ -60,7 +93,9 @@ export default function PingHistoryScreen() {
         className="px-6"
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingBottom: 80 }}>
+        contentContainerStyle={{ paddingBottom: 80 }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}>
         <View className="my-4">
           <FilterDropdown
             value={filterType}

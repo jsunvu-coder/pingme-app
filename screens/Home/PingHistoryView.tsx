@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ArrowRightIcon from 'assets/ArrowRightIcon';
 import PingHistoryItemView from './PingHistoryItemView';
 import { push } from 'navigation/Navigation';
@@ -13,6 +13,13 @@ export default function PingHistoryView() {
   const screenWidth = Dimensions.get('window').width;
   const vm = useMemo(() => new PingHistoryViewModel(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
+
+  useEffect(() => {
+    const unsubscribe = PingHistoryViewModel.subscribe((txs) => {
+      setHistory(txs.slice(0, 5));
+    });
+    return unsubscribe;
+  }, []);
 
   const handleOpenHistory = () => {
     push('PingHistoryScreen');
