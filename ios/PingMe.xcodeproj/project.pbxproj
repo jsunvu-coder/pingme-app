@@ -355,8 +355,8 @@
 				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BMN9N6C39P;
-				EXPO_PUBLIC_ENV = staging;
 				ENABLE_BITCODE = NO;
+				EXPO_PUBLIC_ENV = staging;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
@@ -543,8 +543,8 @@
 				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 698L9G9LDH;
-				EXPO_PUBLIC_ENV = staging;
 				ENABLE_BITCODE = NO;
+				EXPO_PUBLIC_ENV = staging;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
