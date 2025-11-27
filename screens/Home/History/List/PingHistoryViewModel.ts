@@ -20,6 +20,7 @@ export class PingHistoryViewModel {
   private static nextIndex = 0;
   private static pageSize = 20;
   private static subscribers = new Set<(transactions: TransactionViewModel[]) => void>();
+  private static chunkCursor = 0;
 
   private getCacheKey(commitment?: string): string {
     const normalized = (commitment ?? '').toLowerCase();
@@ -33,6 +34,7 @@ export class PingHistoryViewModel {
     this.localCacheLoaded = false;
     this.nextIndex = 0;
     this.pageSize = 20;
+    this.chunkCursor = 0;
   }
 
   static subscribe(listener: (transactions: TransactionViewModel[]) => void): () => void {
@@ -52,8 +54,6 @@ export class PingHistoryViewModel {
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
     force?: boolean;
   }): Promise<TransactionViewModel[]> {
-    const pageSize = options?.pageSize ?? 20;
-    PingHistoryViewModel.pageSize = pageSize;
     const commitment = this.contractService.getCrypto()?.commitment ?? '';
     const cacheKey = this.getCacheKey(commitment);
 
@@ -66,29 +66,18 @@ export class PingHistoryViewModel {
     }
 
     // If data already parsed for this commitment and no force refresh, return cached view
-    if (
-      !options?.force &&
-      PingHistoryViewModel.parsedTransactions.length &&
-      PingHistoryViewModel.cacheKey === cacheKey
-    ) {
-      const slice = this.getCachedSlice(pageSize);
-      if (slice.length) {
-        options?.onPhaseUpdate?.(slice);
-        return slice;
-      }
+    const cachedInitial = PingHistoryViewModel.cachedTransactions.slice(0, 5);
+    if (cachedInitial.length) {
+      PingHistoryViewModel.chunkCursor = cachedInitial.length;
+      PingHistoryViewModel.nextIndex = cachedInitial.length;
+      options?.onPhaseUpdate?.(cachedInitial);
     }
 
-    const cachedSlice = PingHistoryViewModel.cachedTransactions.slice(0, pageSize);
-    if (cachedSlice.length) {
-      options?.onPhaseUpdate?.(cachedSlice);
-    }
-
-    const ensureFetch = () => {
+    const ensureFetch = async () => {
       if (!PingHistoryViewModel.inflight) {
         PingHistoryViewModel.inflight = this.fetchAndHydrate({
           cacheKey,
           commitment,
-          pageSize,
           onPhaseUpdate: options?.onPhaseUpdate,
         }).finally(() => {
           PingHistoryViewModel.inflight = null;
@@ -96,18 +85,12 @@ export class PingHistoryViewModel {
       } else if (options?.onPhaseUpdate) {
         // forward inflight updates to new callers
         const unsubscribe = PingHistoryViewModel.subscribe((txs) => {
-          options.onPhaseUpdate?.(txs.slice(0, pageSize));
+          options.onPhaseUpdate?.(txs);
         });
         PingHistoryViewModel.inflight.finally(() => unsubscribe());
       }
       return PingHistoryViewModel.inflight;
     };
-
-    // If we already have cached data, return immediately while fetching in background
-    if (cachedSlice.length) {
-      void ensureFetch();
-      return cachedSlice;
-    }
 
     return ensureFetch();
   }
@@ -250,20 +233,25 @@ export class PingHistoryViewModel {
 
   /** Load and append the next N pages (default 3) */
   async loadNextPages(pages = 3): Promise<TransactionViewModel[]> {
-    if (!PingHistoryViewModel.parsedTransactions.length) return PingHistoryViewModel.cachedTransactions;
-    const cacheKey = PingHistoryViewModel.cacheKey ?? '';
-    const next = this.takePages(pages);
-    if (next.length !== PingHistoryViewModel.cachedTransactions.length) {
-      PingHistoryViewModel.cachedTransactions = next;
-      PingHistoryViewModel.notify(next);
-      await PingHistoryViewModel.saveToLocalCache(next, cacheKey);
-    }
-    return PingHistoryViewModel.cachedTransactions;
+    // keep for backward compatibility: treat each page as 8 items
+    return this.loadMoreChunks(pages, 8);
   }
 
   /** Whether there are more parsed transactions to paginate */
   static hasMore(): boolean {
     return this.parsedTransactions.length > this.nextIndex;
+  }
+
+  /**
+   * Load more transactions by chunk (default 8 items per chunk), repeated `times`.
+   */
+  async loadMoreChunks(times = 1, chunkSize = 8): Promise<TransactionViewModel[]> {
+    const commitment = this.contractService.getCrypto()?.commitment ?? '';
+    const cacheKey = this.getCacheKey(commitment);
+    for (let i = 0; i < times; i++) {
+      await this.applyChunk(chunkSize, cacheKey);
+    }
+    return PingHistoryViewModel.cachedTransactions;
   }
 
   /**
@@ -343,81 +331,60 @@ export class PingHistoryViewModel {
   }
 
   /** Internal helper to extend cachedTransactions by N pages */
-  private takePages(pages: number): TransactionViewModel[] {
+  private async applyChunk(
+    count: number,
+    cacheKey: string,
+    onPhaseUpdate?: (transactions: TransactionViewModel[]) => void
+  ): Promise<TransactionViewModel[]> {
+    if (!PingHistoryViewModel.parsedTransactions.length) {
+      return PingHistoryViewModel.cachedTransactions;
+    }
+
     const end = Math.min(
       PingHistoryViewModel.parsedTransactions.length,
-      PingHistoryViewModel.nextIndex + pages * PingHistoryViewModel.pageSize
+      PingHistoryViewModel.nextIndex + count
     );
-    if (end <= PingHistoryViewModel.nextIndex) return PingHistoryViewModel.cachedTransactions;
+    if (end <= PingHistoryViewModel.nextIndex) {
+      return PingHistoryViewModel.cachedTransactions;
+    }
 
     PingHistoryViewModel.nextIndex = end;
-    return PingHistoryViewModel.parsedTransactions.slice(0, end);
-  }
-
-  private getCachedSlice(limit: number): TransactionViewModel[] {
-    if (PingHistoryViewModel.parsedTransactions.length) {
-      const end = Math.min(limit, PingHistoryViewModel.parsedTransactions.length);
-      PingHistoryViewModel.nextIndex = end;
-      return PingHistoryViewModel.parsedTransactions.slice(0, end);
-    }
-    const end = Math.min(limit, PingHistoryViewModel.cachedTransactions.length);
-    return PingHistoryViewModel.cachedTransactions.slice(0, end);
+    PingHistoryViewModel.chunkCursor = end;
+    const slice = PingHistoryViewModel.parsedTransactions.slice(0, end);
+    PingHistoryViewModel.cachedTransactions = slice;
+    onPhaseUpdate?.(slice);
+    PingHistoryViewModel.notify(slice);
+    await PingHistoryViewModel.saveToLocalCache(slice, cacheKey);
+    return slice;
   }
 
   private async fetchAndHydrate(opts: {
     cacheKey: string;
     commitment: string;
-    pageSize: number;
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
   }): Promise<TransactionViewModel[]> {
     try {
-      const { cacheKey, commitment, pageSize, onPhaseUpdate } = opts;
+      const { cacheKey, commitment, onPhaseUpdate } = opts;
 
-      // Fetch first page quickly, then hydrate the rest in background
-      const firstBatch = await this.recordService.getFirstPage();
-      const parsedFirst = this.parseTransactions(firstBatch || [], commitment);
-      PingHistoryViewModel.parsedTransactions = parsedFirst;
-      PingHistoryViewModel.nextIndex = 0;
+      const records = await this.recordService.getRecord();
+      const parsed = this.parseTransactions(records || [], commitment);
+      PingHistoryViewModel.parsedTransactions = parsed;
+      PingHistoryViewModel.nextIndex = PingHistoryViewModel.chunkCursor || 0;
 
-      if (!parsedFirst.length && PingHistoryViewModel.cachedTransactions.length) {
-        console.warn('[PingHistoryViewModel] Empty fetch, using cached history');
-        return PingHistoryViewModel.cachedTransactions.slice(0, pageSize);
+      // Initial chunk of 5
+      if (PingHistoryViewModel.nextIndex < 5) {
+        await this.applyChunk(5 - PingHistoryViewModel.nextIndex, cacheKey, onPhaseUpdate);
       }
 
-      const firstPage = this.takePages(1);
-
-      if (firstPage.length) {
-        PingHistoryViewModel.cachedTransactions = firstPage;
-        onPhaseUpdate?.(firstPage);
-        PingHistoryViewModel.notify(firstPage);
-        void PingHistoryViewModel.saveToLocalCache(firstPage, cacheKey);
+      // Stage three additional chunks of 8
+      for (let i = 0; i < 3; i++) {
+        await this.applyChunk(8, cacheKey, onPhaseUpdate);
       }
 
-      // Load the rest in background so the UI isn't blocked
-      Promise.resolve().then(async () => {
-        const records = await this.recordService.getRecord();
-        const parsed = this.parseTransactions(records || [], commitment);
-        PingHistoryViewModel.parsedTransactions = parsed;
-        PingHistoryViewModel.nextIndex = Math.max(
-          PingHistoryViewModel.nextIndex,
-          firstPage.length
-        );
-
-        const updated = this.takePages(3);
-        if (updated.length !== PingHistoryViewModel.cachedTransactions.length) {
-          PingHistoryViewModel.cachedTransactions = updated;
-          onPhaseUpdate?.(updated);
-          PingHistoryViewModel.notify(updated);
-          await PingHistoryViewModel.saveToLocalCache(updated, cacheKey);
-        } else if (!firstPage.length) {
-          await PingHistoryViewModel.saveToLocalCache(updated, cacheKey);
-        }
-      });
-
-      return (firstPage.length ? firstPage : parsedFirst).slice(0, pageSize);
+      return PingHistoryViewModel.cachedTransactions;
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to load transactions', err);
-      return PingHistoryViewModel.cachedTransactions.slice(0, PingHistoryViewModel.pageSize);
+      return PingHistoryViewModel.cachedTransactions;
     }
   }
 }

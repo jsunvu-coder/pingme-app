@@ -38,7 +38,7 @@ export default function PingHistoryScreen() {
     if (loadingMore || !PingHistoryViewModel.hasMore()) return;
     setLoadingMore(true);
     try {
-      const next = await vm.loadNextPages(3);
+      const next = await vm.loadMoreChunks(2, 8);
       setTransactions(next);
     } catch (err) {
       console.warn('⚠️ Failed to load more history', err);
@@ -53,7 +53,7 @@ export default function PingHistoryScreen() {
       if (!contentSize?.height) return;
       const visibleBottom = contentOffset.y + layoutMeasurement.height;
       const ratio = visibleBottom / contentSize.height;
-      if (ratio >= 0.66) {
+      if (ratio >= 0.5) {
         void handleLoadMore();
       }
     },
