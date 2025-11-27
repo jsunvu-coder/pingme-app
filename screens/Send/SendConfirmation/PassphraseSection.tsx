@@ -43,7 +43,12 @@ export default function PassphraseSection({
           value={usePassphrase}
           onValueChange={(val) => {
             setUsePassphrase(val);
-            if (val) setTimeout(() => inputRef.current?.focus(), 150);
+            if (val) {
+              setTimeout(() => inputRef.current?.focus(), 150);
+            } else {
+              setPassphrase('');
+              inputRef.current?.blur();
+            }
           }}
         />
       </View>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, ScrollView, Platform, Keyboard, Animated, Easing } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -54,6 +54,7 @@ export default function SendConfirmationScreen() {
   const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
   const [token, setToken] = useState<string | undefined>(undefined);
   const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
+  const [balancesLoading, setBalancesLoading] = useState(false);
   const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
 
   const balanceService = BalanceService.getInstance();
@@ -122,27 +123,46 @@ export default function SendConfirmationScreen() {
   ]);
 
   // ✅ Fetch balances and set token entry
+  const pickEntry = useCallback((balances: any[] | undefined | null) => {
+    if (!balances?.length) return null;
+    return (
+      balances.find((b) => b.token === TOKENS.USDC && parseFloat(b.amount) > 0.0) ||
+      balances.find((b) => parseFloat(b.amount) > 0.0) ||
+      balances[0]
+    );
+  }, []);
+
+  const ensureEntry = useCallback(async () => {
+    let candidate = pickEntry(balanceService.balances);
+    if (candidate) {
+      setEntry(candidate);
+      return candidate;
+    }
+
+    setBalancesLoading(true);
+    try {
+      await balanceService.getBalance();
+      candidate = pickEntry(balanceService.balances);
+      if (candidate) {
+        setEntry(candidate);
+      }
+    } catch (e) {
+      console.error('⚠️ Failed to load balances:', e);
+    } finally {
+      setBalancesLoading(false);
+    }
+
+    return candidate;
+  }, [balanceService, pickEntry]);
+
   useEffect(() => {
     let mounted = true;
 
     (async () => {
-      try {
-        await balanceService.getBalance();
-        if (!mounted) return;
-
-        const balances = balanceService.balances;
-        console.log('🔄 Balance update received:', balances);
-
-        if (balances && balances.length > 0) {
-          const matched =
-            balances.find((b) => b.token === TOKENS.USDC && parseFloat(b.amount) > 0.0) ||
-            balances.find((b) => parseFloat(b.amount) > 0.0) ||
-            balances[0];
-          setEntry(matched);
-          console.log('🔗 Active token entry:', matched);
-        }
-      } catch (e) {
-        console.error('⚠️ Failed to load balances:', e);
+      const candidate = await ensureEntry();
+      if (!mounted) return;
+      if (candidate) {
+        console.log('🔗 Active token entry:', candidate);
       }
     })();
 
@@ -150,7 +170,7 @@ export default function SendConfirmationScreen() {
       mounted = false;
       console.log('🧹 Unsubscribing from balance updates...');
     };
-  }, [balanceService]);
+  }, [ensureEntry]);
 
   // ✅ Main payment handler
   const handleDurationChange = (value: number) => {
@@ -168,10 +188,11 @@ export default function SendConfirmationScreen() {
       return;
     }
 
-    if (!entry) {
+    const usableEntry = entry ?? (await ensureEntry());
+    if (!usableEntry) {
       await showLocalizedAlert({
-        title: 'Error',
-        message: 'No balance entry available for this transaction.',
+        title: 'Loading balances',
+        message: 'Balances are still loading. Please wait a moment and try again.',
       });
       return;
     }
@@ -201,9 +222,9 @@ export default function SendConfirmationScreen() {
 
       await PayService.getInstance().pay({
         entry: {
-          token: entry.token,
-          amount: entry.amount,
-          tokenName: entry.tokenName,
+          token: usableEntry.token,
+          amount: usableEntry.amount,
+          tokenName: usableEntry.tokenName,
         },
         username: recipient,
         amount: amount.toString(),
@@ -359,7 +380,8 @@ export default function SendConfirmationScreen() {
                 <PrimaryButton
                   title={params?.channel === 'Email' ? 'Pay Now' : 'Confirm Payment'}
                   onPress={pay}
-                  loading={loading}
+                  loading={loading || balancesLoading}
+                  disabled={loading || balancesLoading || !entry}
                 />
               </View>
             </View>

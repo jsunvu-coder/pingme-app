@@ -35,6 +35,13 @@ const normalizeAmountInput = (value: string): string => {
   return formatted || '0.00';
 };
 
+const formatAmountOrEmpty = (value?: string): string => {
+  if (!value) return '';
+  const formatted = formatMicroToUsd(value);
+  const numeric = Number(formatted.replace(/,/g, ''));
+  return numeric > 0 ? formatted : '';
+};
+
 export interface DepositPayload {
   token?: string;
   amount?: string;
@@ -92,9 +99,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
   const [selectedBalance, setSelectedBalance] = useState<BalanceEntry | null>(() =>
     selectDefaultBalance(balanceService.currentBalances, payload?.token)
   );
-  const [amount, setAmount] = useState<string>(() =>
-    payload?.amount ? formatMicroToUsd(payload.amount) : '0.00'
-  );
+  const [amount, setAmount] = useState<string>(() => formatAmountOrEmpty(payload?.amount));
   const [commitment, setCommitment] = useState<string>(payload?.commitment ?? '');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -164,14 +169,14 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
         await confirm('_ALERT_INVALID_QR_CODE', false);
         if (mounted) {
           setCommitment('');
-          setAmount('0.00');
+          setAmount('');
         }
         return;
       }
 
       if (mounted) {
         setCommitment(payload.commitment);
-        setAmount(payload.amount ? formatMicroToUsd(payload.amount) : '0.00');
+        setAmount(formatAmountOrEmpty(payload.amount));
         setSelectedBalance((prev) => {
           if (!balances.length) return prev;
           return selectDefaultBalance(balances, payload.token) ?? prev;
@@ -205,7 +210,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       }
 
       setCommitment(parsed.commitment ?? '');
-      setAmount(parsed.amount ? formatMicroToUsd(parsed.amount) : '0.00');
+      setAmount(formatAmountOrEmpty(parsed.amount));
       setSelectedBalance((prev) => {
         if (!balances.length) return prev;
         return selectDefaultBalance(balances, parsed.token) ?? prev;
@@ -232,6 +237,21 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
 
     if (!trimmedAmount) {
       await confirm('_ALERT_ENTER_AMOUNT', false);
+      return;
+    }
+
+    const numericAmount = Number(trimmedAmount.replace(/,/g, ''));
+    if (!Number.isFinite(numericAmount)) {
+      await confirm('_ALERT_ENTER_AMOUNT', false);
+      return;
+    }
+
+    if (numericAmount < 1) {
+      await showLocalizedAlert({
+        title: 'Invalid amount',
+        message: 'Amount must be at least $1.00.',
+        buttons: [{ text: 'OK' }],
+      });
       return;
     }
 
@@ -284,7 +304,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     setScanned(false);
     setTxHash(null);
     setCommitment('');
-    setAmount('0.00');
+    setAmount('');
   }, []);
 
   const toggleQr = useCallback(() => {

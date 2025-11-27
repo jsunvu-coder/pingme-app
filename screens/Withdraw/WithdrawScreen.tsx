@@ -17,6 +17,7 @@ import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
+import { push } from 'navigation/Navigation';
 
 export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
@@ -141,7 +142,7 @@ export default function WithdrawScreen() {
       const commitmentHash = CryptoUtils.globalHash(nextCommitment);
       if (!commitmentHash) throw new Error('Failed to generate commitment hash');
       // --- Execute commit-protected withdraw ---
-      await authService.commitProtect(
+      const result = await authService.commitProtect(
         () =>
           _withdraw(
             entry.token,
@@ -158,7 +159,17 @@ export default function WithdrawScreen() {
       await balanceService.getBalance();
       await recordService.updateRecord();
 
-      Alert.alert(t('SUCCESS'), 'Withdrawal was successful');
+      const txHash =
+        (result as any)?.txHash ??
+        (result as any)?.tx_hash ??
+        (result as any)?.transactionHash ??
+        '';
+
+      push('WithdrawSuccessScreen', {
+        amount: Number(amount.replace(/[^0-9.]/g, '')) || 0,
+        walletAddress: wallet,
+        txHash,
+      });
     } catch (err) {
       console.error('Withdraw failed:', err);
       await confirm('_ALERT_WITHDRAW_FAILED', { cancel: false });
@@ -180,19 +191,20 @@ export default function WithdrawScreen() {
             mode="send"
           />
 
-          <AuthInput
-            icon={<WalletAddIcon size={32} color="#000" />}
-            value={wallet}
-            onChangeText={setWallet}
-            placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
-            customView={
-              <TouchableOpacity
-                onPress={handlePasteWallet}
-                className="self-end h-8 w-8 items-center justify-center rounded-full bg-[#F2F2F2]">
-                <Ionicons name="clipboard-outline" size={18} color="#FD4912" />
-              </TouchableOpacity>
-            }
-          />
+          <View>
+            <AuthInput
+              icon={<WalletAddIcon size={32} color="#000" />}
+              value={wallet}
+              onChangeText={setWallet}
+              numberOfLines={1}
+              placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
+            />
+            <TouchableOpacity
+              onPress={handlePasteWallet}
+              className="absolute right-0 bottom-10 h-8 items-center justify-center self-end bg-white pl-4">
+              <Ionicons name="clipboard-outline" size={24} color="#FD4912" />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 

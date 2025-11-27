@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, ActivityIndicator, View } from "react-native";
+import { TouchableOpacity, Text, ActivityIndicator, View, Keyboard } from "react-native";
 
 export default function PrimaryButton({
   title,
@@ -15,10 +15,15 @@ export default function PrimaryButton({
   loadingText?: string, 
   className?: string;
 }) {
+  const handlePress = () => {
+    Keyboard.dismiss();
+    onPress?.();
+  };
+
   return (
     <TouchableOpacity
       disabled={disabled || loading}
-      onPress={onPress}
+      onPress={handlePress}
       className={`${disabled || loading ? "bg-[#E9E9E9]" : "bg-[#FD4912]"
         } py-4 px-8 rounded-full border border-transparent flex-row items-center justify-center ${className}`}
       activeOpacity={0.8}

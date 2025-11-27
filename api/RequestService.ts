@@ -165,6 +165,10 @@ export class RequestService {
         if (await confirm('_ALERT_BELOW_MINIMUM', false)) return;
       }
 
+      if (!entry?.token) {
+        if (await confirm('_ALERT_SELECT_BALANCE', false)) return;
+      }
+
       // ---------- Confirm ----------
       if (!(await confirm('_CONFIRM_REQUEST'))) return;
       setLoading(true);

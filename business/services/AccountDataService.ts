@@ -4,6 +4,7 @@ import { BalanceEntry, RecordEntry } from 'business/Types';
 import { RecordService } from './RecordService';
 import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export class AccountDataService {
   private static instance: AccountDataService;
@@ -144,6 +145,23 @@ export class AccountDataService {
     console.log('🧹 AccountDataService cache cleared.');
   }
 
+  private syncRecords(): void {
+    const current = this.recordService.getRecords() ?? [];
+    const seen = new Set<string>();
+    const deduped = current.filter((rec) => {
+      const tx = (rec.txHash ?? '').toLowerCase();
+      const action = Number(rec.action ?? -1);
+      if (!tx) return false;
+      const key = `${action}-${tx}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    deduped.sort((a, b) => Number(b.timestamp ?? 0) - Number(a.timestamp ?? 0));
+    this.records = deduped;
+  }
+
   async updateForwarderBalance(
     confirm: (message: string, okOnly?: boolean) => Promise<boolean>
   ): Promise<void> {
@@ -173,9 +191,14 @@ export class AccountDataService {
             await this.contractService.retrieve(cr.commitment);
             await this.balanceService.getBalance();
             await this.recordService.updateRecord();
+            this.syncRecords();
 
-            const confirmed = await confirm('_ALERT_RECEIVED_TOPUP', true);
-            if (confirmed) return;
+            showFlashMessage({
+              title: 'Top-up received',
+              message: '_ALERT_RECEIVED_TOPUP',
+              type: 'success',
+            });
+            return;
           } catch (err) {
             console.error('RETRIEVE', err);
           }
@@ -184,6 +207,7 @@ export class AccountDataService {
 
       await this.balanceService.getBalance();
       await this.recordService.updateRecord();
+      this.syncRecords();
     } catch (err) {
       console.error('GET_FORWARDER_BALANCE', err);
     }

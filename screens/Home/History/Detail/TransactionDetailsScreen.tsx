@@ -180,9 +180,9 @@ export default function TransactionDetailsScreen() {
         <View className="mt-6 rounded-2xl bg-white p-5">
           <DetailRow label="Amount" value={amountDisplay} />
           <DetailRow label="Recipient" value={transaction.addr || '-'} />
-          <DetailRow label="Created" value={formatTimestamp(createdSeconds)} />
+          <DetailRow label="Created" value={formatTimestamp(createdSeconds)} autoAdjustFontSize />
           {expirySeconds ? (
-            <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} />
+            <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} autoAdjustFontSize />
           ) : null}
           {showStatusRow ? (
             <DetailRow
@@ -225,12 +225,14 @@ function DetailRow({
   valueClassName = '',
   valueTextClassName = '',
   icon,
+  autoAdjustFontSize,
 }: {
   label: string;
   value: string;
   valueClassName?: string;
   valueTextClassName?: string;
   icon?: React.ReactNode;
+  autoAdjustFontSize?: boolean;
 }) {
   return (
     <View className="mb-6 flex-row justify-between">
@@ -240,6 +242,8 @@ function DetailRow({
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
+          adjustsFontSizeToFit={autoAdjustFontSize}
+          minimumFontScale={0.8}
           className={`max-w-50 text-[16px] text-[#0F0F0F] ${valueTextClassName}`}>
           {value}
         </Text>
@@ -248,16 +252,19 @@ function DetailRow({
   );
 }
 
+const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
+
 const formatCurrency = (value?: number) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  const truncated = truncateToCents(amount);
   try {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
-    }).format(amount);
+    }).format(truncated);
   } catch {
-    return `$${amount.toFixed(2)}`;
+    return `$${truncated.toFixed(2)}`;
   }
 };
 

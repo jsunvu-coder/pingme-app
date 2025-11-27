@@ -27,6 +27,7 @@ import ScanRecoveryScreen from 'screens/Recovery/ScanRecoveryScreen';
 import RecoveryPasswordScreen from 'screens/Recovery/RecoveryPasswordScreen';
 import TransactionDetailsScreen from 'screens/Home/History/Detail/TransactionDetailsScreen';
 import WithdrawScreen from 'screens/Withdraw/WithdrawScreen';
+import WithdrawSuccessScreen from 'screens/Withdraw/WithdrawSuccessScreen';
 
 const Stack = createStackNavigator();
 
@@ -191,6 +192,11 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'WithdrawScreen',
         component: WithdrawScreen,
+      },
+      {
+        name: 'WithdrawSuccessScreen',
+        component: WithdrawSuccessScreen,
+        options: transparentModalOptions,
       },
     ],
   },

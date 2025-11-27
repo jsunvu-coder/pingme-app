@@ -39,7 +39,7 @@ export default function AccountInfoCard({ email }: Props) {
   );
 
   return (
-    <View className="mt-12">
+    <View>
       <Text className="text-xl text-gray-700">{email}</Text>
 
       <View className="mt-4 flex-row items-center justify-between rounded-xl bg-gray-100 p-4">

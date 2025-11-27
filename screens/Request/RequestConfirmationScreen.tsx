@@ -117,8 +117,8 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    const roundedAmount = Math.round(numericAmount * 100) / 100;
-    if (roundedAmount < MIN_PAYMENT_AMOUNT) {
+    const truncatedAmount = Math.trunc(numericAmount * 100) / 100;
+    if (truncatedAmount < MIN_PAYMENT_AMOUNT) {
       await showLocalizedAlert({
         title: 'Amount too low',
         message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
@@ -126,7 +126,7 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    if (roundedAmount > MAX_PAYMENT_AMOUNT) {
+    if (truncatedAmount > MAX_PAYMENT_AMOUNT) {
       await showLocalizedAlert({
         title: 'Amount too high',
         message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
@@ -151,9 +151,9 @@ export default function RequestConfirmationScreen() {
       console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
 
       if (channel === 'Email') {
-        await sendByEmail(roundedAmount);
+        await sendByEmail(truncatedAmount);
       } else {
-        await sendByLink(roundedAmount);
+        await sendByLink(truncatedAmount);
       }
 
       console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
@@ -194,6 +194,14 @@ export default function RequestConfirmationScreen() {
   };
 
   const sendByLink = async (validatedAmount: number) => {
+    if (!entry?.token) {
+      await showLocalizedAlert({
+        title: 'Select balance',
+        message: 'Please wait for balances to load or choose a balance before sending a request.',
+      });
+      return;
+    }
+
     const amountString = validatedAmount.toFixed(2);
     await requestService.requestPaymentByLink({
       entry,

@@ -4,7 +4,6 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Animated,
   Easing,
   Dimensions,
@@ -26,6 +25,7 @@ import { LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_PAYMENT_AMOUNT } from 'busine
 import ContactPickerModal from './ContactList';
 import { RecentEmailStorage } from './RecentEmailStorage';
 import LockboxDurationView from './LockboxDurationView';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export default function PingMeScreen() {
   const route = useRoute<any>();
@@ -140,18 +140,28 @@ export default function PingMeScreen() {
     }
   }, [route.params]);
 
+  const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
+
   const handleContinue = async () => {
     // --- 1️⃣ Validate email (only if Email mode is active)
     let recipient = '';
     if (activeChannel === 'Email') {
       if (!email.trim()) {
-        Alert.alert('Missing email', 'Please enter a recipient email address.');
+        showFlashMessage({
+          title: 'Missing email',
+          message: 'Please enter a recipient email address.',
+          type: 'warning',
+        });
         return;
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
-        Alert.alert('Invalid email', 'Please enter a valid email address.');
+        showFlashMessage({
+          title: 'Invalid email',
+          message: 'Please enter a valid email address.',
+          type: 'warning',
+        });
         return;
       }
 
@@ -162,30 +172,43 @@ export default function PingMeScreen() {
     // --- 2️⃣ Validate amount
     const trimmedAmount = amount.trim();
     if (!trimmedAmount) {
-      Alert.alert('Amount required', 'Please input an amount.');
+      showFlashMessage({
+        title: 'Amount required',
+        message: 'Please input an amount.',
+        type: 'warning',
+      });
       return;
     }
 
     const numericAmount = parseFloat(trimmedAmount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      Alert.alert('Invalid amount', 'Please enter a valid payment amount.');
+      showFlashMessage({
+        title: 'Invalid amount',
+        message: 'Please enter a valid payment amount.',
+        type: 'warning',
+      });
       return;
     }
 
-    const normalizedAmount = Math.round(numericAmount * 100) / 100;
+    const normalizedAmount = truncateToCents(numericAmount);
     if (normalizedAmount < MIN_PAYMENT_AMOUNT) {
-      Alert.alert('Amount too low', `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`);
+      showFlashMessage({
+        title: 'Amount too low',
+        message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
+        type: 'warning',
+      });
       return;
     }
 
     if (normalizedAmount > MAX_PAYMENT_AMOUNT) {
-      Alert.alert(
-        'Amount too high',
-        `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
+      showFlashMessage({
+        title: 'Amount too high',
+        message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
-        })}.`
-      );
+        })}.`,
+        type: 'warning',
+      });
       return;
     }
 
@@ -193,7 +216,11 @@ export default function PingMeScreen() {
     let lockboxDurationDays = LOCKBOX_DURATION;
     if (mode === 'send') {
       if (!Number.isFinite(duration) || duration < 1 || duration > 30) {
-        Alert.alert('Invalid duration', 'Lockbox duration must be between 1 and 30 days.');
+        showFlashMessage({
+          title: 'Invalid duration',
+          message: 'Lockbox duration must be between 1 and 30 days.',
+          type: 'warning',
+        });
         return;
       }
       lockboxDurationDays = Math.round(duration);
