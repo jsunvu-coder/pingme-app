@@ -18,7 +18,7 @@ const CONFIG = {
 };
 
 const rawEnv = ((globalThis as EnvHost).process?.env?.EXPO_PUBLIC_ENV ?? '').trim();
-let ENV: EnvName = rawEnv === 'production' ? 'production' : 'staging';
+let ENV: EnvName = 'production';
 
 export let API_URL = CONFIG[ENV].API_URL;
 export let APP_URL = CONFIG[ENV].APP_URL;

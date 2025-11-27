@@ -68,7 +68,7 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
       activeOpacity={0.8}
       disabled={loading}
       onPress={handleUpload}
-      className="mt-6 flex-row items-center justify-center">
+      className="my-6 flex-row items-center justify-center">
       {loading ? (
         <View className="flex-row items-center">
           <ActivityIndicator size="small" color="#FD4912" />

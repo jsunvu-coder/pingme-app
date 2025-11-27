@@ -189,11 +189,11 @@ export default function AccountActionList() {
       action: () => push('ChangePasswordScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },
-    {
-      label: 'Rate us on App Store',
-      action: () => {},
-      rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
-    },
+    // {
+    //   label: 'Rate us on App Store',
+    //   action: () => {},
+    //   rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+    // },
     {
       label: 'About PingMe',
       action: () => {},
