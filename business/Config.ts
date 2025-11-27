@@ -1,7 +1,7 @@
 // config.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
+let ENV: EnvName = 'staging';
 
-type EnvHost = { process?: { env?: Record<string, string | undefined> } };
 type EnvName = 'staging' | 'production';
 
 export const ENV_STORAGE_KEY = '@pingme_env';
@@ -16,9 +16,6 @@ const CONFIG = {
     APP_URL: 'https://app.pingme.xyz',
   },
 };
-
-const rawEnv = ((globalThis as EnvHost).process?.env?.EXPO_PUBLIC_ENV ?? '').trim();
-let ENV: EnvName = 'production';
 
 export let API_URL = CONFIG[ENV].API_URL;
 export let APP_URL = CONFIG[ENV].APP_URL;
