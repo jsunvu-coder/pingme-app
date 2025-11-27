@@ -159,6 +159,7 @@ export class LoginViewModel {
   handleSuccessfulLogin(email: string) {
     AccountDataService.getInstance().email = email;
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
+    PingHistoryViewModel.prefetchTransactions();
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {
       console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');

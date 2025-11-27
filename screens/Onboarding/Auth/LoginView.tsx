@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Keyboard } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
 import PasswordIcon from 'assets/PasswordIcon';
@@ -81,6 +81,7 @@ export default function LoginView({
   );
 
   const handleLogin = async () => {
+    Keyboard.dismiss();
     if (!email || !password) {
       showFlashMessage({
         title: t('AUTH_LOGIN_ERROR_TITLE'),
@@ -132,9 +133,8 @@ export default function LoginView({
             placeholder={t('AUTH_PASSWORD_PLACEHOLDER')}
             secureTextEntry
             returnKeyType="done"
-            blurOnSubmit
             onSubmitEditing={() => {
-              void handleLogin();
+              handleLogin();
             }}
           />
           <TouchableOpacity

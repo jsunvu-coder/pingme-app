@@ -55,8 +55,14 @@ export default function AuthScreen() {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
-        const kbHeight = event.endCoordinates?.height ?? 0;
-        const offset = Math.min(kbHeight / 2.2, 180); // center-ish, not too high
+        let offset = 0;
+        if (showTabs) {
+          offset = IS_SMALL_SCREEN ? 100 : 50;
+        }
+
+        if (headerType === 'full') {
+          offset += IS_SMALL_SCREEN ? 150 : 100;
+        }
         setKeyboardVisible(true);
 
         Animated.timing(translateY, {
@@ -117,8 +123,6 @@ export default function AuthScreen() {
                 amountUsdStr={route.params?.amountUsdStr}
               />
             )}
-
-            {keyboardVisible && <Animated.View style={{ height: 150 }} />}
           </View>
         </ScrollView>
       </Animated.View>
