@@ -163,8 +163,8 @@ const SCREEN_GROUPS: Array<{
           },
           headerTitleStyle: {
             color: '#444444',
-            fontWeight: '500',
-            fontSize: 20,
+            fontWeight: '600',
+            fontSize: 18,
           },
           headerLeft: () => (
             <TouchableOpacity

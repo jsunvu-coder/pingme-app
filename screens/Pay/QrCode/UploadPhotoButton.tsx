@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, Alert, ActivityIndicator, View, Platform } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, View, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { showFlashMessage } from 'utils/flashMessage';
 
 type Props = {
   onScanSuccess?: (data: string, releaseScanLock: () => void) => void;
@@ -15,10 +16,12 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
     if (loading) return; // Prevent multiple presses
 
     if (Platform.OS === 'android' && Platform.Version < 33) {
-      Alert.alert(
-        'Not supported',
-        'Photo uploads require the Android Photo Picker (Android 13+). Please update your device.'
-      );
+      showFlashMessage({
+        title: 'Not supported',
+        message:
+          'Photo uploads require the Android Photo Picker (Android 13+). Please update your device.',
+        type: 'warning',
+      });
       return;
     }
 
@@ -42,11 +45,19 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
         const qrData = scans[0].data;
         onScanSuccess?.(qrData, () => {});
       } else {
-        Alert.alert('No QR Code Found', 'Please select a valid QR code image.');
+        showFlashMessage({
+          title: 'No QR Code Found',
+          message: 'Please select a valid QR code image.',
+          type: 'warning',
+        });
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to decode QR code from image.');
+      showFlashMessage({
+        title: 'Error',
+        message: 'Failed to decode QR code from image.',
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }

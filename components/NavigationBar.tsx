@@ -14,7 +14,8 @@ export default function NavigationBar({ title, onBack }: { title: string; onBack
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <View className="mt-10 flex-row items-center justify-between">
+      <SafeAreaView edges={['top']} className="bg-green-500" />
+      <View className="flex-row items-center justify-between bg-green-500">
         <View className="w-16 items-center">
           <BackIcon onPress={handleBack} />
         </View>
@@ -22,7 +23,7 @@ export default function NavigationBar({ title, onBack }: { title: string; onBack
         <Text className="flex-1 text-center text-xl font-semibold text-gray-800">{title}</Text>
 
         {/* Placeholder for balancing layout (same width as BackIcon) */}
-        <View className="w-10" />
+        <View className="w-16" />
       </View>
     </>
   );

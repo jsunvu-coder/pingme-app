@@ -144,7 +144,7 @@ export default function ScanRecoveryScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white pt-6">
+    <View className="flex-1 bg-white">
       <NavigationBar title="Scan recovery QR code" />
 
       <View className="flex-1">
