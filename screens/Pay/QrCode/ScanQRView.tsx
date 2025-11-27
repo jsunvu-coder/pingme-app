@@ -17,8 +17,8 @@ export default function ScanQRView() {
     initializePermission();
   }, []);
 
-  const handleQRCode = (data: string) => {
-    handleUrl(data);
+  const handleQRCode = (data: string, releaseScanLock: () => void) => {
+    handleUrl(data, releaseScanLock);
   };
 
   const initializePermission = async () => {

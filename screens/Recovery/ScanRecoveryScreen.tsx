@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRScanner from 'screens/Pay/QrCode/QrScanner';
 import UploadPhotoButton from 'screens/Pay/QrCode/UploadPhotoButton';
@@ -10,13 +9,14 @@ import { CryptoUtils } from 'business/CryptoUtils';
 import { ContractService } from 'business/services/ContractService';
 import { Utils } from 'business/Utils';
 import { GLOBAL_SALT, GLOBALS } from 'business/Constants';
+import { showFlashMessage } from 'utils/flashMessage';
 
 // 🔒 your crypto + utils imports
 
 export default function ScanRecoveryScreen() {
   const [loading, setLoading] = useState(false);
 
-  const handleScanSuccess = async (data: string) => {
+  const handleScanSuccess = async (data: string, releaseScanLock: () => void) => {
     // data = long QR string (recovery code)
     setLoading(true);
     try {
@@ -25,11 +25,21 @@ export default function ScanRecoveryScreen() {
       if (recoveredPassword) {
         push('RecoveryPasswordScreen', { password: recoveredPassword });
       } else {
-        Alert.alert('Recovery failed', 'Could not decrypt the password.');
+        showFlashMessage({
+          title: 'Recovery failed',
+          message: 'Could not decrypt the password.',
+          type: 'danger',
+          onHide: releaseScanLock,
+        });
       }
     } catch (err: any) {
       console.error('RECOVER_FAILED', err);
-      Alert.alert('Error', err?.message || 'Password recovery failed.');
+      showFlashMessage({
+        title: 'Error',
+        message: err?.message || 'Password recovery failed.',
+        type: 'danger',
+        onHide: releaseScanLock,
+      });
     } finally {
       setLoading(false);
     }
@@ -135,8 +145,6 @@ export default function ScanRecoveryScreen() {
 
   return (
     <View className="flex-1 bg-white pt-6">
-      <SafeAreaView edges={['top']} />
-
       <NavigationBar title="Scan recovery QR code" />
 
       <View className="flex-1">

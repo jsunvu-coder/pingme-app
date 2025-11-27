@@ -5,7 +5,8 @@
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "android": "expo run:android",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --scheme PingMe-Develop",
+    "ios:prod": "expo run:ios --scheme PingMe-Production",
     "start": "expo start",
     "prebuild": "expo prebuild",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",

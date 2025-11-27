@@ -19,11 +19,11 @@ export default function AccountScreen() {
       <HeaderView title="Account" variant="light" />
 
       <ScrollView className="m-6" showsVerticalScrollIndicator={false}>
-        <AccountTierView
+        {/* <AccountTierView
           pointsToNextTier={80}
           currentTier="BRONZE"
           onHowToEarn={() => console.log('Go to HowToEarn')}
-        />
+        /> */}
 
         <AccountInfoCard email={AccountDataService.getInstance().email || ''} />
 

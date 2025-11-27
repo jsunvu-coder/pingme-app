@@ -1,7 +1,7 @@
 import { APP_URL } from 'business/Config';
 import { push } from 'navigation/Navigation';
-import { Alert } from 'react-native';
-import { showLocalizedAlert } from 'components/LocalizedAlert';
+import { t } from 'i18n';
+import { showFlashMessage } from 'utils/flashMessage';
 import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
 
 /**
@@ -11,7 +11,22 @@ import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
  *  - https://app.pingme.xyz/send?token=...&amount=...&requester=...
  *  - https://app.pingme.xyz/deposit?commitment=...
  */
-export const handleUrl = (rawData: string) => {
+export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
+  const showError = ({
+    title,
+    message,
+  }: {
+    title: string;
+    message: string;
+  }) => {
+    showFlashMessage({
+      title,
+      message,
+      type: 'danger',
+      onHide: releaseScanLock,
+    });
+  };
+
   try {
     if (!rawData) {
       console.warn('⚠️ No data provided to handleUrl');
@@ -25,7 +40,10 @@ export const handleUrl = (rawData: string) => {
     // ✅ Normalize and validate base URL
     if (!decodedData.startsWith(APP_URL)) {
       console.warn('❌ Unsupported URL base:', decodedData);
-      Alert.alert('Oops', 'The provided URL is not supported');
+      showError({
+        title: t('Oops', undefined, 'Oops'),
+        message: t('ALERT_UNSUPPORTED_QR', undefined, 'The provided QR code is not supported.'),
+      });
       return;
     }
 
@@ -37,6 +55,10 @@ export const handleUrl = (rawData: string) => {
       const lockboxSalt = url.searchParams.get('lockboxSalt');
       if (!lockboxSalt) {
         console.warn('⚠️ Missing lockboxSalt in claim URL');
+        showError({
+          title: t('Oops', undefined, 'Oops'),
+          message: t('ALERT_INVALID_CLAIM_QR', undefined, 'Invalid claim QR code.'),
+        });
         return;
       }
 
@@ -49,9 +71,9 @@ export const handleUrl = (rawData: string) => {
     if (path.startsWith('/deposit')) {
       const { payload, errorKey } = parseDepositLink(decodedData);
       if (!payload) {
-        void showLocalizedAlert({
-          title: 'Oops',
-          message: errorKey ?? '_ALERT_INVALID_QR_CODE',
+        showError({
+          title: t('Oops', undefined, 'Oops'),
+          message: t(errorKey ?? '_ALERT_INVALID_QR_CODE', undefined, 'Invalid QR code.'),
         });
         return;
       }
@@ -123,5 +145,9 @@ export const handleUrl = (rawData: string) => {
     console.warn('⚠️ Unrecognized URL path:', path);
   } catch (err) {
     console.error('❌ [handleUrl] Failed to handle URL:', err);
+    showError({
+      title: t('Oops', undefined, 'Oops'),
+      message: t('ALERT_INVALID_QR_CODE', undefined, 'Invalid QR code.'),
+    });
   }
 };

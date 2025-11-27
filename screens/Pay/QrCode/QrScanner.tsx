@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 
 type QRScannerProps = {
-  onScanSuccess: (data: string) => void;
+  onScanSuccess: (data: string, releaseScanLock: () => void) => void | Promise<void>;
 };
 
 export default function QRScanner({ onScanSuccess }: QRScannerProps) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scannedData, setScannedData] = useState<string | null>(null);
+  const isProcessingRef = useRef(false);
+  const lastDataRef = useRef<string | null>(null);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -17,14 +20,54 @@ export default function QRScanner({ onScanSuccess }: QRScannerProps) {
     })();
   }, []);
 
-  const handleBarcodeScanned = ({ data }: { data: string }) => {
-    if (!scannedData) {
-      const decoded = decodeURIComponent(data);
-      setScannedData(decoded);
-      onScanSuccess(decoded);
-      setTimeout(() => setScannedData(null), 3000);
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    []
+  );
+
+  const releaseScanLock = useCallback(() => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
     }
-  };
+    isProcessingRef.current = false;
+    lastDataRef.current = null;
+    setScannedData(null);
+  }, []);
+
+  const handleBarcodeScanned = useCallback(
+    ({ data }: { data: string }) => {
+      if (isProcessingRef.current) return;
+
+      let decoded = data;
+      try {
+        decoded = decodeURIComponent(data);
+      } catch {
+        // ignore decode errors and use raw data
+      }
+
+      if (decoded === lastDataRef.current) return;
+
+      isProcessingRef.current = true;
+      lastDataRef.current = decoded;
+      setScannedData(decoded);
+
+      Promise.resolve(onScanSuccess(decoded, releaseScanLock))
+        .catch((err) => {
+          console.error('[QRScanner] onScanSuccess failed', err);
+        })
+        .finally(() => {
+          if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+          // Fallback release in case handler never resets (e.g., navigation)
+          resetTimerRef.current = setTimeout(() => {
+            releaseScanLock();
+          }, 6000);
+        });
+    },
+    [onScanSuccess, releaseScanLock]
+  );
 
   if (hasPermission === null) {
     return (

@@ -5,7 +5,7 @@ import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
-  onScanSuccess?: (data: string) => void;
+  onScanSuccess?: (data: string, releaseScanLock: () => void) => void;
 };
 
 export default function UploadPhotoButton({ onScanSuccess }: Props) {
@@ -40,7 +40,7 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
 
       if (scans.length > 0) {
         const qrData = scans[0].data;
-        onScanSuccess?.(qrData);
+        onScanSuccess?.(qrData, () => {});
       } else {
         Alert.alert('No QR Code Found', 'Please select a valid QR code image.');
       }
