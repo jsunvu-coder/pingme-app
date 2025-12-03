@@ -236,13 +236,19 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     }
 
     if (!trimmedAmount) {
-      await confirm('_ALERT_ENTER_AMOUNT', false);
+      await confirm('_ALERT_INVALID_AMOUNT', false);
       return;
     }
 
-    const numericAmount = Number(trimmedAmount.replace(/,/g, ''));
+    const normalized = trimmedAmount.replace(/,/g, '');
+    if (!/^\d*\.?\d*$/.test(normalized)) {
+      await confirm('_ALERT_INVALID_AMOUNT', false);
+      return;
+    }
+
+    const numericAmount = Number(normalized);
     if (!Number.isFinite(numericAmount)) {
-      await confirm('_ALERT_ENTER_AMOUNT', false);
+      await confirm('_ALERT_INVALID_AMOUNT', false);
       return;
     }
 

@@ -16,23 +16,47 @@ import { ContractService } from './ContractService';
 import { BalanceService } from './BalanceService';
 import { RecordService } from './RecordService';
 import { t } from 'i18n';
+import { setRootScreen } from 'navigation/Navigation';
+import { AccountDataService } from './AccountDataService';
 
 export class AuthService {
   private static instance: AuthService;
   private contractService: ContractService;
   private balanceService: BalanceService;
   private recordService: RecordService;
+  private accountDataService: AccountDataService;
+  private sessionExpiryHandling = false;
 
   private constructor() {
     this.contractService = ContractService.getInstance();
     this.balanceService = BalanceService.getInstance();
     this.recordService = RecordService.getInstance();
+    this.accountDataService = AccountDataService.getInstance();
 
     // Listen for session expiration
-    this.contractService.onSessionExpired(async () => {
-      console.warn('⚠️ Session expired — logging out.');
-      await this.logout();
-      Alert.alert(t('SESSION_EXPIRED_TITLE'), t('SESSION_EXPIRED_MESSAGE'));
+    this.contractService.onSessionExpired(() => {
+      if (this.sessionExpiryHandling) return;
+      this.sessionExpiryHandling = true;
+
+      Alert.alert(
+        t('SESSION_EXPIRED_TITLE'),
+        t('SESSION_EXPIRED_MESSAGE'),
+        [
+          {
+            text: t('OK_BUTTON'),
+            onPress: async () => {
+              console.warn('⚠️ Session expired — logging out.');
+              try {
+                await this.logout();
+                setRootScreen(['SplashScreen']);
+              } finally {
+                this.sessionExpiryHandling = false;
+              }
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     });
   }
 
@@ -340,6 +364,7 @@ export class AuthService {
       this.log('Logging out...');
       this.balanceService.clear();
       this.recordService.clear();
+      this.accountDataService.clearCache();
       this.contractService.clearCrypto();
       this.log('Logout complete');
     } catch (err) {

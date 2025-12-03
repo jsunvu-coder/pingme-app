@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
-import { setRootScreen, push } from 'navigation/Navigation';
+import { setRootScreen, push, presentOverMain } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { PingHistoryViewModel } from 'screens/Home/History/List/PingHistoryViewModel';
@@ -78,7 +78,8 @@ export class LoginViewModel {
     password: string,
     useBiometric: boolean,
     biometricType: BiometricType,
-    lockboxProof?: string
+    lockboxProof?: string,
+    shareParams?: { mode: 'claimed'; amountUsdStr?: string; from?: 'login' | 'signup' }
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     const auth = AuthService.getInstance();
     let ok = false;
@@ -137,7 +138,7 @@ export class LoginViewModel {
       await LoginViewModel.setUseBiometricPreference(true);
     }
 
-    this.handleSuccessfulLogin(email);
+    this.handleSuccessfulLogin(email, shareParams);
     return { success: true, biometricEnabled };
   }
 
@@ -156,7 +157,10 @@ export class LoginViewModel {
     push('SplashScreen');
   }
 
-  handleSuccessfulLogin(email: string) {
+  handleSuccessfulLogin(
+    email: string,
+    shareParams?: { mode: 'claimed'; amountUsdStr?: string; from?: 'login' | 'signup' }
+  ) {
     AccountDataService.getInstance().email = email;
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
     PingHistoryViewModel.prefetchTransactions();
@@ -164,6 +168,17 @@ export class LoginViewModel {
     if (pendingLink) {
       console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
       setTimeout(() => deepLinkHandler.resumePendingLink(), 500);
+    }
+
+    if (shareParams?.mode === 'claimed') {
+      setTimeout(
+        () =>
+          presentOverMain('ClaimSuccessScreen', {
+            amountUsdStr: shareParams.amountUsdStr,
+            from: shareParams.from,
+          }),
+        300
+      );
     }
   }
 

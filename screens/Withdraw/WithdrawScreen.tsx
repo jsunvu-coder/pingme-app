@@ -9,7 +9,6 @@ import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 import { BalanceService } from 'business/services/BalanceService';
 import { ContractService } from 'business/services/ContractService';
 import { RecordService } from 'business/services/RecordService';
-import { AuthService } from 'business/services/AuthService';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
@@ -27,7 +26,6 @@ export default function WithdrawScreen() {
 
   const balanceService = BalanceService.getInstance();
   const contractService = ContractService.getInstance();
-  const authService = AuthService.getInstance();
   const recordService = RecordService.getInstance();
 
   useEffect(() => {
@@ -60,33 +58,6 @@ export default function WithdrawScreen() {
     });
   };
 
-  const _withdraw = async (
-    token: string,
-    amt: string,
-    recipient: string,
-    nextCurrentSalt: string,
-    nextProof: string,
-    nextCommitment: string
-  ): Promise<void> => {
-    const cr = contractService.getCrypto();
-    const ret = await contractService.withdraw(
-      token,
-      amt,
-      cr.proof,
-      cr.salt,
-      nextCommitment,
-      recipient
-    );
-    cr.current_salt = nextCurrentSalt;
-    cr.proof = nextProof;
-    cr.commitment = nextCommitment;
-    contractService.setCrypto(cr);
-
-    await balanceService.getBalance();
-    await recordService.updateRecord();
-    return ret;
-  };
-
   const handlePasteWallet = async () => {
     try {
       const txt = await Clipboard.getStringAsync();
@@ -108,8 +79,19 @@ export default function WithdrawScreen() {
         return;
       }
 
+      const trimmedAmount = amount.trim();
+      if (!/^\d*\.?\d*$/.test(trimmedAmount)) {
+        await confirm('_ALERT_INVALID_AMOUNT', { cancel: false });
+        return;
+      }
+
+      if (!CryptoUtils.isAddr(wallet)) {
+        await confirm('_ALERT_INVALID_ADDRESS', { cancel: false, variant: 'error' });
+        return;
+      }
+
       const k_min_amount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const k_amount = Utils.toMicro(amount);
+      const k_amount = Utils.toMicro(trimmedAmount);
       const k_entry = BigInt(entry.amount);
 
       if (k_amount < k_min_amount) {
@@ -120,55 +102,11 @@ export default function WithdrawScreen() {
         return;
       }
 
-      if (!CryptoUtils.isAddr(wallet)) {
-        await confirm('_ALERT_INVALID_ADDRESS', { cancel: false, variant: 'error' });
-        return;
-      }
-
-      const ok = await confirm('_CONFIRM_WITHDRAW');
-      if (!ok) return;
-
-      setLoading(true);
-
-      // --- Prepare crypto commit chain ---
-      const cr = contractService.getCrypto();
-      const nextCurrentSalt = CryptoUtils.globalHash(cr.current_salt);
-      if (!nextCurrentSalt) throw new Error('Failed to generate next current salt');
-      const nextProof = CryptoUtils.globalHash2(cr.input_data, nextCurrentSalt);
-      if (!nextProof) throw new Error('Failed to generate next proof');
-      const nextCommitment = CryptoUtils.globalHash(nextProof);
-      if (!nextCommitment) throw new Error('Failed to generate next commitment');
-
-      const commitmentHash = CryptoUtils.globalHash(nextCommitment);
-      if (!commitmentHash) throw new Error('Failed to generate commitment hash');
-      // --- Execute commit-protected withdraw ---
-      const result = await authService.commitProtect(
-        () =>
-          _withdraw(
-            entry.token,
-            k_amount.toString(),
-            wallet,
-            nextCurrentSalt,
-            nextProof,
-            nextCommitment
-          ),
-        cr.commitment,
-        commitmentHash
-      );
-
-      await balanceService.getBalance();
-      await recordService.updateRecord();
-
-      const txHash =
-        (result as any)?.txHash ??
-        (result as any)?.tx_hash ??
-        (result as any)?.transactionHash ??
-        '';
-
-      push('WithdrawSuccessScreen', {
-        amount: Number(amount.replace(/[^0-9.]/g, '')) || 0,
+      push('WithdrawConfirmationScreen', {
+        amount: trimmedAmount,
         walletAddress: wallet,
-        txHash,
+        token: entry.token,
+        availableAmount: entry.amount,
       });
     } catch (err) {
       console.error('Withdraw failed:', err);

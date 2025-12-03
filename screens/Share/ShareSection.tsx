@@ -75,12 +75,11 @@ export default function ShareSection() {
 	}, []);
 
 	const handleFacebookShare = useCallback(async () => {
-		const appUrl = `fb://sharer?u=${encodeURIComponent(APP_URL)}`;
 		const encodedUrl = encodeURIComponent(APP_URL);
 		const encodedQuote = encodeURIComponent(shareText);
 		const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`;
-		const openedApp = await tryOpenShareTarget(appUrl);
-		const opened = openedApp || (await tryOpenShareTarget(shareUrl));
+
+		const opened = await tryOpenShareTarget(shareUrl);
 		if (!opened) {
 			await handleSystemShare();
 		}
@@ -102,34 +101,17 @@ export default function ShareSection() {
 	}, [handleSystemShare, shareText, tryOpenShareTarget]);
 
 	const handleInstagramShare = useCallback(async () => {
+		// Instagram doesn't support prefilled text via deep link; use system share so content is prepared
 		try {
-			await Clipboard.setStringAsync(shareContent);
+			await Share.share({
+				message: shareContent,
+				url: APP_URL,
+			});
 		} catch (err) {
-			console.error("Clipboard error:", err);
+			console.error("Instagram share error:", err);
+			Alert.alert("Instagram unavailable", "We couldn't start Instagram. Try sharing manually.");
 		}
-
-		const openedStory = await tryOpenShareTarget("instagram-stories://share");
-		if (openedStory) {
-			return;
-		}
-
-		const openedApp = await tryOpenShareTarget("instagram://app");
-		if (openedApp) {
-			return;
-		}
-
-		Alert.alert(
-			"Instagram unavailable",
-			"Share text copied to clipboard. Paste it manually in Instagram.",
-		);
-
-		const openedWeb = await tryOpenShareTarget("https://www.instagram.com/");
-		if (openedWeb) {
-			return;
-		}
-
-		await handleSystemShare();
-	}, [handleSystemShare, shareContent, tryOpenShareTarget]);
+	}, [shareContent]);
 
 	const handleMoreShare = useCallback(() => {
 		void handleSystemShare();

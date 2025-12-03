@@ -7,9 +7,16 @@ type Props = {
   onChange: (text: string) => void;
   balance: string;
   mode: 'send' | 'request';
+  autoFocus?: boolean;
 };
 
-export default function PaymentAmountView({ value, onChange, balance, mode }: Props) {
+export default function PaymentAmountView({
+  value,
+  onChange,
+  balance,
+  mode,
+  autoFocus = false,
+}: Props) {
   const balanceLabel = mode === 'request' ? 'Current' : 'Available';
   return (
     <View className="mt-6">
@@ -26,6 +33,7 @@ export default function PaymentAmountView({ value, onChange, balance, mode }: Pr
         onChangeText={onChange}
         placeholder="Amount"
         keyboardType="decimal-pad"
+        autoFocus={autoFocus}
       />
     </View>
   );

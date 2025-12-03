@@ -42,7 +42,7 @@ export default function PayQrScreen() {
     return SAMPLE_DEPOSIT_PAYLOAD;
   }, [route.params]);
 
-  const { amount, setAmount, commitment, withdrawAndDeposit, loading, txHash } =
+  const { amount, setAmount, commitment, withdrawAndDeposit, loading, txHash, scanned } =
     useDepositFlow(depositPayload);
 
   const [acknowledgedHash, setAcknowledgedHash] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function PayQrScreen() {
 
     const normalizedAmount = normalizeDecimal(amount);
     const numericAmount = Number(normalizedAmount);
-    const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
+    const safeAmount = Number.isFinite(numericAmount) ? Number(numericAmount.toFixed(2)) : 0;
 
     setAcknowledgedHash(txHash);
     push('PaymentSuccessScreen', {
@@ -89,7 +89,12 @@ export default function PayQrScreen() {
               You're about to send
             </Text>
 
-            <PayStaticQrView amount={amount} recipient={commitment} setAmount={setAmount} />
+            <PayStaticQrView
+              amount={amount}
+              recipient={commitment}
+              setAmount={setAmount}
+              scanned={scanned}
+            />
           </ScrollView>
         </View>
 

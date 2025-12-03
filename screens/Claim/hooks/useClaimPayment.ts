@@ -150,11 +150,23 @@ export const useClaimPayment = () => {
       setLockbox(ret);
 
       if (ret.status === 0) {
+        const amountUsdStr = (() => {
+          try {
+            const amt = parseFloat(String(ret.amount ?? '0')) / 1_000_000;
+            if (!isFinite(amt)) return undefined;
+            return amt.toFixed(2);
+          } catch {
+            return undefined;
+          }
+        })();
+
         push('AuthScreen', {
           mode: 'login',
           headerType: 'full',
           showTabs: true,
           lockboxProof: finalProof,
+          amountUsdStr,
+          from: 'login',
         });
       }
     } catch (err: any) {

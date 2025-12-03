@@ -8,6 +8,7 @@ import { TouchableOpacity } from 'react-native';
 import MainTab from 'screens/MainTab';
 import SendPaymentScreen from 'screens/Send/PingMe/PingMeScreen';
 import PaymentSuccessScreen from 'screens/Send/SentSuccess/PaymentSuccessScreen';
+import ClaimSuccessScreen from 'screens/Claim/ClaimSuccessScreen';
 import RequestConfirmationScreen from 'screens/Request/RequestConfirmationScreen';
 import SplashScreen from 'screens/SplashScreen';
 import OnboardingPager from 'screens/Onboarding/OnboardingPager';
@@ -28,6 +29,7 @@ import RecoveryPasswordScreen from 'screens/Recovery/RecoveryPasswordScreen';
 import TransactionDetailsScreen from 'screens/Home/History/Detail/TransactionDetailsScreen';
 import WithdrawScreen from 'screens/Withdraw/WithdrawScreen';
 import WithdrawSuccessScreen from 'screens/Withdraw/WithdrawSuccessScreen';
+import WithdrawConfirmationScreen from 'screens/Withdraw/WithdrawConfirmationScreen';
 
 const Stack = createStackNavigator();
 
@@ -96,6 +98,11 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'PaymentSuccessScreen',
         component: PaymentSuccessScreen,
+        options: transparentModalOptions,
+      },
+      {
+        name: 'ClaimSuccessScreen',
+        component: ClaimSuccessScreen,
         options: transparentModalOptions,
       },
       {
@@ -192,6 +199,11 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'WithdrawScreen',
         component: WithdrawScreen,
+      },
+      {
+        name: 'WithdrawConfirmationScreen',
+        component: WithdrawConfirmationScreen,
+        options: transparentModalOptions,
       },
       {
         name: 'WithdrawSuccessScreen',

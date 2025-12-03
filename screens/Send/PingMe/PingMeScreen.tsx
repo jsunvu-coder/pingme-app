@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -10,7 +10,7 @@ import {
   Keyboard,
   StatusBar,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { push } from 'navigation/Navigation';
 
@@ -35,6 +35,15 @@ export default function PingMeScreen() {
   const [duration, setDuration] = useState<number>(LOCKBOX_DURATION);
   const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
+
+  const resetForm = useCallback(() => {
+    setMode('send');
+    setActiveChannel('Email');
+    setAmount('');
+    setDuration(LOCKBOX_DURATION);
+    setEmail('');
+    setPickerVisible(false);
+  }, []);
 
   // --- Animations ---
   const emailOpacity = useRef(new Animated.Value(1)).current;
@@ -93,6 +102,14 @@ export default function PingMeScreen() {
   useEffect(() => {
     animateChannel(activeChannel === 'Email');
   }, [activeChannel]);
+
+  // Reset fields when leaving the screen (or on re-focus)
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+      return () => resetForm();
+    }, [resetForm])
+  );
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -175,6 +192,16 @@ export default function PingMeScreen() {
       showFlashMessage({
         title: 'Amount required',
         message: 'Please input an amount.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    // Reject any non-numeric input instead of auto-parsing
+    if (!/^\d*\.?\d*$/.test(trimmedAmount)) {
+      showFlashMessage({
+        title: 'Invalid amount',
+        message: 'Please enter a valid payment amount.',
         type: 'warning',
       });
       return;

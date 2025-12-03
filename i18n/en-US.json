@@ -119,6 +119,7 @@
   "_ALERT_MIN_DURATION": "Duration must be at least one day.",
   "_ALERT_EMAIL_BLANK": "Email field was blank.",
   "_ALERT_ENTER_AMOUNT": "You must enter an amount.",
+  "_ALERT_INVALID_AMOUNT": "Invalid amount. Please enter numbers only.",
   "_ALERT_INVALID_ADDRESS": "Invalid address.",
   "_ALERT_INVALID_EMAIL": "Invalid email.",
   "_ALERT_INVALID_QR_CODE": "Invalid QR code.",

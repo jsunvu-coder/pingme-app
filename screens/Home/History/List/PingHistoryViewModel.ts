@@ -194,7 +194,7 @@ export class PingHistoryViewModel {
         case 'received':
           return (
             e.direction === 'receive' &&
-            !['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type)
+            !['Deposit', 'Wallet Deposit', 'New Balance', 'Reclaim'].includes(e.type)
           );
         case 'deposit':
           return ['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type);

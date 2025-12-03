@@ -1,5 +1,5 @@
 import { BalanceService } from 'business/services/BalanceService';
-import { View, TextInput, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 
@@ -7,9 +7,12 @@ type Props = {
   recipient: string;
   amount: string;
   setAmount: (val: string) => void;
+  scanned?: boolean;
 };
 
-export default function PayStaticQrView({ recipient, amount, setAmount }: Props) {
+export default function PayStaticQrView({ recipient, amount, setAmount, scanned }: Props) {
+  const shouldAutoFocus = scanned && (!amount || Number(amount) === 0);
+
   return (
     <View>
       <ScrollView>
@@ -27,6 +30,7 @@ export default function PayStaticQrView({ recipient, amount, setAmount }: Props)
           balance={`$${BalanceService.getInstance().totalBalance}`}
           value={amount}
           onChange={setAmount}
+          autoFocus={shouldAutoFocus}
         />
       </ScrollView>
     </View>

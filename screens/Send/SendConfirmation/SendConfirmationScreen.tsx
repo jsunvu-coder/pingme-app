@@ -59,6 +59,13 @@ export default function SendConfirmationScreen() {
 
   const balanceService = BalanceService.getInstance();
 
+  // Clear passphrase whenever the toggle is turned off
+  useEffect(() => {
+    if (!usePassphrase && passphrase) {
+      setPassphrase('');
+    }
+  }, [usePassphrase, passphrase]);
+
   // 👇 smooth keyboard animation value
   const translateY = useRef(new Animated.Value(0)).current;
 
