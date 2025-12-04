@@ -35,6 +35,7 @@ export default function PingMeScreen() {
   const [duration, setDuration] = useState<number>(LOCKBOX_DURATION);
   const [email, setEmail] = useState('');
   const [isPickerVisible, setPickerVisible] = useState(false);
+  const balanceService = BalanceService.getInstance();
 
   const resetForm = useCallback(() => {
     setMode('send');
@@ -239,6 +240,16 @@ export default function PingMeScreen() {
       return;
     }
 
+    const availableBalance = parseFloat(balanceService.totalBalance || '0');
+    if (Number.isFinite(availableBalance) && normalizedAmount > availableBalance) {
+      showFlashMessage({
+        title: 'Exceed balance',
+        message: 'The amount exceed the available balance.',
+        type: 'warning',
+      });
+      return;
+    }
+
     // --- 3️⃣ Validate duration
     let lockboxDurationDays = LOCKBOX_DURATION;
     if (mode === 'send') {
@@ -326,7 +337,11 @@ export default function PingMeScreen() {
               <LockboxDurationView onChange={setDuration} value={duration} />
             ) : null}
 
-            <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
+            <PrimaryButton
+              title="Continue"
+              className="mt-6"
+              onPress={handleContinue}
+            />
           </Animated.View>
 
           <SafeAreaView />

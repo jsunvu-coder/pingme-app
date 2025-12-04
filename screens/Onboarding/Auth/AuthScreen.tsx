@@ -38,7 +38,6 @@ export default function AuthScreen() {
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
   const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
   const [showTabs, setShowTabs] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -63,7 +62,6 @@ export default function AuthScreen() {
         if (headerType === 'full') {
           offset += IS_SMALL_SCREEN ? 150 : 100;
         }
-        setKeyboardVisible(true);
 
         Animated.timing(translateY, {
           toValue: -offset,
@@ -77,7 +75,6 @@ export default function AuthScreen() {
     const hideSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
-        setKeyboardVisible(false);
         Animated.timing(translateY, {
           toValue: 0,
           duration: 200,

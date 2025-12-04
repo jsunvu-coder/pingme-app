@@ -39,10 +39,14 @@ export default function WithdrawScreen() {
 
   const confirm = async (
     message: string,
-    options: { cancel?: boolean; variant?: 'confirm' | 'error' } = {}
+    options: { cancel?: boolean; variant?: 'confirm' | 'error'; titleKey?: string } = {}
   ): Promise<boolean> => {
-    const { cancel = true, variant = 'confirm' } = options;
-    const title = variant === 'error' ? t('ERROR', undefined, 'Error') : t('CONFIRM');
+    const { cancel = true, variant = 'confirm', titleKey } = options;
+    const title = titleKey
+      ? t(titleKey)
+      : variant === 'error'
+        ? t('ERROR', undefined, 'Error')
+        : t('CONFIRM');
 
     return new Promise((resolve) => {
       Alert.alert(
@@ -75,13 +79,19 @@ export default function WithdrawScreen() {
         return;
       }
       if (!amount) {
-        await confirm('_ALERT_ENTER_AMOUNT', { cancel: false });
+        await confirm('_ALERT_ENTER_AMOUNT', {
+          cancel: false,
+          titleKey: '_TITLE_ENTER_AMOUNT',
+        });
         return;
       }
 
       const trimmedAmount = amount.trim();
       if (!/^\d*\.?\d*$/.test(trimmedAmount)) {
-        await confirm('_ALERT_INVALID_AMOUNT', { cancel: false });
+        await confirm('_ALERT_INVALID_AMOUNT', {
+          cancel: false,
+          titleKey: '_TITLE_INVALID_AMOUNT',
+        });
         return;
       }
 
@@ -95,10 +105,16 @@ export default function WithdrawScreen() {
       const k_entry = BigInt(entry.amount);
 
       if (k_amount < k_min_amount) {
-        await confirm('_ALERT_BELOW_MINIMUM', { cancel: false });
+        await confirm('_ALERT_BELOW_MINIMUM', {
+          cancel: false,
+          titleKey: '_TITLE_BELOW_MINIMUM',
+        });
         return;
       } else if (k_amount > k_entry) {
-        await confirm('_ALERT_ABOVE_AVAILABLE', { cancel: false, variant: 'error' });
+        await confirm('_ALERT_ABOVE_AVAILABLE', {
+          cancel: false,
+          titleKey: '_TITLE_ABOVE_AVAILABLE',
+        });
         return;
       }
 

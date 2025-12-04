@@ -118,9 +118,10 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
   }, []);
 
   const confirm = useCallback(
-    (message: string, cancel = true) =>
+    (message: string, cancel = true, titleKey?: string) =>
       showLocalizedAlert({
         message,
+        title: titleKey,
         buttons: cancel
           ? [
               { text: 'Cancel', style: 'cancel' as const },
@@ -236,19 +237,19 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     }
 
     if (!trimmedAmount) {
-      await confirm('_ALERT_INVALID_AMOUNT', false);
+      await confirm('_ALERT_ENTER_AMOUNT', false, '_TITLE_ENTER_AMOUNT');
       return;
     }
 
     const normalized = trimmedAmount.replace(/,/g, '');
     if (!/^\d*\.?\d*$/.test(normalized)) {
-      await confirm('_ALERT_INVALID_AMOUNT', false);
+      await confirm('_ALERT_INVALID_AMOUNT', false, '_TITLE_INVALID_AMOUNT');
       return;
     }
 
     const numericAmount = Number(normalized);
     if (!Number.isFinite(numericAmount)) {
-      await confirm('_ALERT_INVALID_AMOUNT', false);
+      await confirm('_ALERT_INVALID_AMOUNT', false, '_TITLE_INVALID_AMOUNT');
       return;
     }
 
@@ -280,7 +281,8 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       console.error('❌ withdrawAndDeposit failed:', error);
       const message = (error as Error)?.message ?? '_ALERT_PAYMENT_FAILED';
       if (message.startsWith('_')) {
-        await confirm(message, false);
+        const titleKey = message === '_ALERT_ABOVE_AVAILABLE' ? '_TITLE_ABOVE_AVAILABLE' : undefined;
+        await confirm(message, false, titleKey);
       } else {
         await showLocalizedAlert({
           title: 'Deposit failed',

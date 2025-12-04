@@ -14,6 +14,7 @@ import { PayService } from 'api/PayService';
 import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
 import { BalanceService } from 'business/services/BalanceService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
+import { showFlashMessage } from 'utils/flashMessage';
 import enUS from 'i18n/en-US.json';
 import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
 import { AccountDataService } from 'business/services/AccountDataService';
@@ -106,8 +107,12 @@ export default function SendConfirmationScreen() {
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
     const parseAmount = (incoming?: number | string) => {
-      const num = Number(incoming) || 0;
-      return num >= 1e5 ? num / 1_000_000 : num;
+      const normalized =
+        typeof incoming === 'string'
+          ? incoming.replace(/,/g, '').replace(/\$/g, '').trim()
+          : incoming;
+      const num = Number(normalized);
+      return Number.isFinite(num) ? num : 0;
     };
 
     const rawAmount = parseAmount(paramAmount);
@@ -188,27 +193,40 @@ export default function SendConfirmationScreen() {
 
   const pay = async () => {
     if (!amount || Number(amount) <= 0) {
-      await showLocalizedAlert({
+      showFlashMessage({
         title: 'Invalid amount',
         message: 'Payment amount must be greater than 0.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const normalizedPassphrase = passphrase.trim();
+    if (usePassphrase && !normalizedPassphrase) {
+      showFlashMessage({
+        title: 'Passphrase is missing',
+        message: 'Please enter a passphrase or disable the passphrase option.',
+        type: 'warning',
       });
       return;
     }
 
     const usableEntry = entry ?? (await ensureEntry());
     if (!usableEntry) {
-      await showLocalizedAlert({
+      showFlashMessage({
         title: 'Loading balances',
         message: 'Balances are still loading. Please wait a moment and try again.',
+        type: 'info',
       });
       return;
     }
 
     const durationDays = Number(lockboxDuration);
     if (!Number.isFinite(durationDays) || durationDays <= 0) {
-      await showLocalizedAlert({
+      showFlashMessage({
         title: 'Invalid duration',
         message: 'Lockbox duration must be greater than 0 days.',
+        type: 'warning',
       });
       return;
     }
@@ -235,7 +253,7 @@ export default function SendConfirmationScreen() {
         },
         username: recipient,
         amount: amount.toString(),
-        passphrase: passphrase,
+        passphrase: normalizedPassphrase,
         days: durationDays,
 
         // ✅ flexible confirm handler
@@ -246,10 +264,10 @@ export default function SendConfirmationScreen() {
 
           const errorMessages = ['_ALERT_ABOVE_AVAILABLE'];
           if (errorMessages.includes(msg)) {
-            await showLocalizedAlert({
-              title: 'Error',
+            showFlashMessage({
+              title: 'Exceed balance',
               message,
-              buttons: [{ text: 'OK' }],
+              type: 'warning',
             });
             return true;
           }
@@ -259,10 +277,10 @@ export default function SendConfirmationScreen() {
             !message.toLowerCase().includes('confirm') &&
             !message.toLowerCase().includes('sure')
           ) {
-            await showLocalizedAlert({
+            showFlashMessage({
               title: 'Information',
               message,
-              buttons: [{ text: 'OK' }],
+              type: 'info',
             });
             return true; // proceed automatically after OK
           }
@@ -334,9 +352,10 @@ export default function SendConfirmationScreen() {
       });
     } catch (err) {
       console.error('❌ Payment failed:', err);
-      await showLocalizedAlert({
+      showFlashMessage({
         title: 'Payment failed',
         message: 'Something went wrong while processing your payment.',
+        type: 'danger',
       });
     } finally {
       setLoading(false);

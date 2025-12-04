@@ -161,14 +161,15 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
         </TouchableWithoutFeedback>
       </View>
 
-      <PrimaryButton
-        className="m-6"
-        title="Create Account"
-        disabled={loading || !isFormValid}
-        loading={loading}
-        loadingText="Creating account..."
-        onPress={handleRegister}
-      />
+      <View className="mt-6 px-6 pb-12">
+        <PrimaryButton
+          title="Create Account"
+          disabled={loading || !isFormValid}
+          loading={loading}
+          loadingText="Creating account..."
+          onPress={handleRegister}
+        />
+      </View>
     </View>
   );
 }

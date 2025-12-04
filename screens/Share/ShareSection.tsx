@@ -77,9 +77,11 @@ export default function ShareSection() {
 	const handleFacebookShare = useCallback(async () => {
 		const encodedUrl = encodeURIComponent(APP_URL);
 		const encodedQuote = encodeURIComponent(shareText);
-		const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`;
+		// Try opening the Facebook app directly via deep link
+		const fbAppUrl = `fb://facewebmodal/f?href=https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`;
+		const webFallback = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedQuote}`;
 
-		const opened = await tryOpenShareTarget(shareUrl);
+		const opened = (await tryOpenShareTarget(fbAppUrl)) || (await tryOpenShareTarget(webFallback));
 		if (!opened) {
 			await handleSystemShare();
 		}
@@ -101,17 +103,25 @@ export default function ShareSection() {
 	}, [handleSystemShare, shareText, tryOpenShareTarget]);
 
 	const handleInstagramShare = useCallback(async () => {
-		// Instagram doesn't support prefilled text via deep link; use system share so content is prepared
 		try {
-			await Share.share({
-				message: shareContent,
-				url: APP_URL,
-			});
+			// Prefill text to clipboard since Instagram doesn't accept text payloads in deep links
+			await Clipboard.setStringAsync(shareContent);
+			const instagramUrl = "instagram://story";
+			const opened = await tryOpenShareTarget(instagramUrl);
+			if (!opened) {
+				// Fallback to system share if the app isn't available
+				await handleSystemShare();
+				return;
+			}
+			Alert.alert(
+				"Instagram",
+				"Share text copied. Paste into your story or post in Instagram."
+			);
 		} catch (err) {
 			console.error("Instagram share error:", err);
 			Alert.alert("Instagram unavailable", "We couldn't start Instagram. Try sharing manually.");
 		}
-	}, [shareContent]);
+	}, [handleSystemShare, shareContent, tryOpenShareTarget]);
 
 	const handleMoreShare = useCallback(() => {
 		void handleSystemShare();
