@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Alert, TouchableOpacity } from 'react-native';
+import { View, Alert, TouchableOpacity, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
@@ -17,6 +17,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { push } from 'navigation/Navigation';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
@@ -48,17 +49,21 @@ export default function WithdrawScreen() {
         ? t('ERROR', undefined, 'Error')
         : t('CONFIRM');
 
-    return new Promise((resolve) => {
-      Alert.alert(
+    // For informational alerts (no cancel), use flash message instead of blocking alert
+    if (!cancel) {
+      showFlashMessage({
         title,
-        t(message),
-        cancel
-          ? [
-              { text: t('CANCEL'), style: 'cancel', onPress: () => resolve(false) },
-              { text: t('OK'), onPress: () => resolve(true) },
-            ]
-          : [{ text: t('OK'), onPress: () => resolve(true) }]
-      );
+        message: t(message),
+        type: variant === 'error' ? 'danger' : 'info',
+      });
+      return true;
+    }
+
+    return new Promise((resolve) => {
+      Alert.alert(title, t(message), [
+        { text: t('CANCEL'), style: 'cancel', onPress: () => resolve(false) },
+        { text: t('OK'), onPress: () => resolve(true) },
+      ]);
     });
   };
 
@@ -72,6 +77,8 @@ export default function WithdrawScreen() {
   };
 
   const handleWithdraw = async () => {
+    Keyboard.dismiss();
+    setLoading(true);
     try {
       // --- Validation ---
       if (!entry?.amount) {
@@ -151,6 +158,7 @@ export default function WithdrawScreen() {
               value={wallet}
               onChangeText={setWallet}
               numberOfLines={1}
+              editable={!loading}
               placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
             />
             <TouchableOpacity

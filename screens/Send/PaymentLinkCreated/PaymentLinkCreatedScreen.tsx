@@ -5,6 +5,8 @@ import PaymentClaimCard from 'components/PaymentClaimCard';
 import PaymentLinkCard from './PaymentLinkCard';
 import PaymentLinkButtons from './PaymentLinkButtons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useRef } from 'react';
+import { push } from 'navigation/Navigation';
 
 type PaymentLinkParams = {
   payLink: string;
@@ -20,6 +22,21 @@ export default function PaymentLinkCreatedScreen() {
     (route.params as PaymentLinkParams) || {};
   const linkType: 'payment' | 'request' =
     rawLinkType ?? (passphrase !== undefined ? 'payment' : 'request');
+  const hasNavigated = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (hasNavigated.current) return;
+      hasNavigated.current = true;
+      push('ShareScreen', {
+        amount,
+        duration,
+        mode: 'sent',
+      });
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [amount, duration]);
 
   return (
     <View className="flex-1 bg-[#FAFAFA] px-6">

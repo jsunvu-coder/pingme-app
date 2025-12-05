@@ -34,6 +34,20 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
   const toCommitment = (raw.toCommitment ?? raw.to_commitment ?? '').toLowerCase();
   const normalizedCommitment = (currentCommitment ?? '').toLowerCase();
 
+  // Only surface Claim actions to the recipient. Hide sender-side entries.
+  if (action === 0 && normalizedCommitment) {
+    const toMatches = toCommitment && toCommitment === normalizedCommitment;
+    const fromMatches = fromCommitment && fromCommitment === normalizedCommitment;
+
+    // Show when recipient matches, otherwise hide if it's the sender or unrelated.
+    if (!toMatches && fromMatches) {
+      return null;
+    }
+    if (!toMatches && !fromMatches) {
+      return null;
+    }
+  }
+
   // 🧩 refine dynamic types
   if (action === 8) {
     if (fromCommitment) type = 'QR Pay';

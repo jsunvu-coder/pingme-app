@@ -53,6 +53,7 @@ export class PingHistoryViewModel {
     pageSize?: number;
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
     force?: boolean;
+    targetPreload?: number;
   }): Promise<TransactionViewModel[]> {
     const commitment = this.contractService.getCrypto()?.commitment ?? '';
     const cacheKey = this.getCacheKey(commitment);
@@ -65,12 +66,12 @@ export class PingHistoryViewModel {
       await PingHistoryViewModel.loadFromLocalCache(cacheKey);
     }
 
-    // If data already parsed for this commitment and no force refresh, return cached view
-    const cachedInitial = PingHistoryViewModel.cachedTransactions.slice(0, 5);
-    if (cachedInitial.length) {
-      PingHistoryViewModel.chunkCursor = cachedInitial.length;
-      PingHistoryViewModel.nextIndex = cachedInitial.length;
-      options?.onPhaseUpdate?.(cachedInitial);
+    // If cached transactions exist, surface them immediately and keep the cursor at full cache size.
+    const cachedFull = PingHistoryViewModel.cachedTransactions;
+    if (cachedFull.length) {
+      PingHistoryViewModel.chunkCursor = cachedFull.length;
+      PingHistoryViewModel.nextIndex = cachedFull.length;
+      options?.onPhaseUpdate?.(cachedFull);
     }
 
     const ensureFetch = async () => {
@@ -78,6 +79,8 @@ export class PingHistoryViewModel {
         PingHistoryViewModel.inflight = this.fetchAndHydrate({
           cacheKey,
           commitment,
+          pageSize: options?.pageSize,
+          targetPreload: options?.targetPreload,
           onPhaseUpdate: options?.onPhaseUpdate,
         }).finally(() => {
           PingHistoryViewModel.inflight = null;
@@ -107,8 +110,8 @@ export class PingHistoryViewModel {
     for (const event of rawEvents) {
       const txHash = event.txHash ?? '';
       const action = Number(event.action ?? -1);
-      const fromCommitment = event.fromCommitment ?? event.from_commitment ?? '';
-      const toCommitment = event.toCommitment ?? event.to_commitment ?? '';
+      const fromCommitment = event.fromCommitment ?? '';
+      const toCommitment = event.toCommitment ?? '';
       const key = `${action}-${txHash}-${fromCommitment}-${toCommitment}`;
 
       // ⚠️ Skip duplicates or missing hash
@@ -134,37 +137,26 @@ export class PingHistoryViewModel {
   private removeClaimPaymentPairs(events: TransactionViewModel[]): TransactionViewModel[] {
     if (!events.length) return events;
 
-    const claimHashes = new Set<string>();
-    const claimLockboxes = new Set<string>();
-    const claimTimeAmountKeys = new Set<string>();
-
+    // If the same lockbox has both a Payment (action 9) and a Claim (action 0),
+    // keep the Payment and drop the Claim.
+    const lockboxesWithPayment: Record<string, { hasPayment: boolean; hasClaim: boolean }> = {};
     for (const tx of events) {
-      if (tx.type !== 'Claim') continue;
-
-      if (tx.txHash) claimHashes.add(tx.txHash.toLowerCase());
-      if (tx.lockboxCommitment) claimLockboxes.add(tx.lockboxCommitment.toLowerCase());
-      if (tx.timestamp) {
-        claimTimeAmountKeys.add(`${tx.timestamp}-${tx.amount}`);
+      const lockbox = tx.lockboxCommitment?.toLowerCase();
+      if (!lockbox) continue;
+      if (!lockboxesWithPayment[lockbox]) {
+        lockboxesWithPayment[lockbox] = { hasPayment: false, hasClaim: false };
       }
+      if (tx.actionCode === 9) lockboxesWithPayment[lockbox].hasPayment = true;
+      if (tx.actionCode === 0) lockboxesWithPayment[lockbox].hasClaim = true;
     }
 
     return events.filter((tx) => {
-      if (tx.type !== 'Payment') return true;
-
-      const txHash = tx.txHash?.toLowerCase();
-      if (txHash && claimHashes.has(txHash)) return false;
-
-      // Only hide inbound/positive payments that duplicate a Claim.
-      if (tx.direction === 'send' || !tx.isPositive) return true;
-
+      if (tx.type !== 'Claim') return true;
       const lockbox = tx.lockboxCommitment?.toLowerCase();
-      if (lockbox && claimLockboxes.has(lockbox)) return false;
+      if (!lockbox) return true;
 
-      if (tx.timestamp && claimTimeAmountKeys.has(`${tx.timestamp}-${tx.amount}`)) {
-        return false;
-      }
-
-      return true;
+      const entry = lockboxesWithPayment[lockbox];
+      return !entry?.hasPayment;
     });
   }
 
@@ -185,7 +177,10 @@ export class PingHistoryViewModel {
   }
 
   /** Filter events by direction */
-  filterTransactions(events: TransactionViewModel[], filter: HistoryFilter): TransactionViewModel[] {
+  filterTransactions(
+    events: TransactionViewModel[],
+    filter: HistoryFilter
+  ): TransactionViewModel[] {
     if (filter === 'all') return events;
     return events.filter((e) => {
       switch (filter) {
@@ -301,7 +296,10 @@ export class PingHistoryViewModel {
     }
   }
 
-  static async prefetchTransactions(): Promise<TransactionViewModel[]> {
+  static async prefetchTransactions(options?: {
+    pageSize?: number;
+    targetPreload?: number;
+  }): Promise<TransactionViewModel[]> {
     const vm = new PingHistoryViewModel();
     try {
       const commitment = ContractService.getInstance().getCrypto()?.commitment ?? '';
@@ -317,7 +315,10 @@ export class PingHistoryViewModel {
 
       const cached = this.cachedTransactions;
       const fetchPromise = vm
-        .getTransactions()
+        .getTransactions({
+          pageSize: options?.pageSize,
+          targetPreload: options?.targetPreload,
+        })
         .catch((err) => {
           console.error('[PingHistoryViewModel] Prefetch failed', err);
           return this.cachedTransactions;
@@ -361,25 +362,73 @@ export class PingHistoryViewModel {
   private async fetchAndHydrate(opts: {
     cacheKey: string;
     commitment: string;
+    targetPreload?: number;
+    pageSize?: number;
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
   }): Promise<TransactionViewModel[]> {
     try {
-      const { cacheKey, commitment, onPhaseUpdate } = opts;
+      const { cacheKey, commitment, onPhaseUpdate, pageSize, targetPreload } = opts;
 
       const records = await this.recordService.getRecord();
       const parsed = this.parseTransactions(records || [], commitment);
-      PingHistoryViewModel.parsedTransactions = parsed;
+      const existing = PingHistoryViewModel.cachedTransactions;
+      const seen = new Set<string>();
+      const merged: TransactionViewModel[] = [];
+
+      const addTx = (tx: TransactionViewModel) => {
+        const key = `${tx.actionCode}-${tx.txHash}-${(
+          tx.fromCommitment ?? ''
+        ).toLowerCase()}-${(tx.toCommitment ?? '').toLowerCase()}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(tx);
+      };
+
+      parsed.forEach(addTx);
+      existing.forEach(addTx);
+
+      merged.sort((a, b) => b.timestamp - a.timestamp);
+
+      PingHistoryViewModel.parsedTransactions = merged;
+
+      // If we already have cache loaded, avoid reloading old pages; keep full list and save/notify.
+      if (existing.length > 0) {
+        PingHistoryViewModel.nextIndex = merged.length;
+        PingHistoryViewModel.chunkCursor = merged.length;
+        PingHistoryViewModel.cachedTransactions = merged;
+        onPhaseUpdate?.(merged);
+        PingHistoryViewModel.notify(merged);
+        await PingHistoryViewModel.saveToLocalCache(merged, cacheKey);
+        return merged;
+      }
+
       PingHistoryViewModel.nextIndex = PingHistoryViewModel.chunkCursor || 0;
 
-      // Initial chunk of 5
-      if (PingHistoryViewModel.nextIndex < 5) {
-        await this.applyChunk(5 - PingHistoryViewModel.nextIndex, cacheKey, onPhaseUpdate);
+      const initialPreload = Math.max(pageSize ?? 5, 5);
+      const preloadTarget = Math.max(targetPreload ?? 20, initialPreload);
+
+      if (PingHistoryViewModel.nextIndex < initialPreload) {
+        await this.applyChunk(
+          initialPreload - PingHistoryViewModel.nextIndex,
+          cacheKey,
+          onPhaseUpdate
+        );
       }
 
-      // Stage three additional chunks of 8
-      for (let i = 0; i < 3; i++) {
-        await this.applyChunk(8, cacheKey, onPhaseUpdate);
-      }
+      // Stage additional chunks in the background to avoid blocking initial render
+      (async () => {
+        try {
+          while (
+            PingHistoryViewModel.parsedTransactions.length > PingHistoryViewModel.nextIndex &&
+            PingHistoryViewModel.nextIndex < preloadTarget
+          ) {
+            const remaining = preloadTarget - PingHistoryViewModel.nextIndex;
+            await this.applyChunk(Math.min(8, remaining), cacheKey, onPhaseUpdate);
+          }
+        } catch (err) {
+          console.error('[PingHistoryViewModel] Background chunk preload failed', err);
+        }
+      })();
 
       return PingHistoryViewModel.cachedTransactions;
     } catch (err) {

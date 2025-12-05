@@ -20,7 +20,10 @@ const formatMicroToUsd = (value?: string | bigint | null): string => {
   }
 };
 
-const selectDefaultBalance = (balances: BalanceEntry[], token?: string | null): BalanceEntry | null => {
+const selectDefaultBalance = (
+  balances: BalanceEntry[],
+  token?: string | null
+): BalanceEntry | null => {
   if (!balances.length) return null;
   if (token) {
     const found = balances.find((b) => b.token === token);
@@ -123,10 +126,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
         message,
         title: titleKey,
         buttons: cancel
-          ? [
-              { text: 'Cancel', style: 'cancel' as const },
-              { text: 'Confirm' as const },
-            ]
+          ? [{ text: 'Cancel', style: 'cancel' as const }, { text: 'Confirm' as const }]
           : [{ text: 'OK' as const }],
       }),
     []
@@ -195,12 +195,9 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     setAmount((prev) => normalizeAmountInput(prev));
   }, []);
 
-  const selectBalance = useCallback(
-    (entry: BalanceEntry) => {
-      setSelectedBalance(entry);
-    },
-    []
-  );
+  const selectBalance = useCallback((entry: BalanceEntry) => {
+    setSelectedBalance(entry);
+  }, []);
 
   const handleQrResult = useCallback(
     async (value: string) => {
@@ -255,8 +252,8 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
 
     if (numericAmount < 1) {
       await showLocalizedAlert({
-        title: 'Invalid amount',
-        message: 'Amount must be at least $1.00.',
+        title: 'Amount too low',
+        message: 'Minimum payment amount is $1.00.',
         buttons: [{ text: 'OK' }],
       });
       return;
@@ -281,7 +278,8 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       console.error('❌ withdrawAndDeposit failed:', error);
       const message = (error as Error)?.message ?? '_ALERT_PAYMENT_FAILED';
       if (message.startsWith('_')) {
-        const titleKey = message === '_ALERT_ABOVE_AVAILABLE' ? '_TITLE_ABOVE_AVAILABLE' : undefined;
+        const titleKey =
+          message === '_ALERT_ABOVE_AVAILABLE' ? '_TITLE_ABOVE_AVAILABLE' : undefined;
         await confirm(message, false, titleKey);
       } else {
         await showLocalizedAlert({
@@ -292,12 +290,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     } finally {
       setLoading(false);
     }
-  }, [
-    amount,
-    commitment,
-    confirm,
-    selectedBalance,
-  ]);
+  }, [amount, commitment, confirm, selectedBalance]);
 
   const copyTxHash = useCallback(async () => {
     if (!txHash) return;

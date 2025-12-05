@@ -9,9 +9,10 @@ import CheckSquareIcon from 'assets/CheckSquareIcon';
 import { TOC_URL } from 'business/Config';
 import PrimaryButton from 'components/PrimaryButton';
 import { AuthService } from 'business/services/AuthService';
-import { setRootScreen } from 'navigation/Navigation';
+import { presentOverMain, setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
+import { shareFlowService } from 'business/services/ShareFlowService';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/; // 8+ chars, upper, lower, digit
@@ -20,6 +21,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
   const route = useRoute<any>();
   const initialEmail =
     prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
+  const claimedAmountUsd = amountUsdStr ?? route?.params?.amountUsdStr;
 
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -77,10 +79,21 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
 
     try {
       const lockbox = lockboxProof ?? route?.params?.lockboxProof;
-      const ok = await auth.signup(email, password, lockbox);
+      const ok = await Promise.race([
+        auth.signup(email, password, lockbox),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
+        ),
+      ]);
 
       if (ok) {
         AccountDataService.getInstance().email = email;
+        if (lockbox) {
+          shareFlowService.setPendingClaim({
+            amountUsdStr: claimedAmountUsd,
+            from: 'signup',
+          });
+        }
         setRootScreen(['MainTab']);
 
         const pendingLink = deepLinkHandler.getPendingLink();
@@ -107,6 +120,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           placeholder="Email address"
           error={!!errors.email}
           errorMessage={errors.email}
+          editable={!loading}
         />
 
         <AuthInput
@@ -122,6 +136,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           error={!!errors.password}
           errorMessage={errors.password}
           autoCapitalize="none"
+          editable={!loading}
         />
 
         <AuthInput
@@ -137,6 +152,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           errorMessage={errors.confirm}
           returnKeyType="done"
           blurOnSubmit
+          editable={!loading}
           onSubmitEditing={() => {
             if (!loading && isFormValid) {
               void handleRegister();
@@ -144,7 +160,11 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           }}
         />
 
-        <TouchableWithoutFeedback onPress={() => setAgreeToC(!agreeToC)}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            if (loading) return;
+            setAgreeToC(!agreeToC);
+          }}>
           <View className="mt-3 flex-row items-center gap-x-2">
             <CheckSquareIcon isChecked={agreeToC} />
             <Text>

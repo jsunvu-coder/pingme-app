@@ -78,8 +78,8 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
         return;
       }
 
-      console.log('🏦 Navigating to PayQrScreen (deposit mode):', payload);
-      push('PayQrScreen', { mode: 'deposit', depositPayload: payload });
+      console.log('🏦 Navigating to PayQrConfirmationScreen (deposit mode):', payload);
+      push('PayQrConfirmationScreen', { mode: 'deposit', depositPayload: payload });
       return;
     }
 

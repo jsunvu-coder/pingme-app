@@ -285,21 +285,27 @@ export class AuthService {
       if (!saltHash) throw new Error('Failed to generate salt hash.');
       const commitmentHash = CryptoUtils.globalHash(cr.commitment);
       if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
-      await this.commitProtect(
-        () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment),
-        lockboxProofHash,
-        saltHash,
-        commitmentHash
-      );
-
-      this.log('Claim successful');
 
       try {
-        this.log('Refreshing balances after claim...');
-        await this.balanceService.getBalance();
-        this.recordService.updateRecord();
-      } catch (refreshErr) {
-        console.warn('⚠️ [AuthService] Failed to refresh balance after claim', refreshErr);
+        await this.commitProtect(
+          () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment),
+          lockboxProofHash,
+          saltHash,
+          commitmentHash
+        );
+
+        this.log('Claim successful');
+
+        try {
+          this.log('Refreshing balances after claim...');
+          await this.balanceService.getBalance();
+          this.recordService.updateRecord();
+        } catch (refreshErr) {
+          console.warn('⚠️ [AuthService] Failed to refresh balance after claim', refreshErr);
+        }
+      } catch (claimErr) {
+        // If claim already succeeded or cannot re-submit, still allow login to continue
+        console.warn('⚠️ [AuthService] Claim during signin failed; continuing login anyway.', claimErr);
       }
 
       return true;

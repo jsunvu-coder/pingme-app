@@ -8,6 +8,7 @@ type Props = {
   balance: string;
   mode: 'send' | 'request';
   autoFocus?: boolean;
+  isLoading?: boolean;
 };
 
 export default function PaymentAmountView({
@@ -16,6 +17,7 @@ export default function PaymentAmountView({
   balance,
   mode,
   autoFocus = false,
+  isLoading,
 }: Props) {
   const balanceLabel = mode === 'request' ? 'Current' : 'Available';
   return (
@@ -34,6 +36,7 @@ export default function PaymentAmountView({
         placeholder="Amount"
         keyboardType="decimal-pad"
         autoFocus={autoFocus}
+        editable={!isLoading}
       />
     </View>
   );

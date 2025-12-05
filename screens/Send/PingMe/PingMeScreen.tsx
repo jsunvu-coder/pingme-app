@@ -161,6 +161,7 @@ export default function PingMeScreen() {
   const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
 
   const handleContinue = async () => {
+    Keyboard.dismiss();
     // --- 1️⃣ Validate email (only if Email mode is active)
     let recipient = '';
     if (activeChannel === 'Email') {
@@ -240,14 +241,16 @@ export default function PingMeScreen() {
       return;
     }
 
-    const availableBalance = parseFloat(balanceService.totalBalance || '0');
-    if (Number.isFinite(availableBalance) && normalizedAmount > availableBalance) {
-      showFlashMessage({
-        title: 'Exceed balance',
-        message: 'The amount exceed the available balance.',
-        type: 'warning',
-      });
-      return;
+    if (mode === 'send') {
+      const availableBalance = parseFloat(balanceService.totalBalance || '0');
+      if (Number.isFinite(availableBalance) && normalizedAmount > availableBalance) {
+        showFlashMessage({
+          title: 'Exceed balance',
+          message: 'The amount exceed the available balance.',
+          type: 'warning',
+        });
+        return;
+      }
     }
 
     // --- 3️⃣ Validate duration
@@ -337,11 +340,7 @@ export default function PingMeScreen() {
               <LockboxDurationView onChange={setDuration} value={duration} />
             ) : null}
 
-            <PrimaryButton
-              title="Continue"
-              className="mt-6"
-              onPress={handleContinue}
-            />
+            <PrimaryButton title="Continue" className="mt-6" onPress={handleContinue} />
           </Animated.View>
 
           <SafeAreaView />

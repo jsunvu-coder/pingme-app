@@ -9,6 +9,7 @@ import { t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { PingHistoryViewModel } from 'screens/Home/History/List/PingHistoryViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
+import { shareFlowService } from 'business/services/ShareFlowService';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | null;
 
@@ -23,6 +24,20 @@ export class LoginViewModel {
       biometricType: this.biometricType,
       useBiometric: this.useBiometric,
     };
+  }
+
+  private withTimeout<T>(
+    promise: Promise<T>,
+    ms = 20000,
+    message = 'Request timed out. Please try again.'
+  ): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), ms);
+        // Clear handled by race resolution
+      }),
+    ]);
   }
 
   /**
@@ -85,7 +100,7 @@ export class LoginViewModel {
     let ok = false;
 
     try {
-      ok = await auth.signin(email, password, lockboxProof);
+      ok = await this.withTimeout(auth.signin(email, password, lockboxProof));
     } catch (err) {
       const fallbackMessage = t('AUTH_LOGIN_INVALID_CREDENTIALS');
       let message = fallbackMessage;
@@ -162,23 +177,29 @@ export class LoginViewModel {
     shareParams?: { mode: 'claimed'; amountUsdStr?: string; from?: 'login' | 'signup' }
   ) {
     AccountDataService.getInstance().email = email;
-    setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
-    PingHistoryViewModel.prefetchTransactions();
+    if (shareParams?.mode === 'claimed') {
+      shareFlowService.setPendingClaim({
+        amountUsdStr: shareParams.amountUsdStr,
+        from: shareParams.from ?? 'login',
+      });
+    }
+    const warmCache = async () => {
+      try {
+        // Load a quick batch of 5 before showing home; background preloading is limited to 5 here.
+        await PingHistoryViewModel.prefetchTransactions({ pageSize: 5, targetPreload: 5 });
+      } catch (err) {
+        console.warn('[Auth] Prefetch on login failed', err);
+      }
+    };
+
+    warmCache().finally(() =>
+      setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }])
+    );
+
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {
       console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
       setTimeout(() => deepLinkHandler.resumePendingLink(), 500);
-    }
-
-    if (shareParams?.mode === 'claimed') {
-      setTimeout(
-        () =>
-          presentOverMain('ClaimSuccessScreen', {
-            amountUsdStr: shareParams.amountUsdStr,
-            from: shareParams.from,
-          }),
-        300
-      );
     }
   }
 

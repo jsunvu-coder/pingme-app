@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { View, Text, ScrollView, Platform, KeyboardAvoidingView, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Platform,
+  KeyboardAvoidingView,
+  TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -16,7 +25,7 @@ import CloseButton from 'components/CloseButton';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import WalletRequestIcon from 'assets/WalletRequestIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { push } from 'navigation/Navigation';
+import { push, setRootScreen } from 'navigation/Navigation';
 import { BalanceService } from 'business/services/BalanceService';
 import { RequestService } from 'api/RequestService';
 import enUS from 'i18n/en-US.json';
@@ -181,13 +190,18 @@ export default function RequestConfirmationScreen() {
         if (sent) {
           console.log('✅ Request sent successfully!');
 
-          push('RequestSuccessScreen', {
-            amount: validatedAmount,
-            displayAmount: `$${validatedAmount.toFixed(2)}`,
-            recipient,
-            channel,
-            lockboxDuration,
-          });
+          setRootScreen([
+            {
+              name: 'RequestSuccessScreen',
+              params: {
+                amount: validatedAmount,
+                displayAmount: `$${validatedAmount.toFixed(2)}`,
+                recipient,
+                channel,
+                lockboxDuration,
+              },
+            },
+          ]);
         }
       },
     });
@@ -213,77 +227,84 @@ export default function RequestConfirmationScreen() {
       setPayLink: (url) => {
         console.log('✅ Request sent successfully!');
         const durationInDays = Math.ceil(lockboxDuration / 86400);
-        push('PaymentLinkCreatedScreen', {
-          payLink: url,
-          amount: validatedAmount,
-          duration: durationInDays,
-          linkType: 'request',
-        });
+        setRootScreen([
+          {
+            name: 'PaymentLinkCreatedScreen',
+            params: {
+              payLink: url,
+              amount: validatedAmount,
+              duration: durationInDays,
+              linkType: 'request',
+            },
+          },
+        ]);
       },
     });
   };
 
   return (
     <ModalContainer>
-      <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
-        <View className="absolute top-6 right-6 z-10">
-          <CloseButton />
-        </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
+          <View className="absolute top-6 right-6 z-10">
+            <CloseButton />
+          </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'position' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-          style={{ flex: 1 }}>
-          <ScrollView
-            contentInsetAdjustmentBehavior="automatic"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            <View className="px-6 pt-10 pb-8">
-              <View className="mt-2 mb-6 items-center">
-                <WalletRequestIcon />
-              </View>
-
-              <Text className="mb-8 text-center text-4xl font-bold text-black">
-                You’re about to request a payment
-              </Text>
-
-              <PaymentSummaryCard
-                amount={displayAmount}
-                recipient={recipient}
-                lockboxDuration={lockboxDuration}
-              />
-
-              {channel === 'Email' ? (
-                <View className="mt-1">
-                  <Text className="mb-2 text-xs font-semibold tracking-[1px] text-gray-500">
-                    ENTER NOTE
-                  </Text>
-                  <TextInput
-                    placeholder="Add an optional message for your request"
-                    placeholderTextColor="#9CA3AF"
-                    multiline
-                    textAlignVertical="top"
-                    maxLength={240}
-                    className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
-                    value={note}
-                    onChangeText={setNote}
-                  />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'position' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+            style={{ flex: 1 }}>
+            <ScrollView
+              contentInsetAdjustmentBehavior="automatic"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              <View className="px-6 pt-10 pb-8">
+                <View className="mt-2 mb-6 items-center">
+                  <WalletRequestIcon />
                 </View>
-              ) : null}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
 
-        <View className="px-6 pb-6">
-          <PrimaryButton
-            title={channel === 'Email' ? 'Send Payment Request' : 'Confirm Request'}
-            loading={loading}
-            onPress={handleSendingRequest}
-          />
+                <Text className="mb-8 text-center text-4xl font-bold text-black">
+                  You’re about to request a payment
+                </Text>
+
+                <PaymentSummaryCard
+                  amount={displayAmount}
+                  recipient={recipient}
+                  lockboxDuration={lockboxDuration}
+                />
+
+                {channel === 'Email' ? (
+                  <View className="mt-1">
+                    <Text className="mb-2 text-xs font-semibold tracking-[1px] text-gray-500">
+                      ENTER NOTE
+                    </Text>
+                    <TextInput
+                      placeholder="Add an optional message for your request"
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      textAlignVertical="top"
+                      maxLength={240}
+                      className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
+                      value={note}
+                      onChangeText={setNote}
+                    />
+                  </View>
+                ) : null}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+
+          <View className="px-6 pb-6">
+            <PrimaryButton
+              title={channel === 'Email' ? 'Send Payment Request' : 'Confirm Request'}
+              loading={loading}
+              onPress={handleSendingRequest}
+            />
+          </View>
+
+          <SafeAreaView edges={['bottom']} />
         </View>
-
-        <SafeAreaView edges={['bottom']} />
-      </View>
+      </TouchableWithoutFeedback>
     </ModalContainer>
   );
 }

@@ -63,6 +63,10 @@ export default function AuthScreen() {
           offset += IS_SMALL_SCREEN ? 150 : 100;
         }
 
+        if (activeTab === 'signup') {
+          offset += IS_SMALL_SCREEN ? 250 : 0;
+        }
+
         Animated.timing(translateY, {
           toValue: -offset,
           duration: 250,

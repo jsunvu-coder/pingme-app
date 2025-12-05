@@ -15,10 +15,11 @@ export default function LoginView({
   lockboxProof,
   prefillUsername,
   from,
+  amountUsdStr,
 }: {
   lockboxProof?: string;
   prefillUsername?: string;
-  from?: string;
+  from?: 'login' | 'signup';
   amountUsdStr?: string;
 }) {
   const route = useRoute<any>();
@@ -92,24 +93,35 @@ export default function LoginView({
     }
 
     setLoading(true);
-    const result = await vm.handleLogin(
-      email,
-      password,
-      useBiometric,
-      biometricType,
-      lockboxProof ?? routeLockboxProof, // 🔒 Keep proof logic intact
-      lockboxProof || routeLockboxProof
-        ? {
-            mode: 'claimed',
-            amountUsdStr: amountUsdStr ?? route?.params?.amountUsdStr,
-            from,
-          }
-        : undefined
-    );
-    setLoading(false);
+    try {
+      const fromParam: 'login' | 'signup' =
+        (from ?? route?.params?.from) === 'signup' ? 'signup' : 'login';
+      const result = await vm.handleLogin(
+        email,
+        password,
+        useBiometric,
+        biometricType,
+        lockboxProof ?? routeLockboxProof, // 🔒 Keep proof logic intact
+        lockboxProof || routeLockboxProof
+          ? {
+              mode: 'claimed',
+              amountUsdStr: amountUsdStr ?? route?.params?.amountUsdStr,
+              from: fromParam,
+            }
+          : undefined
+      );
 
-    if (result?.success) {
-      setUseBiometric(result.biometricEnabled);
+      if (result?.success) {
+        setUseBiometric(result.biometricEnabled);
+      }
+    } catch (err: any) {
+      showFlashMessage({
+        title: t('AUTH_LOGIN_FAILED_TITLE'),
+        message: err?.message || t('AUTH_LOGIN_INVALID_CREDENTIALS'),
+        type: 'danger',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,6 +140,7 @@ export default function LoginView({
           value={email}
           onChangeText={setEmail}
           placeholder={t('AUTH_EMAIL_PLACEHOLDER')}
+          editable={!loading}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -138,6 +151,7 @@ export default function LoginView({
             value={password}
             onChangeText={setPassword}
             placeholder={t('AUTH_PASSWORD_PLACEHOLDER')}
+            editable={!loading}
             secureTextEntry
             returnKeyType="done"
             onSubmitEditing={() => {
@@ -162,7 +176,7 @@ export default function LoginView({
             }}
             trackColor={{ false: '#ccc', true: '#FD4912' }}
             thumbColor={useBiometric ? '#fff' : '#f4f3f4'}
-            disabled={!initialized}
+            disabled={!initialized || loading}
           />
           <Text className="ml-3 text-[15px] text-[#1D1D1D]">
             {t('AUTH_USE_BIOMETRIC', {

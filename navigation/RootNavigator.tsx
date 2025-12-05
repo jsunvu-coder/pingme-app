@@ -18,7 +18,7 @@ import PaymentLinkCreatedScreen from 'screens/Send/PaymentLinkCreated/PaymentLin
 import PingHistoryScreen from 'screens/Home/History/List/PingHistoryScreen';
 import DepositScreen from 'screens/Home/Deposit/DepositScreen';
 import QRCodeScreen from 'screens/Pay/QrCode/QRCodeScreen';
-import PayQrScreen from 'screens/Pay/QrPayment/PayQrScreen';
+import PayQrConfirmationScreen from 'screens/Pay/QrPayment/PayQrConfirmationScreen';
 import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
 import ChangePasswordScreen from 'screens/Onboarding/Auth/ChangePasswordScreen';
@@ -98,17 +98,26 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'PaymentSuccessScreen',
         component: PaymentSuccessScreen,
-        options: transparentModalOptions,
+        options: {
+          ...transparentModalOptions,
+          gestureEnabled: false,
+        },
       },
       {
         name: 'ClaimSuccessScreen',
         component: ClaimSuccessScreen,
-        options: transparentModalOptions,
+        options: {
+          ...transparentModalOptions,
+          gestureEnabled: false,
+        },
       },
       {
         name: 'PaymentLinkCreatedScreen',
         component: PaymentLinkCreatedScreen,
-        options: transparentModalOptions,
+        options: {
+          ...transparentModalOptions,
+          gestureEnabled: false,
+        },
       },
     ],
   },
@@ -123,7 +132,10 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'RequestSuccessScreen',
         component: RequestSuccessScreen,
-        options: transparentModalOptions,
+        options: {
+          ...transparentModalOptions,
+          gestureEnabled: false,
+        },
       },
       { name: 'ClaimPaymentScreen', component: ClaimPaymentScreen },
       {
@@ -145,7 +157,7 @@ const SCREEN_GROUPS: Array<{
     label: 'QR Payments',
     screens: [
       { name: 'QRCodeScreen', component: QRCodeScreen },
-      { name: 'PayQrScreen', component: PayQrScreen },
+      { name: 'PayQrConfirmationScreen', component: PayQrConfirmationScreen },
     ],
   },
   {
@@ -208,7 +220,10 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'WithdrawSuccessScreen',
         component: WithdrawSuccessScreen,
-        options: transparentModalOptions,
+        options: {
+          ...transparentModalOptions,
+          gestureEnabled: false,
+        },
       },
     ],
   },

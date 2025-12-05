@@ -24,6 +24,8 @@ export default function PingHistoryScreen() {
     try {
       const firstPage = await vm.getTransactions({
         force,
+        pageSize: 25,
+        targetPreload: 25,
         onPhaseUpdate: (txs) => setTransactions(txs),
       });
       setTransactions(firstPage);
@@ -62,12 +64,15 @@ export default function PingHistoryScreen() {
 
   useEffect(() => {
     const commitment = ContractService.getInstance().getCrypto()?.commitment;
-    const cached = PingHistoryViewModel.getCachedTransactions(commitment ?? undefined);
-    if (cached.length) {
-      setTransactions(cached);
-      setLoading(false);
-    }
-    loadData(!cached.length, true);
+
+    (async () => {
+      const cached = await PingHistoryViewModel.loadCachedTransactions(commitment ?? undefined);
+      if (cached.length) {
+        setTransactions(cached);
+        setLoading(false);
+      }
+      await loadData(!cached.length, true);
+    })();
   }, []);
 
   useEffect(() => {

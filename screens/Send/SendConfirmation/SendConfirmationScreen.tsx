@@ -5,7 +5,7 @@ import type { RouteProp } from '@react-navigation/native';
 
 import ModalContainer from 'components/ModalContainer';
 import PrimaryButton from 'components/PrimaryButton';
-import { push } from 'navigation/Navigation';
+import { push, setRootScreen } from 'navigation/Navigation';
 import WalletSendIcon from 'assets/WalletSendIcon';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import PassphraseSection from './PassphraseSection';
@@ -317,14 +317,19 @@ export default function SendConfirmationScreen() {
           if (hash) {
             console.log('🎉 Payment completed successfully!');
             console.log('✅ Transaction hash:', hash);
-            push('PaymentSuccessScreen', {
-              recipient,
-              amount,
-              passphrase,
-              txHash: hash,
-              channel: params.channel || 'Link',
-              duration: durationDays,
-            });
+            setRootScreen([
+              {
+                name: 'PaymentSuccessScreen',
+                params: {
+                  recipient,
+                  amount,
+                  passphrase,
+                  txHash: hash,
+                  channel: params.channel || 'Link',
+                  duration: durationDays,
+                },
+              },
+            ]);
 
             const userEmail = AccountDataService.getInstance().email ?? '';
             PingHistoryStorage.save(userEmail, {
@@ -340,13 +345,18 @@ export default function SendConfirmationScreen() {
           if (payLink) {
             console.log('🎉 Payment completed successfully!');
             console.log('✅ PayLink:', payLink);
-            push('PaymentLinkCreatedScreen', {
-              amount,
-              passphrase,
-              payLink,
-              duration: durationDays,
-              linkType: 'payment',
-            });
+            setRootScreen([
+              {
+                name: 'PaymentLinkCreatedScreen',
+                params: {
+                  amount,
+                  passphrase,
+                  payLink,
+                  duration: durationDays,
+                  linkType: 'payment',
+                },
+              },
+            ]);
           }
         },
       });
@@ -400,6 +410,7 @@ export default function SendConfirmationScreen() {
                 setUsePassphrase={setUsePassphrase}
                 passphrase={passphrase}
                 setPassphrase={setPassphrase}
+                disabled={loading || balancesLoading}
               />
 
               <View className="mt-10">

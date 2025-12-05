@@ -63,6 +63,7 @@ export default function ClaimPaymentScreen() {
                   onChangeText={setPassphrase}
                   error={!!verifyError}
                   errorMessage={verifyError || undefined}
+                  disabled={loading}
                 />
               </View>
             )}

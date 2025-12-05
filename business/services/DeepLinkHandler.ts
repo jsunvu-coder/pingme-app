@@ -1,6 +1,7 @@
 import { push, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
+import { Alert } from 'react-native';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -9,6 +10,10 @@ class DeepLinkHandler {
   setPendingURL(url: string) {
     this.pendingURL = url;
     console.log('[DeepLinkHandler] Stored pending URL:', url);
+  }
+
+  clearPendingURL() {
+    this.pendingURL = null;
   }
 
   getPendingLink(): string | null {
@@ -82,7 +87,14 @@ class DeepLinkHandler {
         // CLAIM → open immediately regardless of login
         if (path === 'claim') {
           console.log('[DeepLinkHandler] Cold start claim → open ClaimPaymentScreen');
-          this.navigateClaim(Object.fromEntries(u.searchParams));
+          const params = Object.fromEntries(u.searchParams);
+          if (isLoggedIn) {
+            this.setPendingURL(url);
+            setRootScreen(['MainTab']);
+            setTimeout(() => this.confirmLogoutAndClaim(params), 400);
+          } else {
+            this.navigateClaim(params);
+          }
           return;
         }
 
@@ -138,10 +150,14 @@ class DeepLinkHandler {
     console.log('[DeepLinkHandler] handleURL:', path, params, 'loggedIn=', isLoggedIn);
 
     switch (path) {
-      case 'claim':
-        // Skip login check always
+      case 'claim': {
+        if (isLoggedIn) {
+          this.confirmLogoutAndClaim(params);
+          return;
+        }
         this.navigateClaim(params);
         return;
+      }
 
       case 'pay':
       case 'deposit':
@@ -164,6 +180,7 @@ class DeepLinkHandler {
   // --- Navigation helpers ---
   private navigateClaim(params: Record<string, string>) {
     console.log('[DeepLinkHandler] Navigating to ClaimPaymentScreen', params);
+    this.clearPendingURL();
     push('ClaimPaymentScreen', {
       ...params,
       onClaimSuccess: () => {
@@ -179,8 +196,36 @@ class DeepLinkHandler {
   }
 
   private navigatePayQr(params: Record<string, string>) {
-    console.log('[DeepLinkHandler] Navigating to PayQrScreen', params);
-    push('PayQrScreen', params);
+    console.log('[DeepLinkHandler] Navigating to PayQrConfirmationScreen', params);
+    push('PayQrConfirmationScreen', params);
+  }
+
+  private confirmLogoutAndClaim(params: Record<string, string>) {
+    Alert.alert(
+      'Confirmation',
+      'To claim, you must log out first. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          style: 'destructive',
+          onPress: () => {
+            void this.logoutAndNavigateClaim(params);
+          },
+        },
+      ]
+    );
+  }
+
+  private async logoutAndNavigateClaim(params: Record<string, string>) {
+    try {
+      this.clearPendingURL();
+      await AuthService.getInstance().logout();
+    } catch (err) {
+      console.warn('[DeepLinkHandler] Logout before claim failed', err);
+    }
+    setRootScreen(['OnboardingPager']);
+    setTimeout(() => this.navigateClaim(params), 300);
   }
 }
 

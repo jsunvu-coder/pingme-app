@@ -5,6 +5,7 @@ import ArrowLeftRightIcon from 'assets/ArrowLeftRightIcon';
 import ShareSection from './ShareSection';
 import CloseButton from 'components/CloseButton';
 import { AdCard } from './AdCard';
+import { setRootScreen } from 'navigation/Navigation';
 
 type ShareParams = {
   amount?: number; // for send flow
@@ -43,7 +44,12 @@ export default function ShareScreen() {
   return (
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
-        <CloseButton className="mt-6 mr-6 items-end" />
+        <CloseButton
+          className="mt-6 mr-6 items-end"
+          onPress={() => {
+            setRootScreen(['MainTab']);
+          }}
+        />
 
         <ScrollView className="px-6 pb-10">
           <Header title={title} description={description} />

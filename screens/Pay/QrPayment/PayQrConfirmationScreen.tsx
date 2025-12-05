@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -76,44 +84,52 @@ export default function PayQrConfirmationScreen() {
 
   return (
     <ModalContainer>
-      <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
-        <View className="absolute top-6 right-6 z-10">
-          <CloseButton />
-        </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
+          <View className="absolute top-6 right-6 z-10">
+            <CloseButton />
+          </View>
 
-        <View className="px-6 pt-10 pb-8">
-          <ScrollView
-            className="mt-8"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}>
-            <View className="mt-12 mb-6 items-center">
-              <WalletSendIcon />
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
+            <View className="flex-1 px-6 pt-10 pb-8">
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                className="mt-8"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 24 }}>
+                <View className="mt-12 mb-6 items-center">
+                  <WalletSendIcon />
+                </View>
+
+                <Text className="mb-6 text-center text-3xl font-bold text-black">
+                  You're about to send
+                </Text>
+
+                <PayStaticQrView
+                  amount={amount}
+                  recipient={commitment}
+                  setAmount={setAmount}
+                  scanned={scanned}
+                />
+              </ScrollView>
             </View>
+          </KeyboardAvoidingView>
 
-            <Text className="mb-6 text-center text-3xl font-bold text-black">
-              You're about to send
-            </Text>
-
-            <PayStaticQrView
-              amount={amount}
-              recipient={commitment}
-              setAmount={setAmount}
-              scanned={scanned}
+          <View className="mx-6 mb-16">
+            <PrimaryButton
+              title="Pay Now"
+              onPress={() => {
+                void handlePayNow();
+              }}
+              loading={loading}
+              loadingText="Processing"
             />
-          </ScrollView>
+          </View>
         </View>
-
-        <View className="mx-6 mb-16">
-          <PrimaryButton
-            title="Pay Now"
-            onPress={() => {
-              void handlePayNow();
-            }}
-            loading={loading}
-            loadingText="Processing"
-          />
-        </View>
-      </View>
+      </TouchableWithoutFeedback>
     </ModalContainer>
   );
 }

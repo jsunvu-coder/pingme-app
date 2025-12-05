@@ -9,16 +9,25 @@ type ClaimSuccessParams = {
   amount?: number;
   amountUsdStr?: string;
   from?: 'login' | 'signup';
+  disableAutoShare?: boolean;
+  autoShareDelayMs?: number;
 };
 
 export default function ClaimSuccessScreen() {
   const route = useRoute();
   const hasNavigated = useRef(false);
 
-  const { amount = 0, amountUsdStr, from = 'login' } = (route.params as ClaimSuccessParams) || {};
+  const {
+    amount = 0,
+    amountUsdStr,
+    from = 'login',
+    disableAutoShare = false,
+    autoShareDelayMs = 5000,
+  } = (route.params as ClaimSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
 
   useEffect(() => {
+    if (disableAutoShare) return;
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         hasNavigated.current = true;
@@ -28,10 +37,10 @@ export default function ClaimSuccessScreen() {
           from,
         });
       }
-    }, 5000);
+    }, autoShareDelayMs);
 
     return () => clearTimeout(timer);
-  }, [displayAmount, from]);
+  }, [autoShareDelayMs, disableAutoShare, displayAmount, from]);
 
   const handleBackToHome = () => {
     hasNavigated.current = true;

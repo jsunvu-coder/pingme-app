@@ -1,5 +1,4 @@
 import { View, Text, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 const adCard = require('../../assets/ad_card.png');
 
 export const AdCard = () => {
