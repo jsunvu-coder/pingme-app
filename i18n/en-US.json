@@ -17,6 +17,7 @@
   "AUTH_PASSWORD_PLACEHOLDER": "Password",
   "AUTH_PASSWORD_REQUIRED": "Password is required",
   "AUTH_PASSWORD_RULE": "Password must be at least 8 characters and include uppercase, lowercase, and a number",
+  "AUTH_PASSWORD_RULE_LOWERCASE": "1 lowercase letter",
   "AUTH_PASSWORD_RULE_LENGTH": "8 characters",
   "AUTH_PASSWORD_RULE_NUMBER": "1 number",
   "AUTH_PASSWORD_RULE_UPPERCASE": "1 uppercase letter",

@@ -13,9 +13,9 @@ import { presentOverMain, setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { shareFlowService } from 'business/services/ShareFlowService';
+import { passwordRegex, validatePasswordFields as sharedValidatePasswords } from './passwordValidation';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/; // 8+ chars, upper, lower, digit
 
 export default function CreateAccountView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
   const route = useRoute<any>();
@@ -42,25 +42,16 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
         break;
 
       case 'password':
-        if (!value) newErrors.password = 'Password is required';
-        else if (!passwordRegex.test(value))
-          newErrors.password =
-            'Password must be at least 8 characters and include uppercase, lowercase, and a number';
+      case 'confirm': {
+        const pwd = field === 'password' ? value : password;
+        const conf = field === 'confirm' ? value : confirm;
+        const validation = sharedValidatePasswords(pwd, conf);
+        if (validation.password) newErrors.password = validation.password;
         else delete newErrors.password;
-
-        // Revalidate confirm password
-        if (confirm && value !== confirm) {
-          newErrors.confirm = 'Passwords do not match';
-        } else if (confirm) {
-          delete newErrors.confirm;
-        }
-        break;
-
-      case 'confirm':
-        if (!value) newErrors.confirm = 'Please re-enter password';
-        else if (password && value !== password) newErrors.confirm = 'Passwords do not match';
+        if (validation.confirm) newErrors.confirm = validation.confirm;
         else delete newErrors.confirm;
         break;
+      }
     }
 
     setErrors(newErrors);

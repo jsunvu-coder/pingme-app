@@ -60,7 +60,6 @@ export default function RecoveryPasswordScreen() {
             value={password}
             placeholder="Password"
             editable={false}
-            secureTextEntry
           />
         </View>
 
