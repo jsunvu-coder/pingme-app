@@ -34,20 +34,6 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
   const toCommitment = (raw.toCommitment ?? raw.to_commitment ?? '').toLowerCase();
   const normalizedCommitment = (currentCommitment ?? '').toLowerCase();
 
-  // Only surface Claim actions to the recipient. Hide sender-side entries.
-  if (action === 0 && normalizedCommitment) {
-    const toMatches = toCommitment && toCommitment === normalizedCommitment;
-    const fromMatches = fromCommitment && fromCommitment === normalizedCommitment;
-
-    // Show when recipient matches, otherwise hide if it's the sender or unrelated.
-    if (!toMatches && fromMatches) {
-      return null;
-    }
-    if (!toMatches && !fromMatches) {
-      return null;
-    }
-  }
-
   // 🧩 refine dynamic types
   if (action === 8) {
     if (fromCommitment) type = 'QR Pay';
@@ -76,8 +62,16 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
     return null;
   }
 
+  // Map inbound/outbound similar to web filters; fall back to commitment-based logic when needed.
+  const inboundActions = new Set<number>([0, 2, 3, 4, 5]);
+  const outboundActions = new Set<number>([6, 7, 9]);
+
   let direction: 'send' | 'receive' | 'other' = 'other';
-  if (normalizedCommitment) {
+  if (inboundActions.has(action) || (action === 8 && !!toCommitment)) {
+    direction = 'receive';
+  } else if (outboundActions.has(action) || (action === 8 && !!fromCommitment)) {
+    direction = 'send';
+  } else if (normalizedCommitment) {
     if (toCommitment && toCommitment === normalizedCommitment) direction = 'receive';
     else if (fromCommitment && fromCommitment === normalizedCommitment) direction = 'send';
   }

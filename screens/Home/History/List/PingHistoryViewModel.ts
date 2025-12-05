@@ -104,70 +104,59 @@ export class PingHistoryViewModel {
    */
   private parseTransactions(rawEvents: RecordEntry[], commitment: string): TransactionViewModel[] {
     const seen = new Set<string>();
-
+    const seenLockboxes = new Set<string>();
     const parsed: TransactionViewModel[] = [];
 
     for (const event of rawEvents) {
-      const txHash = event.txHash ?? '';
       const action = Number(event.action ?? -1);
+      const rawTo = event.toCommitment ?? event.to_commitment ?? '';
+
+      // 🔎 Align with web filter: keep Claim only when toCommitment exists, or any action >= 2.
+      if (!((action === 0 && rawTo) || action >= 2)) {
+        continue;
+      }
+
+      const txHash = event.txHash ?? '';
       const fromCommitment = event.fromCommitment ?? '';
       const toCommitment = event.toCommitment ?? '';
-      const key = `${action}-${txHash}-${fromCommitment}-${toCommitment}`;
+      const lockboxCommitment = (event.lockboxCommitment ?? '').toLowerCase();
 
-      // ⚠️ Skip duplicates or missing hash
-      if (!txHash || seen.has(key)) continue;
+      if (action === 0 && lockboxCommitment) {
+        if (seenLockboxes.has(lockboxCommitment)) {
+          continue;
+        }
+        seenLockboxes.add(lockboxCommitment);
+      }
 
+      const fallbackHash =
+        txHash ||
+        lockboxCommitment ||
+        fromCommitment ||
+        toCommitment ||
+        String(event.timestamp ?? '');
+      const key = `${action}-${fallbackHash}-${fromCommitment}-${toCommitment}`;
+
+      if (seen.has(key)) continue;
       seen.add(key);
 
       const tx = parseTransaction(event, commitment);
       if (tx) parsed.push(tx);
     }
 
-    const cleaned = this.removeClaimPaymentPairs(parsed);
-
     // sort newest → oldest
-    return cleaned.sort((a, b) => b.timestamp - a.timestamp);
+    return parsed.sort((a, b) => b.timestamp - a.timestamp);
   }
 
-  /**
-   * Hide redundant Payment entries that correspond to the same blockchain event
-   * as a Claim. Claiming a pay link emits both a Payment (debit) and Claim
-   * (credit) event with identical metadata, which looked like duplicates in the UI.
-   */
-  private removeClaimPaymentPairs(events: TransactionViewModel[]): TransactionViewModel[] {
-    if (!events.length) return events;
-
-    // If the same lockbox has both a Payment (action 9) and a Claim (action 0),
-    // keep the Payment and drop the Claim.
-    const lockboxesWithPayment: Record<string, { hasPayment: boolean; hasClaim: boolean }> = {};
-    for (const tx of events) {
-      const lockbox = tx.lockboxCommitment?.toLowerCase();
-      if (!lockbox) continue;
-      if (!lockboxesWithPayment[lockbox]) {
-        lockboxesWithPayment[lockbox] = { hasPayment: false, hasClaim: false };
-      }
-      if (tx.actionCode === 9) lockboxesWithPayment[lockbox].hasPayment = true;
-      if (tx.actionCode === 0) lockboxesWithPayment[lockbox].hasClaim = true;
-    }
-
-    return events.filter((tx) => {
-      if (tx.type !== 'Claim') return true;
-      const lockbox = tx.lockboxCommitment?.toLowerCase();
-      if (!lockbox) return true;
-
-      const entry = lockboxesWithPayment[lockbox];
-      return !entry?.hasPayment;
-    });
-  }
-
-  /** Group parsed events by calendar day (e.g. 2025-10-28) */
   groupByDate(events: TransactionViewModel[]): Record<string, TransactionViewModel[]> {
     return events.reduce<Record<string, TransactionViewModel[]>>((acc, event) => {
       if (!event.timestamp) return acc;
 
-      // 🗓 Format as "YYYY-MM-DD"
+      // 🗓 Format as "dd/MM/yyyy"
       const date = new Date(event.timestamp);
-      const key = date.toISOString().split('T')[0]; // "2025-10-28"
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const key = `${day}/${month}/${year}`;
 
       if (!acc[key]) acc[key] = [];
       acc[key].push(event);
@@ -176,31 +165,11 @@ export class PingHistoryViewModel {
     }, {});
   }
 
-  /** Filter events by direction */
   filterTransactions(
     events: TransactionViewModel[],
     filter: HistoryFilter
   ): TransactionViewModel[] {
-    if (filter === 'all') return events;
-    return events.filter((e) => {
-      switch (filter) {
-        case 'sent':
-          return e.direction === 'send' && e.type !== 'Withdrawal';
-        case 'received':
-          return (
-            e.direction === 'receive' &&
-            !['Deposit', 'Wallet Deposit', 'New Balance', 'Reclaim'].includes(e.type)
-          );
-        case 'deposit':
-          return ['Deposit', 'Wallet Deposit', 'New Balance'].includes(e.type);
-        case 'withdraw':
-          return e.type === 'Withdrawal';
-        case 'reclaim':
-          return e.type === 'Reclaim';
-        default:
-          return true;
-      }
-    });
+    return events;
   }
 
   static getCachedTransactions(commitment?: string): TransactionViewModel[] {
@@ -261,12 +230,6 @@ export class PingHistoryViewModel {
         this.localCacheLoaded = true;
         this.cacheKey = cacheKey;
         this.notify(parsed);
-        console.log(
-          '[PingHistoryViewModel] Loaded',
-          parsed.length,
-          'transactions from local cache for key',
-          cacheKey
-        );
         return parsed;
       }
     } catch (err) {
@@ -285,12 +248,6 @@ export class PingHistoryViewModel {
     try {
       await AsyncStorage.setItem(cacheKey, JSON.stringify(transactions));
       this.notify(transactions);
-      console.log(
-        '[PingHistoryViewModel] Saved',
-        transactions.length,
-        'transactions to local cache for key',
-        cacheKey
-      );
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to save to local cache', err);
     }

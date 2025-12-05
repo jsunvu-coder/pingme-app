@@ -30,8 +30,8 @@ type AuthParams = {
 export default function AuthScreen() {
   const route = useRoute<RouteProp<Record<string, AuthParams>, string>>();
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
-  const [headerType, setHeaderType] = useState<'simple' | 'full'>('full');
-  const [showTabs, setShowTabs] = useState(true);
+  const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
+  const [showTabs, setShowTabs] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
