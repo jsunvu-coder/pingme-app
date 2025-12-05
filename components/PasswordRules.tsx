@@ -5,6 +5,7 @@ import { t } from 'i18n';
 export default function PasswordRules({ password }: { password: string }) {
   const rules = [
     { text: t('AUTH_PASSWORD_RULE_LENGTH'), valid: password.length >= 8 },
+    { text: t('AUTH_PASSWORD_RULE_LOWERCASE', 'At least one lowercase letter'), valid: /[a-z]/.test(password) },
     { text: t('AUTH_PASSWORD_RULE_NUMBER'), valid: /\d/.test(password) },
     { text: t('AUTH_PASSWORD_RULE_UPPERCASE'), valid: /[A-Z]/.test(password) },
   ];

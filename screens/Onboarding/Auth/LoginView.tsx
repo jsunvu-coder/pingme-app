@@ -26,8 +26,10 @@ export default function LoginView({
   const vm = useMemo(() => new LoginViewModel(), []);
   const routeLockboxProof = route?.params?.lockboxProof;
 
-  const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(
+    prefillUsername ?? route?.params?.prefillUsername ?? 'test_email35412@test.com'
+  );
+  const [password, setPassword] = useState('test_pass_74282');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
   const [biometricType, setBiometricType] = useState<BiometricType>(null);
@@ -96,7 +98,7 @@ export default function LoginView({
     try {
       const fromParam: 'login' | 'signup' =
         (from ?? route?.params?.from) === 'signup' ? 'signup' : 'login';
-      const result = await vm.handleLogin(
+      const loginPromise = vm.handleLogin(
         email,
         password,
         useBiometric,
@@ -110,6 +112,16 @@ export default function LoginView({
             }
           : undefined
       );
+
+      const result = await Promise.race([
+        loginPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Something went wrong. Please close the app and login again. ')),
+            20000
+          )
+        ),
+      ]);
 
       if (result?.success) {
         setUseBiometric(result.biometricEnabled);

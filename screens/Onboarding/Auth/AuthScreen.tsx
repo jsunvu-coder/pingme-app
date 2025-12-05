@@ -9,6 +9,7 @@ import {
   Animated,
   Platform,
   Easing,
+  Dimensions,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,25 +20,23 @@ import LoginView from './LoginView';
 
 type AuthParams = {
   mode?: 'signup' | 'login';
-  headerType?: 'simple' | 'full';
+  headerFull?: boolean;
   from?: string;
   lockboxProof?: string;
   username?: string;
   amountUsdStr?: string;
-  showTabs?: boolean;
 };
 
 export default function AuthScreen() {
   const route = useRoute<RouteProp<Record<string, AuthParams>, string>>();
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
-  const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
-  const [showTabs, setShowTabs] = useState(false);
+  const [headerFull, setHeaderFull] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
+  const isSmallScreen = Dimensions.get('window').height <= 700;
 
   useEffect(() => {
     if (route.params?.mode) setActiveTab(route.params.mode);
-    if (route.params?.headerType) setHeaderType(route.params.headerType);
-    if (route.params?.showTabs !== undefined) setShowTabs(route.params.showTabs);
+    if (route.params?.headerFull !== undefined) setHeaderFull(route.params.headerFull);
 
     if (route.params?.lockboxProof) {
       console.log('🔗 [AuthScreen] Received lockboxProof:', route.params.lockboxProof);
@@ -50,7 +49,27 @@ export default function AuthScreen() {
 
     const handleShow = (event: any) => {
       const keyboardHeight = event?.endCoordinates?.height ?? 0;
-      const offset = Math.max(0, keyboardHeight - 40); // lift the whole screen
+
+      // Large screens keep layout static.
+      if (!isSmallScreen && !headerFull) {
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+        return;
+      }
+
+      // Small screens: scale lift based on layout complexity.
+      const multiplier = headerFull ? 0.85 : 0.55;
+      const baseLift = headerFull ? 100 : 50;
+
+      let offset = keyboardHeight * multiplier + baseLift;
+      const maxLift = Math.max(0, keyboardHeight - 16);
+      if (offset > maxLift) offset = maxLift;
+      const minLift = headerFull ? 100 : 40;
+      if (offset < minLift) offset = minLift;
 
       Animated.timing(translateY, {
         toValue: -offset,
@@ -76,7 +95,7 @@ export default function AuthScreen() {
       showSub.remove();
       hideSub.remove();
     };
-  }, [translateY]);
+  }, [translateY, headerFull, isSmallScreen]);
 
   return (
     <View className="flex-1 bg-white">
@@ -89,9 +108,9 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View className="flex-1 bg-white py-8">
-            {headerType === 'simple' ? <SimpleHeader /> : <Header />}
+            {headerFull ? <Header /> : <SimpleHeader />}
 
-            {showTabs && <AuthTabs activeTab={activeTab} onChange={setActiveTab} />}
+            {headerFull && <AuthTabs activeTab={activeTab} onChange={setActiveTab} />}
 
             {activeTab === 'login' ? (
               <LoginView

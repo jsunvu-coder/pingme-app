@@ -32,6 +32,8 @@ export default function PaymentSuccessScreen() {
     duration = 7,
   } = route.params || {};
 
+  const claimMessage = `Recipient will be notified by email, and have ${duration} days to claim the balance.`;
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
@@ -63,11 +65,12 @@ export default function PaymentSuccessScreen() {
           <PaymentRecipientCard recipient={recipient} amount={amount} />
         </View>
 
-        {passphrase && (
-          <PaymentClaimCard
-            content="Recipient will be notified by email, and have 7 days to claim the balance."
-            passphrase={passphrase}
-          />
+        {passphrase ? (
+          <PaymentClaimCard content={claimMessage} passphrase={passphrase} />
+        ) : (
+          <View className="rounded-2xl bg-white px-6 py-5">
+            <Text className="text-lg text-gray-700">{claimMessage}</Text>
+          </View>
         )}
       </ScrollView>
 

@@ -6,6 +6,7 @@ import NavigationBar from 'components/NavigationBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryButton from 'components/PrimaryButton';
 import { ContractService } from 'business/services/ContractService';
+import { BalanceService } from 'business/services/BalanceService';
 import { TransactionViewModel } from '../List/TransactionViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
 import SecondaryButton from 'components/ScondaryButton';
@@ -72,6 +73,7 @@ export default function TransactionDetailsScreen() {
   const [reclaiming, setReclaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const lockboxCommitment = transaction?.lockboxCommitment;
 
@@ -141,6 +143,7 @@ export default function TransactionDetailsScreen() {
         title: 'Payment reclaimed',
         message: 'Funds were returned to your balance.',
       });
+      await balanceService.getBalance();
       await fetchLockboxDetail();
     } catch (err: any) {
       console.error('❌ Failed to reclaim payment:', err);

@@ -162,8 +162,7 @@ export const useClaimPayment = () => {
 
         push('AuthScreen', {
           mode: 'login',
-          headerType: 'full',
-          showTabs: true,
+          headerFull: true,
           lockboxProof: finalProof,
           amountUsdStr,
           from: 'login',

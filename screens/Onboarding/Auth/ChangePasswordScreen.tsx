@@ -12,7 +12,7 @@ import NavigationBar from 'components/NavigationBar';
 import { t } from 'i18n';
 import { ScrollView } from 'react-native-gesture-handler';
 
-const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/; // 8+ chars, upper, lower, digit
 
 const validatePasswordFields = (password: string, confirm: string) => {
   const validation: { password?: string; confirm?: string } = {};
@@ -20,7 +20,9 @@ const validatePasswordFields = (password: string, confirm: string) => {
   if (!password) {
     validation.password = t('AUTH_PASSWORD_REQUIRED');
   } else if (!passwordRegex.test(password)) {
-    validation.password = t('AUTH_PASSWORD_RULE');
+    validation.password =
+      t('AUTH_PASSWORD_RULE') ||
+      'Password must be at least 8 characters and include uppercase, lowercase, and a number';
   }
 
   if (!confirm) {

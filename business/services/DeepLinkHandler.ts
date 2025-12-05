@@ -93,7 +93,7 @@ class DeepLinkHandler {
             setRootScreen(['MainTab']);
             setTimeout(() => this.confirmLogoutAndClaim(params), 400);
           } else {
-            this.navigateClaim(params);
+            this.navigateClaim(params, true); // reset stack so splash isn't behind
           }
           return;
         }
@@ -178,16 +178,25 @@ class DeepLinkHandler {
   }
 
   // --- Navigation helpers ---
-  private navigateClaim(params: Record<string, string>) {
+  private navigateClaim(params: Record<string, string>, resetStack = false) {
     console.log('[DeepLinkHandler] Navigating to ClaimPaymentScreen', params);
     this.clearPendingURL();
-    push('ClaimPaymentScreen', {
-      ...params,
-      onClaimSuccess: () => {
-        console.log('[DeepLinkHandler] Claim finished → returning to MainTab');
-        setRootScreen(['MainTab']);
+    const route = {
+      name: 'ClaimPaymentScreen',
+      params: {
+        ...params,
+        onClaimSuccess: () => {
+          console.log('[DeepLinkHandler] Claim finished → returning to MainTab');
+          setRootScreen(['MainTab']);
+        },
       },
-    });
+    };
+
+    if (resetStack) {
+      setRootScreen([route]);
+    } else {
+      push('ClaimPaymentScreen', route.params);
+    }
   }
 
   private navigatePay(params: Record<string, string>) {
