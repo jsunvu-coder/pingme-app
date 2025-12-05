@@ -73,6 +73,8 @@ const RowContent = ({
       </View>
     </View>
 
-    <Text className={`text-lg font-semibold ${amountColor}`}>{event.formattedAmount}</Text>
+    <Text className={`text-lg font-semibold ${amountColor}`}>
+      {`${event.isPositive ? '+' : '-'}$${Math.abs(Number(event.amount) || 0).toFixed(2)}`}
+    </Text>
   </>
 );

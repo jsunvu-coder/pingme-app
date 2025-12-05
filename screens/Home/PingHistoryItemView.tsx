@@ -22,7 +22,9 @@ export default function PingHistoryItemView({ item }: { item: TransactionViewMod
       <Text className="text-base font-semibold text-black" numberOfLines={1} ellipsizeMode="tail">
         {label}
       </Text>
-      <Text className={`mt-1 text-lg font-semibold ${amountColor}`}>{item.formattedAmount}</Text>
+      <Text className={`mt-1 text-lg font-semibold ${amountColor}`}>
+        {`${isPositive ? '+' : '-'}$${Math.abs(Number(item.amount) || 0).toFixed(2)}`}
+      </Text>
     </View>
   );
 }
