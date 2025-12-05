@@ -12,22 +12,40 @@ import * as FileSystem from 'expo-file-system/legacy';
 type ShareParams = {
   amount?: number;
   duration?: number;
-  mode?: 'claimed' | 'sent';
+  mode?: 'claimed' | 'sent' | 'request';
   amountUsdStr?: string;
   from?: 'login' | 'signup';
+  action?: 'send' | 'claim' | 'request' | 'link';
+  linkType?: 'payment' | 'request';
 };
 
 export default function ShareSection() {
   const route = useRoute();
-  const { amount = 100, duration = 2, mode, amountUsdStr } = (route.params as ShareParams) || {};
+  const { amount = 100, duration = 2, mode, amountUsdStr, action, linkType } =
+    (route.params as ShareParams) || {};
 
   const formattedAmount = useMemo(() => amountUsdStr ?? amount.toFixed(2), [amount, amountUsdStr]);
+  const shareAction: NonNullable<ShareParams['action']> = useMemo(() => {
+    if (action) return action;
+    if (mode === 'claimed') return 'claim';
+    if (mode === 'request') return 'request';
+    return 'send';
+  }, [action, mode]);
 
   const shareText = useMemo(() => {
-    const action = mode === 'claimed' ? 'claimed' : 'sent';
     const durationText = duration ? `${duration} sec` : 'seconds';
-    return `Just ${action} $${formattedAmount} in ${durationText} with @PingMe! #JustPinged`;
-  }, [formattedAmount, mode, duration]);
+    if (shareAction === 'claim') {
+      return `Just claimed $${formattedAmount} in ${durationText} with @PingMe! #JustPinged`;
+    }
+    if (shareAction === 'request') {
+      return `Requesting $${formattedAmount} with @PingMe. Pay me fast.`;
+    }
+    if (shareAction === 'link') {
+      const linkLabel = linkType === 'request' ? 'payment request' : 'payment';
+      return `Here is my ${linkLabel} link on @PingMe for $${formattedAmount}. Quick and secure.`;
+    }
+    return `Just sent $${formattedAmount} in ${durationText} with @PingMe! #JustPinged`;
+  }, [duration, formattedAmount, linkType, shareAction]);
 
   const shareContent = useMemo(() => `${shareText}\n${APP_URL}`, [shareText]);
 

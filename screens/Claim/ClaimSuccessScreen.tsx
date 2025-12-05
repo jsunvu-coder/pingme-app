@@ -35,6 +35,7 @@ export default function ClaimSuccessScreen() {
           mode: 'claimed',
           amountUsdStr: displayAmount,
           from,
+          action: 'claim',
         });
       }
     }, autoShareDelayMs);

@@ -41,6 +41,7 @@ export default function PaymentSuccessScreen() {
           duration,
           recipient,
           txHash,
+          action: 'send',
         });
       }
     }, 5000);

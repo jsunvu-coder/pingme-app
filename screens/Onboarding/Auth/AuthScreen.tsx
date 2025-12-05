@@ -9,7 +9,6 @@ import {
   Animated,
   Platform,
   Easing,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,11 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AuthTabs from './AuthTabs';
 import CreateAccountView from './CreateAccountView';
 import LoginView from './LoginView';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// ✅ Small screen detection (e.g. iPhone SE/8)
-const IS_SMALL_SCREEN = Platform.OS === 'ios' && SCREEN_HEIGHT <= 667;
 
 type AuthParams = {
   mode?: 'signup' | 'login';
@@ -36,8 +30,8 @@ type AuthParams = {
 export default function AuthScreen() {
   const route = useRoute<RouteProp<Record<string, AuthParams>, string>>();
   const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
-  const [headerType, setHeaderType] = useState<'simple' | 'full'>('simple');
-  const [showTabs, setShowTabs] = useState(false);
+  const [headerType, setHeaderType] = useState<'simple' | 'full'>('full');
+  const [showTabs, setShowTabs] = useState(true);
   const translateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -51,42 +45,32 @@ export default function AuthScreen() {
   }, [route.params]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (event) => {
-        let offset = 0;
-        if (showTabs) {
-          offset = IS_SMALL_SCREEN ? 100 : 50;
-        }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-        if (headerType === 'full') {
-          offset += IS_SMALL_SCREEN ? 150 : 100;
-        }
+    const handleShow = (event: any) => {
+      const keyboardHeight = event?.endCoordinates?.height ?? 0;
+      const offset = Math.max(0, keyboardHeight - 40); // lift the whole screen
 
-        if (activeTab === 'signup') {
-          offset += IS_SMALL_SCREEN ? 250 : 0;
-        }
+      Animated.timing(translateY, {
+        toValue: -offset,
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    };
 
-        Animated.timing(translateY, {
-          toValue: -offset,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
+    const handleHide = () => {
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    };
 
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start();
-      }
-    );
+    const showSub = Keyboard.addListener(showEvent, handleShow);
+    const hideSub = Keyboard.addListener(hideEvent, handleHide);
 
     return () => {
       showSub.remove();

@@ -45,6 +45,7 @@ export default function MainTab() {
             mode: 'claimed',
             amountUsdStr: pending.amountUsdStr,
             from: pending.from,
+            action: 'claim',
           });
         }, 3000);
       }

@@ -19,6 +19,7 @@ export default function PassphraseSection({
   disabled,
 }: Props) {
   const inputRef = useRef<any>(null);
+  const inputEditable = usePassphrase && !disabled;
 
   // 👇 Auto-focus input when enabled
   useEffect(() => {
@@ -62,9 +63,12 @@ export default function PassphraseSection({
         <AuthInput
           ref={inputRef}
           value={passphrase}
-          onChangeText={setPassphrase}
+          onChangeText={(text) => {
+            if (disabled) return;
+            setPassphrase(text);
+          }}
           placeholder="Enter passphrase"
-          editable={usePassphrase} // disable when switch off
+          editable={inputEditable} // disable when switch off or processing
         />
       </View>
 

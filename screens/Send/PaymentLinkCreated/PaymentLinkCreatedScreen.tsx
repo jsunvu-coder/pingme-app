@@ -31,12 +31,14 @@ export default function PaymentLinkCreatedScreen() {
       push('ShareScreen', {
         amount,
         duration,
-        mode: 'sent',
+        action: linkType === 'request' ? 'request' : 'link',
+        linkType,
+        closeToRoot: false,
       });
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [amount, duration]);
+  }, [amount, duration, linkType]);
 
   return (
     <View className="flex-1 bg-[#FAFAFA] px-6">

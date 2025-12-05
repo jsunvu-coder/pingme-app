@@ -29,6 +29,11 @@ import { showFlashMessage } from 'utils/flashMessage';
 
 export default function PingMeScreen() {
   const route = useRoute<any>();
+  const defaultModeFromRoute = useCallback(() => {
+    const paramMode = route?.params?.mode;
+    return paramMode === 'request' ? 'request' : 'send';
+  }, [route?.params?.mode]);
+
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
   const [amount, setAmount] = useState('');
@@ -38,13 +43,13 @@ export default function PingMeScreen() {
   const balanceService = BalanceService.getInstance();
 
   const resetForm = useCallback(() => {
-    setMode('send');
+    setMode(defaultModeFromRoute());
     setActiveChannel('Email');
     setAmount('');
     setDuration(LOCKBOX_DURATION);
     setEmail('');
     setPickerVisible(false);
-  }, []);
+  }, [defaultModeFromRoute]);
 
   // --- Animations ---
   const emailOpacity = useRef(new Animated.Value(1)).current;
@@ -156,7 +161,7 @@ export default function PingMeScreen() {
       if (paramEmail && typeof paramEmail === 'string') setEmail(paramEmail);
       if (paramAmount && !isNaN(Number(paramAmount))) setAmount(String(paramAmount));
     }
-  }, [route.params]);
+  }, [route.params, defaultModeFromRoute]);
 
   const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
 

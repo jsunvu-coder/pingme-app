@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, Modal, ScrollView, Dimensions } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LOCKBOX_DURATION } from 'business/Constants';
 
@@ -111,10 +111,15 @@ export default function LockboxDurationView({ value, onChange }: Props) {
     onChange(day);
   };
 
+  const handleOpen = () => {
+    Keyboard.dismiss();
+    setVisible(true);
+  };
+
   return (
     <View className="mt-6">
       <Text className="mb-2 text-lg text-[#0F0F0F]">Lockbox duration</Text>
-      <DurationDisplay value={selectedValue} onOpen={() => setVisible(true)} />
+      <DurationDisplay value={selectedValue} onOpen={handleOpen} />
       <DurationModal
         visible={visible}
         selectedValue={selectedValue}
