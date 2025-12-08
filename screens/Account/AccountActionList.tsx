@@ -17,12 +17,14 @@ type ItemProps = {
   label: string;
   action?: () => void;
   rightView?: React.ReactNode;
+  disabled?: boolean;
 };
 
 export default function AccountActionList() {
   const [biometricType, setBiometricType] = useState<'Face ID' | 'Touch ID' | null>(null);
   const [useBiometric, setUseBiometric] = useState(false);
   const [env, setEnvState] = useState<'staging' | 'production'>(getEnv());
+  const [loggingOut, setLoggingOut] = useState(false);
   const email = AccountDataService.getInstance().email ?? '';
   const canChangeEnvironment = /@hailstonelabs\.com$/i.test(email);
 
@@ -39,6 +41,8 @@ export default function AccountActionList() {
   }, []);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
       const preservedEnv = await AsyncStorage.getItem(ENV_STORAGE_KEY);
       await AuthService.getInstance().logout();
@@ -52,6 +56,7 @@ export default function AccountActionList() {
       setRootScreen(['SplashScreen']);
     } catch (error) {
       console.error('Logout error:', error);
+      setLoggingOut(false);
     }
   };
 

@@ -169,7 +169,28 @@ export class PingHistoryViewModel {
     events: TransactionViewModel[],
     filter: HistoryFilter
   ): TransactionViewModel[] {
-    return events;
+    if (!Array.isArray(events)) return [];
+    if (filter === 'all') return events;
+
+    const isDeposit = (tx: TransactionViewModel) =>
+      tx.type === 'Deposit' || tx.type === 'Wallet Deposit';
+    const isWithdraw = (tx: TransactionViewModel) => tx.type === 'Withdrawal';
+    const isReclaim = (tx: TransactionViewModel) => tx.type === 'Reclaim';
+
+    switch (filter) {
+      case 'sent':
+        return events.filter((tx) => tx.direction === 'send');
+      case 'received':
+        return events.filter((tx) => tx.direction === 'receive');
+      case 'deposit':
+        return events.filter(isDeposit);
+      case 'withdraw':
+        return events.filter(isWithdraw);
+      case 'reclaim':
+        return events.filter(isReclaim);
+      default:
+        return events;
+    }
   }
 
   static getCachedTransactions(commitment?: string): TransactionViewModel[] {

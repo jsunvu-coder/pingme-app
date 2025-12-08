@@ -123,6 +123,8 @@ export default function LoginView({
 
       if (result?.success) {
         setUseBiometric(result.biometricEnabled);
+      } else {
+        setLoading(false);
       }
     } catch (err: any) {
       showFlashMessage({
@@ -130,7 +132,6 @@ export default function LoginView({
         message: err?.message || t('AUTH_LOGIN_INVALID_CREDENTIALS'),
         type: 'danger',
       });
-    } finally {
       setLoading(false);
     }
   };

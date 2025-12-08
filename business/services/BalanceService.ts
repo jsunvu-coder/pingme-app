@@ -20,9 +20,12 @@ export class BalanceService {
   private contractService: ContractService;
 
   private _totalBalance: string = "0.00"; // 🔹 store last computed balance
+  private needsRetryOnReconnect = false;
+  private netInfoUnsubscribe?: () => void;
 
   private constructor() {
     this.contractService = ContractService.getInstance();
+    this.attachConnectivityListener();
   }
 
   static getInstance(): BalanceService {
@@ -75,26 +78,31 @@ export class BalanceService {
     if (this._mutex) return;
     this._mutex = true;
 
+    const prevBalances = [...this.balances];
+    const prevUpdateTime = this.balanceUpdateTime;
+
     try {
       const cr = this.contractService.getCrypto();
       this.balanceUpdateTime = null;
       this.notifyUpdateTimeChange();
 
-      const ret = await this.contractService.getBalance(cr?.commitment).catch(() => ({
-        amounts: [],
-        update_time: null,
-      }));
+      const ret = await this.contractService.getBalance(cr?.commitment);
 
       this.balances = Utils.filterBalance(ret.amounts);
       this.balanceUpdateTime = ret.update_time;
 
-      // 🔹 Compute and store total balance
-      const sum = this.balances.reduce((acc, b) => {
-        const amt = parseFloat(b.amount ?? "0");
-        return acc + (isNaN(amt) ? 0 : amt);
-      }, 0);
-      this._totalBalance = (sum / 1_000_000).toFixed(2);
+      this._totalBalance = this.computeTotal(this.balances);
+      this.needsRetryOnReconnect = false;
 
+      this.notifyBalanceChange();
+      this.notifyUpdateTimeChange();
+    } catch (err) {
+      console.error("❌ [BalanceService] Failed to fetch balance:", err);
+      // Keep showing the last known balance instead of clearing to $0 on failure.
+      this.balances = prevBalances;
+      this.balanceUpdateTime = prevUpdateTime;
+      this._totalBalance = this.computeTotal(this.balances);
+      this.needsRetryOnReconnect = true;
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
     } finally {
@@ -106,7 +114,31 @@ export class BalanceService {
     this.balances = [];
     this.balanceUpdateTime = null;
     this._totalBalance = "0.00";
+    this.needsRetryOnReconnect = false;
     this.notifyBalanceChange();
     this.notifyUpdateTimeChange();
+  }
+
+  private attachConnectivityListener() {
+    try {
+      // Lazy import to avoid requiring NetInfo in non-RN contexts (e.g., tests).
+      const NetInfo = require("@react-native-community/netinfo").default;
+      this.netInfoUnsubscribe = NetInfo.addEventListener((state: any) => {
+        const reachable = state.isConnected && state.isInternetReachable !== false;
+        if (reachable && this.needsRetryOnReconnect && !this._mutex) {
+          void this.getBalance();
+        }
+      });
+    } catch (err) {
+      console.warn("⚠️ [BalanceService] NetInfo unavailable; auto-retry on reconnect disabled.", err);
+    }
+  }
+
+  private computeTotal(balances: BalanceEntry[]): string {
+    const sum = balances.reduce((acc, b) => {
+      const amt = parseFloat(b.amount ?? "0");
+      return acc + (isNaN(amt) ? 0 : amt);
+    }, 0);
+    return (sum / 1_000_000).toFixed(2);
   }
 }

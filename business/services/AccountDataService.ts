@@ -195,7 +195,7 @@ export class AccountDataService {
 
             showFlashMessage({
               title: 'Top-up received',
-              message: '_ALERT_RECEIVED_TOPUP',
+              message: 'You have received a top up.',
               type: 'success',
             });
             return;

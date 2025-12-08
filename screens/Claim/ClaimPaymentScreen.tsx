@@ -50,7 +50,7 @@ export default function ClaimPaymentScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FAFAFA]">
+    <View className="flex-1 bg-[#FAFAFA]">
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="flex-1 justify-between px-6 py-10">
           <View>
@@ -92,6 +92,6 @@ export default function ClaimPaymentScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,4 +1,5 @@
 import { TouchableOpacity, Text, ActivityIndicator, View, Keyboard } from "react-native";
+import { useRef } from "react";
 
 export default function PrimaryButton({
   title,
@@ -15,7 +16,15 @@ export default function PrimaryButton({
   loadingText?: string, 
   className?: string;
 }) {
+  const pressLockRef = useRef(false);
+
   const handlePress = () => {
+    if (pressLockRef.current) return;
+    pressLockRef.current = true;
+    setTimeout(() => {
+      pressLockRef.current = false;
+    }, 500);
+
     Keyboard.dismiss();
     onPress?.();
   };
