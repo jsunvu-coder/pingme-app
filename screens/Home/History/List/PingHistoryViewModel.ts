@@ -179,9 +179,13 @@ export class PingHistoryViewModel {
 
     switch (filter) {
       case 'sent':
-        return events.filter((tx) => tx.direction === 'send');
+        return events.filter(
+          (tx) => tx.direction === 'send' && !isWithdraw(tx) && !isReclaim(tx)
+        );
       case 'received':
-        return events.filter((tx) => tx.direction === 'receive');
+        return events.filter(
+          (tx) => tx.direction === 'receive' && !isDeposit(tx) && !isReclaim(tx)
+        );
       case 'deposit':
         return events.filter(isDeposit);
       case 'withdraw':

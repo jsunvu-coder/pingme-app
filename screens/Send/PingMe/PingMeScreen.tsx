@@ -43,13 +43,11 @@ export default function PingMeScreen() {
   const balanceService = BalanceService.getInstance();
 
   const resetForm = useCallback(() => {
-    setMode(defaultModeFromRoute());
-    setActiveChannel('Email');
     setAmount('');
     setDuration(LOCKBOX_DURATION);
     setEmail('');
     setPickerVisible(false);
-  }, [defaultModeFromRoute]);
+  }, []);
 
   // --- Animations ---
   const emailOpacity = useRef(new Animated.Value(1)).current;

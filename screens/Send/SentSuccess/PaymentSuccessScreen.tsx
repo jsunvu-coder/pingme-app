@@ -32,6 +32,7 @@ export default function PaymentSuccessScreen() {
     duration = 7,
   } = route.params || {};
 
+  const showClaimMessage = channel !== 'QR';
   const claimMessage = `Recipient will be notified by email, and have ${duration} days to claim the balance.`;
 
   useEffect(() => {
@@ -65,13 +66,15 @@ export default function PaymentSuccessScreen() {
           <PaymentRecipientCard recipient={recipient} amount={amount} />
         </View>
 
-        {passphrase ? (
-          <PaymentClaimCard content={claimMessage} passphrase={passphrase} />
-        ) : (
-          <View className="rounded-2xl bg-white px-6 py-5">
-            <Text className="text-lg text-gray-700">{claimMessage}</Text>
-          </View>
-        )}
+        {showClaimMessage ? (
+          passphrase ? (
+            <PaymentClaimCard content={claimMessage} passphrase={passphrase} />
+          ) : (
+            <View className="rounded-2xl bg-white px-6 py-5">
+              <Text className="text-lg text-gray-700">{claimMessage}</Text>
+            </View>
+          )
+        ) : null}
       </ScrollView>
 
       <View className="mx-6 my-12">

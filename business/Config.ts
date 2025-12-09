@@ -56,4 +56,4 @@ export const PAGINATION = 8; // 8 entries per account record pagination
 export const SKIP_PASSPHRASE = 10;
 export const SHOW_USD = true;
 export const UPDATE_DELAY = 3 * 1000; // 3 seconds
-export const TOC_URL = 'https://pingme.xyz/toc';
+export const TOC_URL = 'https://pingmexyz.gitbook.io/docs/legal/terms-of-use';

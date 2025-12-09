@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Linking, Alert, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, Linking, TouchableWithoutFeedback } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PasswordRules from 'components/PasswordRules';
 import AuthInput from 'components/AuthInput';
@@ -14,6 +14,7 @@ import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { passwordRegex, validatePasswordFields as sharedValidatePasswords } from './passwordValidation';
+import { showFlashMessage } from 'utils/flashMessage';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,7 +27,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [agreeToC, setAgreeToC] = useState(true);
+  const [agreeToC, setAgreeToC] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
@@ -92,7 +93,15 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
       }
     } catch (err: any) {
       console.error('Signup error:', err);
-      Alert.alert('Signup failed', err?.message || 'Unable to create account');
+      const message =
+        err?.message === 'CREDENTIAL_EXISTS'
+          ? 'Signup failed: Credentials already exist'
+          : err?.message || 'Unable to create account';
+      showFlashMessage({
+        title: 'Signup failed',
+        message,
+        type: 'danger',
+      });
     } finally {
       setLoading(false);
     }

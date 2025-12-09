@@ -1,4 +1,4 @@
-import { push, setRootScreen } from 'navigation/Navigation';
+import { navigationRef, push, replace, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
 import { Alert } from 'react-native';
@@ -195,7 +195,13 @@ class DeepLinkHandler {
     if (resetStack) {
       setRootScreen([route]);
     } else {
-      push('ClaimPaymentScreen', route.params);
+      const isClaimOnTop =
+        navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'ClaimPaymentScreen';
+      if (isClaimOnTop) {
+        replace('ClaimPaymentScreen', route.params);
+      } else {
+        push('ClaimPaymentScreen', route.params);
+      }
     }
   }
 

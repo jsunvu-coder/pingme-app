@@ -1,4 +1,4 @@
-import { createNavigationContainerRef } from '@react-navigation/native';
+import { createNavigationContainerRef, StackActions } from '@react-navigation/native';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -48,4 +48,10 @@ export const presentOverMain = (name: string, params?: any) => {
   setTimeout(() => {
     push(name, params);
   }, 0);
+};
+
+export const replace = (name: string, params?: any) => {
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(StackActions.replace(name, params));
+  }
 };
