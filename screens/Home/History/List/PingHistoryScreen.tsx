@@ -18,15 +18,21 @@ export default function PingHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadBatches, setLoadBatches] = useState(0);
 
   const loadData = async (showSpinner = true, force = false) => {
     if (showSpinner) setLoading(true);
+    setLoadBatches(0);
     try {
       const firstPage = await vm.getTransactions({
         force,
-        pageSize: 25,
+        pageSize: 5,
         targetPreload: 25,
-        onPhaseUpdate: (txs) => setTransactions(txs),
+        preferFirstPage: true,
+        onPhaseUpdate: (txs) => {
+          setTransactions(txs);
+          setLoading(false); // surface UI as soon as first API pass returns
+        },
       });
       setTransactions(firstPage);
     } catch (err) {
@@ -37,17 +43,18 @@ export default function PingHistoryScreen() {
   };
 
   const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !PingHistoryViewModel.hasMore()) return;
+    if (loadingMore || loadBatches >= 4 || !PingHistoryViewModel.hasMore()) return;
     setLoadingMore(true);
     try {
-      const next = await vm.loadMoreChunks(2, 8);
+      const next = await vm.loadMoreChunks(1, 5);
+      setLoadBatches((count) => Math.min(count + 1, 4));
       setTransactions(next);
     } catch (err) {
       console.warn('⚠️ Failed to load more history', err);
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore]);
+  }, [loadingMore, loadBatches]);
 
   const onScroll = useCallback(
     (event: any) => {

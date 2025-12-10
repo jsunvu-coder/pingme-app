@@ -54,9 +54,11 @@ export class PingHistoryViewModel {
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
     force?: boolean;
     targetPreload?: number;
+    preferFirstPage?: boolean;
   }): Promise<TransactionViewModel[]> {
     const commitment = this.contractService.getCrypto()?.commitment ?? '';
     const cacheKey = this.getCacheKey(commitment);
+    const initialLimit = Math.max(options?.pageSize ?? 5, 5);
 
     if (PingHistoryViewModel.cacheKey !== cacheKey) {
       PingHistoryViewModel.resetCache(cacheKey);
@@ -69,9 +71,10 @@ export class PingHistoryViewModel {
     // If cached transactions exist, surface them immediately and keep the cursor at full cache size.
     const cachedFull = PingHistoryViewModel.cachedTransactions;
     if (cachedFull.length) {
+      const initialCached = cachedFull.slice(0, initialLimit);
       PingHistoryViewModel.chunkCursor = cachedFull.length;
       PingHistoryViewModel.nextIndex = cachedFull.length;
-      options?.onPhaseUpdate?.(cachedFull);
+      options?.onPhaseUpdate?.(initialCached);
     }
 
     const ensureFetch = async () => {
@@ -82,6 +85,7 @@ export class PingHistoryViewModel {
           pageSize: options?.pageSize,
           targetPreload: options?.targetPreload,
           onPhaseUpdate: options?.onPhaseUpdate,
+          preferFirstPage: options?.preferFirstPage,
         }).finally(() => {
           PingHistoryViewModel.inflight = null;
         });
@@ -260,6 +264,8 @@ export class PingHistoryViewModel {
     } catch (err) {
       console.error('[PingHistoryViewModel] Failed to load local cache', err);
     }
+    this.localCacheLoaded = true;
+    this.cacheKey = cacheKey;
     return [];
   }
 
@@ -347,68 +353,81 @@ export class PingHistoryViewModel {
     targetPreload?: number;
     pageSize?: number;
     onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
+    preferFirstPage?: boolean;
   }): Promise<TransactionViewModel[]> {
     try {
-      const { cacheKey, commitment, onPhaseUpdate, pageSize, targetPreload } = opts;
+      const { cacheKey, commitment, onPhaseUpdate, pageSize, targetPreload, preferFirstPage } = opts;
+      const requestedInitial = Math.max(pageSize ?? 5, 5);
+      const preloadTarget = Math.max(targetPreload ?? 25, requestedInitial);
 
-      const records = await this.recordService.getRecord();
-      const parsed = this.parseTransactions(records || [], commitment);
-      const existing = PingHistoryViewModel.cachedTransactions;
+      let nextCommitment = commitment.toLowerCase();
+
+      const first = await this.contractService.getEvents(nextCommitment, requestedInitial);
+      const firstBatch = this.parseTransactions(first?.events ?? [], commitment);
+
+      const existing = PingHistoryViewModel.parsedTransactions;
       const seen = new Set<string>();
       const merged: TransactionViewModel[] = [];
-
       const addTx = (tx: TransactionViewModel) => {
-        const key = `${tx.actionCode}-${tx.txHash}-${(
-          tx.fromCommitment ?? ''
-        ).toLowerCase()}-${(tx.toCommitment ?? '').toLowerCase()}`;
+        const key = `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+          tx.toCommitment ?? ''
+        ).toLowerCase()}`;
         if (seen.has(key)) return;
         seen.add(key);
         merged.push(tx);
       };
-
-      parsed.forEach(addTx);
+      firstBatch.forEach(addTx);
       existing.forEach(addTx);
-
       merged.sort((a, b) => b.timestamp - a.timestamp);
 
+      const base = Math.min(merged.length, Math.max(existing.length, requestedInitial));
       PingHistoryViewModel.parsedTransactions = merged;
+      PingHistoryViewModel.nextIndex = base;
+      PingHistoryViewModel.chunkCursor = base;
+      PingHistoryViewModel.cachedTransactions = merged.slice(0, base);
+      onPhaseUpdate?.(PingHistoryViewModel.cachedTransactions);
+      PingHistoryViewModel.notify(PingHistoryViewModel.cachedTransactions);
+      await PingHistoryViewModel.saveToLocalCache(PingHistoryViewModel.cachedTransactions, cacheKey);
 
-      // If we already have cache loaded, avoid reloading old pages; keep full list and save/notify.
-      if (existing.length > 0) {
-        PingHistoryViewModel.nextIndex = merged.length;
-        PingHistoryViewModel.chunkCursor = merged.length;
-        PingHistoryViewModel.cachedTransactions = merged;
-        onPhaseUpdate?.(merged);
-        PingHistoryViewModel.notify(merged);
-        await PingHistoryViewModel.saveToLocalCache(merged, cacheKey);
-        return merged;
-      }
+      nextCommitment = (first?.commitment ?? '').toLowerCase();
 
-      PingHistoryViewModel.nextIndex = PingHistoryViewModel.chunkCursor || 0;
-
-      const initialPreload = Math.max(pageSize ?? 5, 5);
-      const preloadTarget = Math.max(targetPreload ?? 20, initialPreload);
-
-      if (PingHistoryViewModel.nextIndex < initialPreload) {
-        await this.applyChunk(
-          initialPreload - PingHistoryViewModel.nextIndex,
-          cacheKey,
-          onPhaseUpdate
-        );
-      }
-
-      // Stage additional chunks in the background to avoid blocking initial render
       (async () => {
         try {
-          while (
-            PingHistoryViewModel.parsedTransactions.length > PingHistoryViewModel.nextIndex &&
-            PingHistoryViewModel.nextIndex < preloadTarget
-          ) {
-            const remaining = preloadTarget - PingHistoryViewModel.nextIndex;
-            await this.applyChunk(Math.min(8, remaining), cacheKey, onPhaseUpdate);
+          let guard = 0;
+          while (nextCommitment && !/^0x0+$/.test(nextCommitment)) {
+            if (preferFirstPage && PingHistoryViewModel.nextIndex >= preloadTarget) break;
+            const ret = await this.contractService.getEvents(nextCommitment, requestedInitial);
+            const raw = ret?.events ?? [];
+            if (!raw.length) break;
+            nextCommitment = (ret?.commitment ?? '').toLowerCase();
+
+            const parsedNew = this.parseTransactions(raw, commitment);
+
+            const prevLen = PingHistoryViewModel.parsedTransactions.length;
+            const seen2 = new Set<string>();
+            const merged2: TransactionViewModel[] = [];
+            const addTx2 = (tx: TransactionViewModel) => {
+              const key = `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+                tx.toCommitment ?? ''
+              ).toLowerCase()}`;
+              if (seen2.has(key)) return;
+              seen2.add(key);
+              merged2.push(tx);
+            };
+            parsedNew.forEach(addTx2);
+            PingHistoryViewModel.parsedTransactions.forEach(addTx2);
+            merged2.sort((a, b) => b.timestamp - a.timestamp);
+            PingHistoryViewModel.parsedTransactions = merged2;
+
+            const added = Math.max(merged2.length - prevLen, 0);
+            if (added > 0) {
+              await this.applyChunk(added, cacheKey, onPhaseUpdate);
+            }
+
+            if (++guard > 400) break;
           }
         } catch (err) {
-          console.error('[PingHistoryViewModel] Background chunk preload failed', err);
+          console.error('[PingHistoryViewModel] Background incremental fetch failed', err);
         }
       })();
 
@@ -417,5 +436,61 @@ export class PingHistoryViewModel {
       console.error('[PingHistoryViewModel] Failed to load transactions', err);
       return PingHistoryViewModel.cachedTransactions;
     }
+  }
+
+  private async hydrateWithParsed(params: {
+    parsed: TransactionViewModel[];
+    cacheKey: string;
+    onPhaseUpdate?: (transactions: TransactionViewModel[]) => void;
+    requestedInitial: number;
+    preloadTarget: number;
+  }): Promise<TransactionViewModel[]> {
+    const { parsed, cacheKey, onPhaseUpdate, requestedInitial, preloadTarget } = params;
+    const existing = PingHistoryViewModel.cachedTransactions;
+    const seen = new Set<string>();
+    const merged: TransactionViewModel[] = [];
+
+    const addTx = (tx: TransactionViewModel) => {
+      const key = `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+        tx.toCommitment ?? ''
+      ).toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      merged.push(tx);
+    };
+
+    parsed.forEach(addTx);
+    existing.forEach(addTx);
+
+    merged.sort((a, b) => b.timestamp - a.timestamp);
+
+    const baselineCursor = Math.min(merged.length, Math.max(existing.length, requestedInitial));
+    PingHistoryViewModel.parsedTransactions = merged;
+    PingHistoryViewModel.nextIndex = baselineCursor;
+    PingHistoryViewModel.chunkCursor = baselineCursor;
+    PingHistoryViewModel.cachedTransactions = merged.slice(0, baselineCursor);
+    onPhaseUpdate?.(PingHistoryViewModel.cachedTransactions);
+    PingHistoryViewModel.notify(PingHistoryViewModel.cachedTransactions);
+    await PingHistoryViewModel.saveToLocalCache(PingHistoryViewModel.cachedTransactions, cacheKey);
+
+    // Stage additional chunks in the background (5 at a time) until preload target is reached.
+    const targetCursor = Math.min(merged.length, Math.max(preloadTarget, baselineCursor));
+    if (PingHistoryViewModel.nextIndex < targetCursor) {
+      (async () => {
+        try {
+          while (
+            PingHistoryViewModel.parsedTransactions.length > PingHistoryViewModel.nextIndex &&
+            PingHistoryViewModel.nextIndex < targetCursor
+          ) {
+            const remaining = targetCursor - PingHistoryViewModel.nextIndex;
+            await this.applyChunk(Math.min(5, remaining), cacheKey, onPhaseUpdate);
+          }
+        } catch (err) {
+          console.error('[PingHistoryViewModel] Background chunk preload failed', err);
+        }
+      })();
+    }
+
+    return PingHistoryViewModel.cachedTransactions;
   }
 }

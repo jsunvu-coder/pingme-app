@@ -75,7 +75,7 @@ export default function PayQrConfirmationScreen() {
           amount: safeAmount,
           passphrase: '',
           txHash,
-          channel: 'Deposit',
+          channel: 'QR',
           duration: 0,
         },
       },

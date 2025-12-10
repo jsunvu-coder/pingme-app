@@ -49,7 +49,7 @@ describe('PingHistoryViewModel chunk loading', () => {
     } as any);
   });
 
-  it('loads initial 5 then chunks of 8 and updates cache', async () => {
+  it('loads initial chunk then adds more in 5-item batches', async () => {
     const vm = new PingHistoryViewModel();
     const updates: any[] = [];
 
@@ -61,7 +61,7 @@ describe('PingHistoryViewModel chunk loading', () => {
     // After hydration with only 2 records, cache should have those 2
     expect(updates[updates.length - 1]).toBe(2);
 
-    const more = await vm.loadMoreChunks(1, 8);
+    const more = await vm.loadMoreChunks(1, 5);
     expect(more.length).toBe(2);
   });
 

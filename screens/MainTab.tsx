@@ -7,23 +7,12 @@ import AccountScreen from './Account/AccountScreen';
 import HomeIcon from 'assets/HomeIcon';
 import PingIcon from 'assets/PingIcon';
 import UserIcon from 'assets/UserIcon';
-import { PingHistoryViewModel } from './Home/History/List/PingHistoryViewModel';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { push } from 'navigation/Navigation';
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      PingHistoryViewModel.prefetchTransactions().catch((err) =>
-        console.warn('⚠️ Failed to prefetch ping history', err)
-      );
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   useEffect(() => {
     let claimTimer: ReturnType<typeof setTimeout> | null = null;
     let shareTimer: ReturnType<typeof setTimeout> | null = null;

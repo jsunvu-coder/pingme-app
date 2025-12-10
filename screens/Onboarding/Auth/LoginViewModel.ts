@@ -1,13 +1,13 @@
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push, presentOverMain } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
-import { PingHistoryViewModel } from 'screens/Home/History/List/PingHistoryViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
 
@@ -183,18 +183,7 @@ export class LoginViewModel {
         from: shareParams.from ?? 'login',
       });
     }
-    const warmCache = async () => {
-      try {
-        // Load a quick batch of 5 before showing home; background preloading is limited to 5 here.
-        await PingHistoryViewModel.prefetchTransactions({ pageSize: 5, targetPreload: 5 });
-      } catch (err) {
-        console.warn('[Auth] Prefetch on login failed', err);
-      }
-    };
-
-    warmCache().finally(() =>
-      setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }])
-    );
+    setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
 
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {

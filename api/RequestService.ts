@@ -179,9 +179,7 @@ export class RequestService {
 
       // ---------- Execute Contract ----------
       const encodedRequester = encodeURIComponent(cr.username);
-      // Use the user-entered amount (in dollars) for deep links; contract calls expect micros, but
-      // the link should carry the display amount to avoid 1 → 1,000,000 inflation on open.
-      const url = `${APP_URL}/pay?token=${entry.token}&amount=${safeAmount}&requester=${encodedRequester}`;
+      const url = `${APP_URL}/pay?token=${entry.token}&amount=${kAmount.toString()}&requester=${encodedRequester}`;
 
       setPayLink(url);
       console.log('🎉 [RequestService] Payment request sent successfully.');

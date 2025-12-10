@@ -112,7 +112,8 @@ export default function SendConfirmationScreen() {
           ? incoming.replace(/,/g, '').replace(/\$/g, '').trim()
           : incoming;
       const num = Number(normalized);
-      return Number.isFinite(num) ? num : 0;
+      if (!Number.isFinite(num)) return 0;
+      return num >= 1_000_000 ? num / 1_000_000 : num;
     };
 
     const rawAmount = parseAmount(paramAmount);

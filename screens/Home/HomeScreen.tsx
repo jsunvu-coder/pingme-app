@@ -9,6 +9,7 @@ import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
+import { PingHistoryViewModel } from './History/List/PingHistoryViewModel';
 
 export default function HomeScreen() {
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
@@ -47,6 +48,10 @@ export default function HomeScreen() {
       balanceService.offBalanceChange(onUpdate);
     };
   }, [accountDataService, balanceService, confirmTopUp]);
+
+  useEffect(() => {
+    void PingHistoryViewModel.prefetchTransactions({ pageSize: 5, targetPreload: 20 });
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);

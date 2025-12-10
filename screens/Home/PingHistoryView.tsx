@@ -1,10 +1,4 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  Dimensions,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ArrowRightIcon from 'assets/ArrowRightIcon';
@@ -16,7 +10,7 @@ import { ContractService } from 'business/services/ContractService';
 
 export default function PingHistoryView() {
   const [history, setHistory] = useState<TransactionViewModel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const screenWidth = Dimensions.get('window').width;
   const vm = useMemo(() => new PingHistoryViewModel(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
@@ -37,26 +31,30 @@ export default function PingHistoryView() {
       let mounted = true;
       const commitment = contractService.getCrypto()?.commitment;
       let initialCached: TransactionViewModel[] = [];
-      setLoading(true);
+
+      // surface any in-memory cache immediately
+      const memCached = PingHistoryViewModel.getCachedTransactions(commitment ?? undefined);
+      if (memCached.length) {
+        setHistory(memCached.slice(0, 5));
+      }
 
       // show cached immediately if present for this user (load from disk if needed)
       (async () => {
         initialCached = await PingHistoryViewModel.loadCachedTransactions(commitment ?? undefined);
         if (initialCached.length && mounted) {
           setHistory(initialCached.slice(0, 5));
-          setLoading(false);
         }
       })();
 
       (async () => {
         try {
           const loaded = await vm.getTransactions({
-            pageSize: 10, // fetch first 10 immediately
-            targetPreload: 20, // then stage another 10 in background
+            pageSize: 5, // only fetch the first 5 for home preview
+            targetPreload: 20, // background-preload 4 more batches (5 each) into cache
+            preferFirstPage: true, // keep first hit fast; fetch full history in background
             onPhaseUpdate: (txs) => {
               if (!mounted) return;
               setHistory(txs.slice(0, 5));
-              if (txs.length) setLoading(false);
             },
           });
           if (!mounted) return;
