@@ -1,5 +1,6 @@
 // business/services/RequestService.ts
 import { Alert } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { Utils } from '../business/Utils';
 import { ContractService } from '../business/services/ContractService';
 import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES } from '../business/Constants';
@@ -47,6 +48,16 @@ export class RequestService {
     });
   }
 
+  private async isOnline(): Promise<boolean> {
+    try {
+      const state = await NetInfo.fetch();
+      return !!(state.isConnected && state.isInternetReachable !== false);
+    } catch {
+      // If NetInfo fails, don't block the user; let the request attempt handle errors.
+      return true;
+    }
+  }
+
   // ---------- Main Entry ----------
   async requestPayment({
     entry,
@@ -67,6 +78,11 @@ export class RequestService {
   }) {
     try {
       console.log('🚀 [RequestService] Starting requestPayment()...');
+
+      if (!(await this.isOnline())) {
+        await confirm('_ALERT_NO_INTERNET', true);
+        return;
+      }
 
       // ---------- Validation ----------
       const safeRequestee = (requestee ?? '').toLowerCase().trim();
@@ -125,6 +141,10 @@ export class RequestService {
       setSent(true);
       console.log('🎉 [RequestService] Payment request sent successfully.');
     } catch (error) {
+      if (!(await this.isOnline())) {
+        await confirm('_ALERT_NO_INTERNET', true);
+        return;
+      }
       this.handleError('Payment request failed', error);
       await confirm('_ALERT_REQUEST_FAILED', false);
     } finally {
@@ -152,8 +172,12 @@ export class RequestService {
     try {
       console.log('🚀 [RequestService] Starting requestPaymentByLink()...');
 
+      if (!(await this.isOnline())) {
+        await confirm('_ALERT_NO_INTERNET', true);
+        return;
+      }
+
       // ---------- Validation ----------
-      const safeRequestee = (requestee ?? '').toLowerCase().trim();
       const safeAmount = amount?.trim() ?? '';
 
       if (!safeAmount) {
@@ -184,6 +208,10 @@ export class RequestService {
       setPayLink(url);
       console.log('🎉 [RequestService] Payment request sent successfully.');
     } catch (error) {
+      if (!(await this.isOnline())) {
+        await confirm('_ALERT_NO_INTERNET', true);
+        return;
+      }
       this.handleError('Payment request failed', error);
       await confirm('_ALERT_REQUEST_FAILED', false);
     } finally {

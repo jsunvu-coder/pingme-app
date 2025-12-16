@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import NetInfo from '@react-native-community/netinfo';
 
 import ModalContainer from 'components/ModalContainer';
 import PrimaryButton from 'components/PrimaryButton';
@@ -152,6 +153,17 @@ export default function RequestConfirmationScreen() {
         message: 'Please provide a valid email address.',
       });
       return;
+    }
+
+    try {
+      const state = await NetInfo.fetch();
+      const reachable = state.isConnected && state.isInternetReachable !== false;
+      if (!reachable) {
+        await showLocalizedAlert({ message: '_ALERT_NO_INTERNET' });
+        return;
+      }
+    } catch {
+      // If NetInfo fails, allow the request attempt to proceed.
     }
 
     setLoading(true);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Alert, TouchableOpacity, Keyboard } from 'react-native';
+import { View, Alert, TouchableOpacity, Keyboard, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
@@ -82,12 +82,13 @@ export default function WithdrawScreen() {
     try {
       // --- Validation ---
       if (!entry?.amount) {
-        await confirm('_ALERT_SELECT_BALANCE', { cancel: false });
+        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
         return;
       }
       if (!amount) {
         await confirm('_ALERT_ENTER_AMOUNT', {
           cancel: false,
+          variant: 'error',
           titleKey: '_TITLE_ENTER_AMOUNT',
         });
         return;
@@ -97,6 +98,7 @@ export default function WithdrawScreen() {
       if (!/^\d*\.?\d*$/.test(trimmedAmount)) {
         await confirm('_ALERT_INVALID_AMOUNT', {
           cancel: false,
+          variant: 'error',
           titleKey: '_TITLE_INVALID_AMOUNT',
         });
         return;
@@ -114,12 +116,14 @@ export default function WithdrawScreen() {
       if (k_amount < k_min_amount) {
         await confirm('_ALERT_BELOW_MINIMUM', {
           cancel: false,
+          variant: 'error',
           titleKey: '_TITLE_BELOW_MINIMUM',
         });
         return;
       } else if (k_amount > k_entry) {
         await confirm('_ALERT_ABOVE_AVAILABLE', {
           cancel: false,
+          variant: 'error',
           titleKey: '_TITLE_ABOVE_AVAILABLE',
         });
         return;
@@ -133,7 +137,7 @@ export default function WithdrawScreen() {
       });
     } catch (err) {
       console.error('Withdraw failed:', err);
-      await confirm('_ALERT_WITHDRAW_FAILED', { cancel: false });
+      await confirm('_ALERT_WITHDRAW_FAILED', { cancel: false, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -160,6 +164,7 @@ export default function WithdrawScreen() {
               numberOfLines={1}
               editable={!loading}
               placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
+              style={Platform.OS === 'android' ? { paddingRight: 44 } : undefined}
             />
             <TouchableOpacity
               onPress={handlePasteWallet}

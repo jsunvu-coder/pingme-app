@@ -76,9 +76,9 @@
                     android:pathPrefix="/"
                     android:scheme="https" />
 
-                    <data
+                <data
                     android:host="app.staging.pingme.xyz"
-                    android:pathPrefix="/pay"
+                    android:pathPrefix="/"
                     android:scheme="https" />
             </intent-filter>
         </activity>

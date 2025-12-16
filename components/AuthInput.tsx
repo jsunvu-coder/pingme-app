@@ -1,5 +1,5 @@
-import { View, TextInput, Text, KeyboardTypeOptions, TextInputProps } from 'react-native';
-import React, { RefAttributes } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import { KeyboardTypeOptions, Platform, Text, TextInput, TextInputProps, View } from 'react-native';
 
 type Props = {
   icon?: React.ReactNode;
@@ -15,29 +15,48 @@ type Props = {
   autoFocus?: boolean;
 };
 
-export default function AuthInput({
-  icon,
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry,
-  customView,
-  error = false,
-  errorMessage,
-  keyboardType,
-  autoCapitalize,
-  autoFocus = false,
-  editable = true,
-  ref,
-  ...rest
-}: Props & TextInputProps & RefAttributes<any>) {
+const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInput(
+  {
+    icon,
+    placeholder,
+    value,
+    onChangeText,
+    secureTextEntry,
+    customView,
+    error = false,
+    errorMessage,
+    keyboardType,
+    autoCapitalize,
+    autoFocus = false,
+    editable = true,
+    ...rest
+  },
+  ref
+) {
   const isEmpty = !value || value.trim() === '';
+
+  // Android-only: keep passwords masked when deleting down to a single character.
+  // Some Android IMEs temporarily reveal the remaining character; remounting the input
+  // when length transitions down to 1 reliably re-applies password masking.
+  const [androidSecureRemountKey, setAndroidSecureRemountKey] = useState(0);
+  const prevLengthRef = useRef<number>(value?.length ?? 0);
+  useEffect(() => {
+    const nextLength = value?.length ?? 0;
+    const prevLength = prevLengthRef.current;
+    prevLengthRef.current = nextLength;
+
+    if (Platform.OS !== 'android' || !secureTextEntry) return;
+    if (nextLength === 1 && prevLength > nextLength) {
+      setAndroidSecureRemountKey((k) => k + 1);
+    }
+  }, [secureTextEntry, value]);
 
   return (
     <View className="mb-6">
       {icon && <View className="mb-2">{icon}</View>}
 
       <TextInput
+        key={Platform.OS === 'android' && secureTextEntry ? androidSecureRemountKey : undefined}
         ref={ref}
         placeholder={placeholder}
         placeholderTextColor="#909090"
@@ -68,4 +87,6 @@ export default function AuthInput({
       {customView && <View className="mt-4">{customView}</View>}
     </View>
   );
-}
+});
+
+export default AuthInput;

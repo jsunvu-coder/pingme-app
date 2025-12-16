@@ -128,6 +128,8 @@
   "_ALERT_INVALID_QR_LINK": "Invalid QR link.",
   "_ALERT_LOCKBOX_ALREADY_EXISTS": "Lockbox already exists.",
   "_ALERT_PAYMENT_FAILED": "Payment failed.",
+  "_ALERT_NO_INTERNET": "No internet connection. Please try again when you're back online.",
+  "_ALERT_REQUEST_FAILED": "Request failed. Please check your internet connection and try again.",
   "_ALERT_MISSING_PASSPHRASE": "Passphrase is missing.",
   "_ALERT_RECEIVED_TOPUP": "You have received a top up.",
   "_ALERT_SELECT_BALANCE": "You must select a balance.",

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 type FlashMessageType = 'default' | 'info' | 'success' | 'warning' | 'danger';
@@ -18,6 +19,16 @@ export function showFlashMessage({
   icon,
   onHide,
 }: FlashMessageParams) {
+  const androidDangerOverrides =
+    Platform.OS === 'android' && type === 'danger'
+      ? {
+          backgroundColor: '#FB1028',
+          color: '#FFFFFF',
+          titleStyle: { color: '#FFFFFF' },
+          textStyle: { color: '#FFFFFF' },
+        }
+      : {};
+
   showMessage({
     message: title ?? message,
     description: title ? message : undefined,
@@ -26,5 +37,6 @@ export function showFlashMessage({
     floating: true,
     duration: 2500,
     onHide,
+    ...androidDangerOverrides,
   });
 }
