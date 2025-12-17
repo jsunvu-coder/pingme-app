@@ -6,6 +6,8 @@ import { EncryptSession } from "./EncryptSession";
 import { GLOBALS } from "./Constants";
 
 export class Utils {
+  static readonly MICRO_FACTOR = 1_000_000n;
+
   // ------------------------
   // AsyncStorage replacements
   // ------------------------
@@ -158,8 +160,75 @@ export class Utils {
   }
 
   static toMicro(amount: string): bigint {
-    return BigInt(
-      Math.round(parseFloat(amount.replace(/[^0-9.]/g, "")) * 1_000_000)
-    );
+    const cleaned = (amount ?? "").toString().trim();
+    if (!cleaned) return 0n;
+
+    const sanitized = cleaned.replace(/[^0-9.\-]/g, "");
+    if (!sanitized || sanitized === "-" || sanitized === "." || sanitized === "-.") return 0n;
+
+    const sign = sanitized.startsWith("-") ? -1n : 1n;
+    const unsigned = sanitized.replace(/^\-/, "");
+    const firstDot = unsigned.indexOf(".");
+    const wholeStr = (firstDot >= 0 ? unsigned.slice(0, firstDot) : unsigned) || "0";
+    const fracRaw = firstDot >= 0 ? unsigned.slice(firstDot + 1) : "";
+
+    const wholeDigits = wholeStr.replace(/\D/g, "") || "0";
+    const fracDigits = fracRaw.replace(/\D/g, "");
+
+    const whole = BigInt(wholeDigits) * Utils.MICRO_FACTOR;
+
+    if (!fracDigits) return sign * whole;
+
+    const fracLen = fracDigits.length;
+    const frac6 = fracLen <= 6 ? fracDigits.padEnd(6, "0") : fracDigits.slice(0, 6);
+    let micro = whole + BigInt(frac6);
+
+    if (fracLen > 6) {
+      const roundDigit = fracDigits.charCodeAt(6) - 48;
+      if (roundDigit >= 5) micro += 1n;
+    }
+
+    return sign * micro;
+  }
+
+  static formatMicroToUsd(
+    value: string | bigint | null | undefined,
+    mode: "dollar" | "cent" | undefined = undefined,
+    options?: { grouping?: boolean; empty?: string }
+  ): string {
+    const empty = options?.empty ?? "0.00";
+    try {
+      if (value === null || value === undefined) return empty;
+      const micro = typeof value === "bigint" ? value : BigInt(value);
+
+      const sign = micro < 0n ? "-" : "";
+      const absMicro = micro < 0n ? -micro : micro;
+
+      // Round to cents: 0.01 USD = 10,000 micro.
+      const cents = (absMicro + 5_000n) / 10_000n;
+      const dollars = cents / 100n;
+      const centPart = (cents % 100n).toString().padStart(2, "0");
+
+      const dollarsStr = options?.grouping === false
+        ? dollars.toString()
+        : Utils.groupDigits(dollars.toString());
+
+      if (mode === "dollar") return `${sign}${dollarsStr}`;
+      if (mode === "cent") return centPart;
+      return `${sign}${dollarsStr}.${centPart}`;
+    } catch {
+      return empty;
+    }
+  }
+
+  private static groupDigits(value: string): string {
+    const digits = value.replace(/^0+(?=\d)/, "") || "0";
+    let out = "";
+    for (let i = 0; i < digits.length; i++) {
+      const idxFromEnd = digits.length - i;
+      out += digits[i];
+      if (idxFromEnd > 1 && idxFromEnd % 3 === 1) out += ",";
+    }
+    return out;
   }
 }

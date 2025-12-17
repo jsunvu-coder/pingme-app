@@ -42,6 +42,7 @@ describe('PingHistoryViewModel chunk loading', () => {
     jest.resetAllMocks();
     (mockContractService.getInstance as jest.Mock).mockReturnValue({
       getCrypto: () => ({ commitment: 'commit' }),
+      getEvents: jest.fn().mockResolvedValue({ events: mockRecords, commitment: '0x0' }),
     } as any);
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
@@ -97,6 +98,7 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockContractService.getInstance as jest.Mock).mockReturnValue({
       getCrypto: () => ({ commitment: 'claimant' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
     } as any);
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
@@ -130,6 +132,7 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockContractService.getInstance as jest.Mock).mockReturnValue({
       getCrypto: () => ({ commitment: 'claimant-self' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
     } as any);
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
@@ -175,6 +178,7 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockContractService.getInstance as jest.Mock).mockReturnValue({
       getCrypto: () => ({ commitment: 'payee' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
     } as any);
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
@@ -208,6 +212,7 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockContractService.getInstance as jest.Mock).mockReturnValue({
       getCrypto: () => ({ commitment: 'recipient' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
     } as any);
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({

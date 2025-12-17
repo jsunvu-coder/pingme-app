@@ -43,6 +43,7 @@ jest.mock('expo-contacts', () => ({
 
 jest.mock('@react-navigation/native', () => {
   const actual = jest.requireActual('@react-navigation/native');
+  const React = require('react');
   return {
     ...actual,
     useNavigation: () => ({
@@ -58,7 +59,10 @@ jest.mock('@react-navigation/native', () => {
     }),
     useRoute: () => ({ params: {} }),
     useFocusEffect: jest.fn((callback) => {
-      callback();
+      React.useEffect(() => {
+        const cleanup = callback();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, [callback]);
     }),
     useIsFocused: jest.fn(() => true),
   };
@@ -86,8 +90,8 @@ jest.mock('react-native-safe-area-context', () => {
     insetLeft: 0,
   });
   return {
-    SafeAreaProvider: ({ children }: any) => children,
-    SafeAreaView: ({ children }: any) => children,
+    SafeAreaProvider: ({ children }) => children,
+    SafeAreaView: ({ children }) => children,
     useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
     SafeAreaInsetsContext: SafeAreaContext,
   };

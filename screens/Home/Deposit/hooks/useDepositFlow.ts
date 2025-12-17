@@ -5,21 +5,6 @@ import { Utils } from 'business/Utils';
 import { submitDepositTransaction } from 'business/services/DepositQrService';
 import type { BalanceEntry } from 'business/Types';
 
-const MICRO_FACTOR = 1_000_000n;
-
-const formatMicroToUsd = (value?: string | bigint | null): string => {
-  try {
-    if (value === null || value === undefined) return '0.00';
-    const micro = typeof value === 'bigint' ? value : BigInt(value);
-    const intPart = micro / MICRO_FACTOR;
-    const fracPart = micro % MICRO_FACTOR;
-    const scaled = Number(intPart) + Number(fracPart) / Number(MICRO_FACTOR);
-    return scaled.toFixed(2);
-  } catch {
-    return '0.00';
-  }
-};
-
 const selectDefaultBalance = (
   balances: BalanceEntry[],
   token?: string | null
@@ -40,9 +25,13 @@ const normalizeAmountInput = (value: string): string => {
 
 const formatAmountOrEmpty = (value?: string): string => {
   if (!value) return '';
-  const formatted = formatMicroToUsd(value);
-  const numeric = Number(formatted.replace(/,/g, ''));
-  return numeric > 0 ? formatted : '';
+  try {
+    const micro = BigInt(value);
+    if (micro <= 0n) return '';
+    return Utils.formatMicroToUsd(micro, undefined, { grouping: false, empty: '' });
+  } catch {
+    return '';
+  }
 };
 
 export interface DepositPayload {
@@ -336,6 +325,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     toggleQr,
 
     // Helpers
-    formatMicroToUsd,
+    formatMicroToUsd: (value?: string | bigint | null) =>
+      Utils.formatMicroToUsd(value, undefined, { grouping: true, empty: '0.00' }),
   };
 };

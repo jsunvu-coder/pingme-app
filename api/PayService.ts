@@ -103,7 +103,8 @@ export class PayService {
       }
 
       passphrase = passphrase.trim();
-      if (kAmount >= BigInt(SKIP_PASSPHRASE * 1_000_000) && !passphrase) {
+      const skipPassphraseThreshold = BigInt(SKIP_PASSPHRASE) * Utils.MICRO_FACTOR;
+      if (kAmount >= skipPassphraseThreshold && !passphrase) {
         if (await confirm('_ALERT_SKIP_PASSPHRASE', false)) return;
       }
 
@@ -243,7 +244,6 @@ export class PayService {
           entry.token,
           amt,
           cr.proof,
-          cr.salt,
           nextCommitment,
           duration,
           lockboxCommitment,
@@ -257,7 +257,6 @@ export class PayService {
           entry.token,
           amt,
           cr.proof,
-          cr.salt,
           nextCommitment,
           duration,
           lockboxCommitment

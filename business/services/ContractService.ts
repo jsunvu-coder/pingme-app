@@ -229,7 +229,6 @@ export class ContractService {
     token: string,
     amount: string,
     proof: string,
-    salt: string,
     next_commitment: string,
     recipient: string
   ) {
@@ -238,7 +237,6 @@ export class ContractService {
         token,
         amount,
         proof,
-        salt,
         next_commitment,
         recipient,
       })
@@ -249,7 +247,6 @@ export class ContractService {
     token: string,
     amount: string,
     proof: string,
-    salt: string,
     next_commitment: string,
     commitment: string
   ) {
@@ -258,7 +255,6 @@ export class ContractService {
         token,
         amount,
         proof,
-        salt,
         next_commitment,
         commitment,
       })
@@ -269,7 +265,6 @@ export class ContractService {
     token: string,
     amount: string,
     proof: string,
-    salt: string,
     next_commitment: string,
     duration: number,
     lockbox_commitment: string
@@ -279,7 +274,6 @@ export class ContractService {
         token,
         amount,
         proof,
-        salt,
         next_commitment,
         duration,
         lockbox_commitment,
@@ -291,7 +285,6 @@ export class ContractService {
     token: string,
     amount: string,
     proof: string,
-    salt: string,
     next_commitment: string,
     duration: number,
     lockbox_commitment: string,
@@ -305,7 +298,6 @@ export class ContractService {
         token,
         amount,
         proof,
-        salt,
         next_commitment,
         duration,
         lockbox_commitment,

@@ -107,6 +107,14 @@ export class PingHistoryViewModel {
    * Keeps only the first occurrence of each unique pair.
    */
   private parseTransactions(rawEvents: RecordEntry[], commitment: string): TransactionViewModel[] {
+    const lockboxesWithPayment = new Set<string>();
+    for (const event of rawEvents) {
+      const action = Number(event.action ?? -1);
+      if (action !== 9) continue;
+      const lockboxCommitment = (event.lockboxCommitment ?? '').toLowerCase();
+      if (lockboxCommitment) lockboxesWithPayment.add(lockboxCommitment);
+    }
+
     const seen = new Set<string>();
     const seenLockboxes = new Set<string>();
     const parsed: TransactionViewModel[] = [];
@@ -126,6 +134,10 @@ export class PingHistoryViewModel {
       const lockboxCommitment = (event.lockboxCommitment ?? '').toLowerCase();
 
       if (action === 0 && lockboxCommitment) {
+        if (lockboxesWithPayment.has(lockboxCommitment)) {
+          // Avoid duplicate entries when a Payment exists for the same lockbox.
+          continue;
+        }
         if (seenLockboxes.has(lockboxCommitment)) {
           continue;
         }

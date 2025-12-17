@@ -1,8 +1,8 @@
 // services/BalanceService.ts
 
-import { ContractService } from "./ContractService";
-import { BalanceEntry } from "business/Types";
-import { Utils } from "business/Utils";
+import { ContractService } from './ContractService';
+import { BalanceEntry } from 'business/Types';
+import { Utils } from 'business/Utils';
 
 type BalanceListener = (balances: BalanceEntry[]) => void;
 type UpdateTimeListener = (time: number | null) => void;
@@ -19,7 +19,7 @@ export class BalanceService {
   private _mutex = false;
   private contractService: ContractService;
 
-  private _totalBalance: string = "0.00"; // 🔹 store last computed balance
+  private _totalBalance: string = '0.00'; // 🔹 store last computed balance
   private needsRetryOnReconnect = false;
   private netInfoUnsubscribe?: () => void;
 
@@ -97,7 +97,7 @@ export class BalanceService {
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
     } catch (err) {
-      console.error("❌ [BalanceService] Failed to fetch balance:", err);
+      console.error('❌ [BalanceService] Failed to fetch balance:', err);
       // Keep showing the last known balance instead of clearing to $0 on failure.
       this.balances = prevBalances;
       this.balanceUpdateTime = prevUpdateTime;
@@ -113,7 +113,7 @@ export class BalanceService {
   clear(): void {
     this.balances = [];
     this.balanceUpdateTime = null;
-    this._totalBalance = "0.00";
+    this._totalBalance = '0.00';
     this.needsRetryOnReconnect = false;
     this.notifyBalanceChange();
     this.notifyUpdateTimeChange();
@@ -122,7 +122,7 @@ export class BalanceService {
   private attachConnectivityListener() {
     try {
       // Lazy import to avoid requiring NetInfo in non-RN contexts (e.g., tests).
-      const NetInfo = require("@react-native-community/netinfo").default;
+      const NetInfo = require('@react-native-community/netinfo').default;
       this.netInfoUnsubscribe = NetInfo.addEventListener((state: any) => {
         const reachable = state.isConnected && state.isInternetReachable !== false;
         if (reachable && this.needsRetryOnReconnect && !this._mutex) {
@@ -130,15 +130,22 @@ export class BalanceService {
         }
       });
     } catch (err) {
-      console.warn("⚠️ [BalanceService] NetInfo unavailable; auto-retry on reconnect disabled.", err);
+      console.warn(
+        '⚠️ [BalanceService] NetInfo unavailable; auto-retry on reconnect disabled.',
+        err
+      );
     }
   }
 
   private computeTotal(balances: BalanceEntry[]): string {
-    const sum = balances.reduce((acc, b) => {
-      const amt = parseFloat(b.amount ?? "0");
-      return acc + (isNaN(amt) ? 0 : amt);
-    }, 0);
-    return (sum / 1_000_000).toFixed(2);
+    const sumMicro = balances.reduce((acc, b) => {
+      try {
+        if (!b?.amount) return acc;
+        return acc + BigInt(b.amount);
+      } catch {
+        return acc;
+      }
+    }, 0n);
+    return Utils.formatMicroToUsd(sumMicro, undefined, { grouping: true, empty: '0.00' });
   }
 }

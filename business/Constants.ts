@@ -41,7 +41,7 @@ export const LOCKBOX_DURATION = 14; // 14 day
 // DO NOT CHANGE THESE VALUES!!!!
 // ####################################################
 export const TOKENS = {
-  USDC: '0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7',
+  USDC: '0x32F62bDC2BE3E1B1C0265143831155253cd5A248',
 };
 
 export const TOKEN_NAMES = {

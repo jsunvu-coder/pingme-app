@@ -1,6 +1,7 @@
 // helpers/TransactionParser.ts
 
 import { TransactionAction, TransactionViewModel } from './TransactionViewModel';
+import { Utils } from 'business/Utils';
 
 const ACTION_MAP: Record<number, TransactionAction> = {
   0: 'Claim',
@@ -26,9 +27,14 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
     return null;
   }
 
-  const amountMicro = raw.amount ?? '0';
-  const amountNumeric = Number(amountMicro);
-  const amount = Number.isFinite(amountNumeric) ? amountNumeric / 1_000_000 : 0;
+  const amountMicroRaw = (raw.amount ?? '0').toString();
+  const amountMicro = (() => {
+    try {
+      return BigInt(amountMicroRaw);
+    } catch {
+      return 0n;
+    }
+  })();
 
   const fromCommitment = (raw.fromCommitment ?? raw.from_commitment ?? '').toLowerCase();
   const toCommitment = (raw.toCommitment ?? raw.to_commitment ?? '').toLowerCase();
@@ -81,7 +87,12 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
   }
 
   const isPositive = direction !== 'send';
-  const formattedAmount = `${isPositive ? '+' : '-'} ${Math.abs(amount).toFixed(2)}`;
+  const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: true, empty: '0.00' });
+  const formattedAmount = `${isPositive ? '+' : '-'} $${amountUsd}`;
+  const amount = (() => {
+    const numeric = Number(amountUsd.replace(/,/g, ''));
+    return Number.isFinite(numeric) ? numeric : 0;
+  })();
 
   const timestampSeconds = Number(raw.timestamp ?? raw.timestampSeconds ?? 0);
   const date = timestampSeconds ? new Date(timestampSeconds * 1000) : new Date(0);
@@ -104,7 +115,7 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
   return {
     actionCode: action,
     addr: raw.addr ?? '',
-    amountRaw: (raw.amount ?? '0').toString(),
+    amountRaw: amountMicroRaw,
     fromCommitment: raw.fromCommitment ?? raw.from_commitment ?? '',
     toCommitment: raw.toCommitment ?? raw.to_commitment ?? '',
     token: raw.token ?? '',

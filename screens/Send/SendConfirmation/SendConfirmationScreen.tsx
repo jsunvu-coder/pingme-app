@@ -13,6 +13,7 @@ import CloseButton from 'components/CloseButton';
 import { PayService } from 'api/PayService';
 import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
 import { BalanceService } from 'business/services/BalanceService';
+import { Utils } from 'business/Utils';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { showFlashMessage } from 'utils/flashMessage';
 import enUS from 'i18n/en-US.json';
@@ -50,7 +51,7 @@ export default function SendConfirmationScreen() {
   const [passphrase, setPassphrase] = useState('');
   const [entry, setEntry] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<string>('0.00');
   const [recipient, setRecipient] = useState<string>('');
   const [displayAmount, setDisplayAmount] = useState<string>('$0.00');
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -106,19 +107,41 @@ export default function SendConfirmationScreen() {
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
     console.log('[SendConfirmation] Received params:', params);
-    const parseAmount = (incoming?: number | string) => {
-      const normalized =
-        typeof incoming === 'string'
-          ? incoming.replace(/,/g, '').replace(/\$/g, '').trim()
-          : incoming;
-      const num = Number(normalized);
-      if (!Number.isFinite(num)) return 0;
-      return num >= 1_000_000 ? num / 1_000_000 : num;
+    const parseAmount = (
+      incoming?: number | string
+    ): { amountUsd: string; displayUsd: string } => {
+      if (incoming === null || incoming === undefined) {
+        return { amountUsd: '0.00', displayUsd: '$0.00' };
+      }
+
+      if (typeof incoming === 'number') {
+        const normalized = Number.isFinite(incoming) ? incoming.toFixed(2) : '0.00';
+        return { amountUsd: normalized, displayUsd: `$${Utils.toCurrency(normalized)}` };
+      }
+
+      const normalized = incoming.replace(/,/g, '').replace(/\$/g, '').trim();
+      if (!normalized) return { amountUsd: '0.00', displayUsd: '$0.00' };
+
+      // If it includes '.', treat as USD decimal; otherwise treat as micro integer string.
+      if (normalized.includes('.')) {
+        const formatted = Utils.toCurrency(normalized) || '0.00';
+        return { amountUsd: normalized, displayUsd: `$${formatted}` };
+      }
+
+      const amountUsd = Utils.formatMicroToUsd(normalized, undefined, {
+        grouping: false,
+        empty: '0.00',
+      });
+      const displayUsd = Utils.formatMicroToUsd(normalized, undefined, {
+        grouping: true,
+        empty: '0.00',
+      });
+      return { amountUsd, displayUsd: `$${displayUsd}` };
     };
 
-    const rawAmount = parseAmount(paramAmount);
-    setAmount(rawAmount);
-    setDisplayAmount(paramDisplayAmount ?? `$${rawAmount.toFixed(2)}`);
+    const parsed = parseAmount(paramAmount);
+    setAmount(parsed.amountUsd);
+    setDisplayAmount(paramDisplayAmount ?? parsed.displayUsd);
     setRecipient(paramRecipient || paramRequester || '');
     setToken(paramToken);
     const initialDuration =
@@ -138,9 +161,16 @@ export default function SendConfirmationScreen() {
   // ✅ Fetch balances and set token entry
   const pickEntry = useCallback((balances: any[] | undefined | null) => {
     if (!balances?.length) return null;
+    const hasPositiveBalance = (b: any) => {
+      try {
+        return BigInt(b?.amount ?? '0') > 0n;
+      } catch {
+        return false;
+      }
+    };
     return (
-      balances.find((b) => b.token === TOKENS.USDC && parseFloat(b.amount) > 0.0) ||
-      balances.find((b) => parseFloat(b.amount) > 0.0) ||
+      balances.find((b) => b.token === TOKENS.USDC && hasPositiveBalance(b)) ||
+      balances.find((b) => hasPositiveBalance(b)) ||
       balances[0]
     );
   }, []);
@@ -193,7 +223,8 @@ export default function SendConfirmationScreen() {
   };
 
   const pay = async () => {
-    if (!amount || Number(amount) <= 0) {
+    const amountMicro = Utils.toMicro(amount);
+    if (amountMicro <= 0n) {
       showFlashMessage({
         title: 'Invalid amount',
         message: 'Payment amount must be greater than 0.',
@@ -253,7 +284,7 @@ export default function SendConfirmationScreen() {
           tokenName: usableEntry.tokenName,
         },
         username: recipient,
-        amount: amount.toString(),
+        amount,
         passphrase: normalizedPassphrase,
         days: durationDays,
 
@@ -323,7 +354,7 @@ export default function SendConfirmationScreen() {
                 name: 'PaymentSuccessScreen',
                 params: {
                   recipient,
-                  amount,
+                  amount: Number(amount),
                   passphrase,
                   txHash: hash,
                   channel: params.channel || 'Link',
@@ -350,7 +381,7 @@ export default function SendConfirmationScreen() {
               {
                 name: 'PaymentLinkCreatedScreen',
                 params: {
-                  amount,
+                  amount: Number(amount),
                   passphrase,
                   payLink,
                   duration: durationDays,

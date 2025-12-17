@@ -71,6 +71,10 @@ export default function AuthScreen() {
       const minLift = headerFull ? 100 : 40;
       if (offset < minLift) offset = minLift;
 
+      if (activeTab === 'login') {
+        offset = 0;
+      }
+
       Animated.timing(translateY, {
         toValue: -offset,
         duration: 250,

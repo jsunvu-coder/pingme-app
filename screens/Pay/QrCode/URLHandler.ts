@@ -1,4 +1,5 @@
 import { APP_URL } from 'business/Config';
+import { Utils } from 'business/Utils';
 import { push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { showFlashMessage } from 'utils/flashMessage';
@@ -88,6 +89,12 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
       const token = url.searchParams.get('token');
       let amount = url.searchParams.get('amount');
       let requester = url.searchParams.get('requester') ?? url.searchParams.get('email');
+      const normalizeAmountForInput = (raw?: string | null) => {
+        const normalized = (raw ?? '').replace(/,/g, '').replace(/\$/g, '').trim();
+        if (!normalized) return undefined;
+        if (normalized.includes('.')) return normalized; // already USD decimal
+        return Utils.formatMicroToUsd(normalized, undefined, { grouping: false, empty: '' }) || undefined;
+      };
 
       // Try parsing from path if query params missing
       if (!requester) {
@@ -113,12 +120,8 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
         };
 
         if (requester) fallbackParams.email = requester;
-        if (amount) {
-          const numericAmount = Number(amount);
-          if (Number.isFinite(numericAmount)) {
-            fallbackParams.amount = numericAmount;
-          }
-        }
+        const amountUsd = normalizeAmountForInput(amount);
+        if (amountUsd) fallbackParams.amount = amountUsd;
 
         push('MainTab', {
           screen: 'Ping Now',
@@ -134,8 +137,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
       });
 
       push('SendConfirmationScreen', {
-        amount: Number(amount),
-        displayAmount: `$${Number(amount).toFixed(2)}`,
+        amount,
         recipient: requester,
         channel: 'Email',
       });

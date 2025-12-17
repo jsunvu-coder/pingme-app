@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { CryptoUtils } from 'business/CryptoUtils';
+import { Utils } from 'business/Utils';
 import { ContractService } from 'business/services/ContractService';
 import { solidityPacked } from 'ethers';
 import { push } from 'navigation/Navigation';
@@ -101,12 +102,12 @@ export const useClaimPayment = () => {
   // Format USD amount from lockbox
   const formatUsdFromLockbox = () => {
     try {
-      const amt = parseFloat(String(lockbox?.amount ?? '0')) / 1_000_000;
-      if (!isFinite(amt)) return undefined;
-      return new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amt);
+      if (!lockbox?.amount) return undefined;
+      const formatted = Utils.formatMicroToUsd(lockbox.amount, undefined, {
+        grouping: true,
+        empty: '',
+      });
+      return formatted || undefined;
     } catch {
       return undefined;
     }
@@ -152,9 +153,12 @@ export const useClaimPayment = () => {
       if (ret.status === 0) {
         const amountUsdStr = (() => {
           try {
-            const amt = parseFloat(String(ret.amount ?? '0')) / 1_000_000;
-            if (!isFinite(amt)) return undefined;
-            return amt.toFixed(2);
+            if (!ret.amount) return undefined;
+            const formatted = Utils.formatMicroToUsd(ret.amount, undefined, {
+              grouping: true,
+              empty: '',
+            });
+            return formatted || undefined;
           } catch {
             return undefined;
           }
