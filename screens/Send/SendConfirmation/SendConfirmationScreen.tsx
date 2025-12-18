@@ -5,13 +5,14 @@ import type { RouteProp } from '@react-navigation/native';
 
 import ModalContainer from 'components/ModalContainer';
 import PrimaryButton from 'components/PrimaryButton';
-import { push, setRootScreen } from 'navigation/Navigation';
+import { setRootScreen } from 'navigation/Navigation';
 import WalletSendIcon from 'assets/WalletSendIcon';
 import PaymentSummaryCard from './PaymentSummaryCard';
 import PassphraseSection from './PassphraseSection';
 import CloseButton from 'components/CloseButton';
 import { PayService } from 'api/PayService';
-import { LOCKBOX_DURATION, TOKENS } from 'business/Constants';
+import { LOCKBOX_DURATION, TOKEN_NAMES, TOKENS } from 'business/Constants';
+import { SKIP_PASSPHRASE } from 'business/Config';
 import { BalanceService } from 'business/services/BalanceService';
 import { Utils } from 'business/Utils';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
@@ -58,6 +59,7 @@ export default function SendConfirmationScreen() {
   const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
   const [balancesLoading, setBalancesLoading] = useState(false);
   const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
+  const prevPassphraseRequired = useRef<boolean>(false);
 
   const balanceService = BalanceService.getInstance();
 
@@ -68,6 +70,24 @@ export default function SendConfirmationScreen() {
     }
   }, [usePassphrase, passphrase]);
 
+  const passphraseRequired = (() => {
+    try {
+      const amountMicro = Utils.toMicro(amount);
+      return amountMicro > BigInt(SKIP_PASSPHRASE) * Utils.MICRO_FACTOR;
+    } catch {
+      return false;
+    }
+  })();
+
+  useEffect(() => {
+    if (passphraseRequired) {
+      setUsePassphrase(true);
+    } else if (prevPassphraseRequired.current) {
+      setUsePassphrase(false);
+    }
+    prevPassphraseRequired.current = passphraseRequired;
+  }, [passphraseRequired]);
+
   // 👇 smooth keyboard animation value
   const translateY = useRef(new Animated.Value(0)).current;
 
@@ -76,7 +96,7 @@ export default function SendConfirmationScreen() {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
-        const keyboardHeight = e.endCoordinates.height || 300;
+        const keyboardHeight = e?.endCoordinates?.height ?? 300;
         Animated.timing(translateY, {
           toValue: -keyboardHeight / 2.2,
           duration: 250,
@@ -106,7 +126,6 @@ export default function SendConfirmationScreen() {
 
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
-    console.log('[SendConfirmation] Received params:', params);
     const parseAmount = (
       incoming?: number | string
     ): { amountUsd: string; displayUsd: string } => {
@@ -161,18 +180,31 @@ export default function SendConfirmationScreen() {
   // ✅ Fetch balances and set token entry
   const pickEntry = useCallback((balances: any[] | undefined | null) => {
     if (!balances?.length) return null;
-    const hasPositiveBalance = (b: any) => {
+    const getAmount = (b: any) => {
       try {
-        return BigInt(b?.amount ?? '0') > 0n;
+        return BigInt(b?.amount ?? '0');
       } catch {
-        return false;
+        return 0n;
       }
     };
-    return (
-      balances.find((b) => b.token === TOKENS.USDC && hasPositiveBalance(b)) ||
-      balances.find((b) => hasPositiveBalance(b)) ||
-      balances[0]
-    );
+
+    const usdcAddress = TOKENS.USDC.toLowerCase();
+    const isUsdc = (b: any) => {
+      const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
+      const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
+      return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+    };
+
+    const bestByAmount = (list: any[]) =>
+      list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
+
+    const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
+    if (usdcBalances.length) return bestByAmount(usdcBalances);
+
+    const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
+    if (positiveBalances.length) return bestByAmount(positiveBalances);
+
+    return bestByAmount(balances);
   }, []);
 
   const ensureEntry = useCallback(async () => {
@@ -223,6 +255,16 @@ export default function SendConfirmationScreen() {
   };
 
   const pay = async () => {
+    const isEmailChannel = params?.channel === 'Email';
+    if (isEmailChannel && !Utils.isValidEmail(recipient.trim())) {
+      showFlashMessage({
+        title: 'Invalid recipient',
+        message: 'Please provide a valid email address.',
+        type: 'warning',
+      });
+      return;
+    }
+
     const amountMicro = Utils.toMicro(amount);
     if (amountMicro <= 0n) {
       showFlashMessage({
@@ -234,10 +276,12 @@ export default function SendConfirmationScreen() {
     }
 
     const normalizedPassphrase = passphrase.trim();
-    if (usePassphrase && !normalizedPassphrase) {
+    if ((usePassphrase || passphraseRequired) && !normalizedPassphrase) {
       showFlashMessage({
         title: 'Passphrase is missing',
-        message: 'Please enter a passphrase or disable the passphrase option.',
+        message: passphraseRequired
+          ? 'A passphrase is required for amounts over $10.'
+          : 'Please enter a passphrase or disable the passphrase option.',
         type: 'warning',
       });
       return;
@@ -279,7 +323,7 @@ export default function SendConfirmationScreen() {
 
       await PayService.getInstance().pay({
         entry: {
-          token: usableEntry.token,
+          token: usableEntry.tokenAddress ?? usableEntry.token,
           amount: usableEntry.amount,
           tokenName: usableEntry.tokenName,
         },
@@ -289,10 +333,12 @@ export default function SendConfirmationScreen() {
         days: durationDays,
 
         // ✅ flexible confirm handler
-        confirm: async (msg: string) => {
-          const message = Object.prototype.hasOwnProperty.call(enUS, msg)
-            ? enUS[msg as keyof typeof enUS]
+        confirm: async (msg: string, okOnly = false) => {
+          const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
+            ? (enUS as Record<string, unknown>)[msg]
             : msg;
+          const message =
+            typeof resolvedMessage === 'string' ? resolvedMessage : String(resolvedMessage ?? msg);
 
           const errorMessages = ['_ALERT_ABOVE_AVAILABLE'];
           if (errorMessages.includes(msg)) {
@@ -301,6 +347,11 @@ export default function SendConfirmationScreen() {
               message,
               type: 'warning',
             });
+            return true;
+          }
+
+          if (okOnly) {
+            await showLocalizedAlert({ title: 'Information', message });
             return true;
           }
 
@@ -318,28 +369,24 @@ export default function SendConfirmationScreen() {
           }
 
           // Show confirmation popup (OK + Cancel)
-          return new Promise<boolean>((resolve) => {
-            showLocalizedAlert({
-              title: 'Confirmation',
-              message,
-              buttons: [
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
-                  onPress: () => {
-                    console.log('❌ Payment canceled by user');
-                    resolve(false);
-                  },
+          return showLocalizedAlert({
+            title: 'Confirmation',
+            message,
+            buttons: [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  console.log('❌ Payment canceled by user');
                 },
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    console.log('✅ User confirmed payment');
-                    resolve(true);
-                  },
+              },
+              {
+                text: 'OK',
+                onPress: () => {
+                  console.log('✅ User confirmed payment');
                 },
-              ],
-            });
+              },
+            ],
           });
         },
 
@@ -422,7 +469,7 @@ export default function SendConfirmationScreen() {
               </View>
 
               <Text className="mb-8 text-center text-4xl font-bold text-black">
-                You're about to send
+                You’re about to send
               </Text>
 
               <PaymentSummaryCard
@@ -442,6 +489,7 @@ export default function SendConfirmationScreen() {
                 setUsePassphrase={setUsePassphrase}
                 passphrase={passphrase}
                 setPassphrase={setPassphrase}
+                toggleDisabled={passphraseRequired}
                 disabled={loading || balancesLoading}
               />
 

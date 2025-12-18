@@ -11,7 +11,7 @@ import { ContractService } from 'business/services/ContractService';
 import { RecordService } from 'business/services/RecordService';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
-import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
+import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
@@ -33,7 +33,34 @@ export default function WithdrawScreen() {
     const loadBalance = async () => {
       await balanceService.getBalance();
       const balances = balanceService.balances;
-      if (balances && balances.length > 0) setEntry(balances[0]);
+      if (!balances?.length) return;
+
+      const getAmount = (b: any) => {
+        try {
+          return BigInt(b?.amount ?? '0');
+        } catch {
+          return 0n;
+        }
+      };
+
+      const usdcAddress = TOKENS.USDC.toLowerCase();
+      const isUsdc = (b: any) => {
+        const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
+        const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
+        return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+      };
+
+      const bestByAmount = (list: any[]) =>
+        list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
+
+      const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
+      const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
+      const selected =
+        (usdcBalances.length ? bestByAmount(usdcBalances) : undefined) ??
+        (positiveBalances.length ? bestByAmount(positiveBalances) : undefined) ??
+        bestByAmount(balances);
+
+      setEntry(selected);
     };
     loadBalance();
   }, []);
@@ -132,7 +159,7 @@ export default function WithdrawScreen() {
       push('WithdrawConfirmationScreen', {
         amount: trimmedAmount,
         walletAddress: wallet,
-        token: entry.token,
+        token: entry.tokenAddress ?? entry.token,
         availableAmount: entry.amount,
       });
     } catch (err) {

@@ -2,15 +2,13 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ScrollView,
   View,
-  KeyboardAvoidingView,
   Platform,
   Animated,
   Easing,
-  Dimensions,
   Keyboard,
   StatusBar,
 } from 'react-native';
-import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { push } from 'navigation/Navigation';
 
@@ -26,13 +24,11 @@ import ContactPickerModal from './ContactList';
 import { RecentEmailStorage } from './RecentEmailStorage';
 import LockboxDurationView from './LockboxDurationView';
 import { showFlashMessage } from 'utils/flashMessage';
+import { Utils } from 'business/Utils';
 
 export default function PingMeScreen() {
   const route = useRoute<any>();
-  const defaultModeFromRoute = useCallback(() => {
-    const paramMode = route?.params?.mode;
-    return paramMode === 'request' ? 'request' : 'send';
-  }, [route?.params?.mode]);
+  const isFocused = useIsFocused();
 
   const [mode, setMode] = useState<'send' | 'request'>('send');
   const [activeChannel, setActiveChannel] = useState<'Email' | 'Link'>('Email');
@@ -53,11 +49,11 @@ export default function PingMeScreen() {
   const emailOpacity = useRef(new Animated.Value(1)).current;
   const emailTranslateY = useRef(new Animated.Value(0)).current;
   const amountTranslateY = useRef(new Animated.Value(0)).current;
-  const spacerHeight = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
 
   // 🔹 Animate channel (Email ↔ Link)
-  const animateChannel = (toEmail: boolean) => {
+  const animateChannel = useCallback(
+    (toEmail: boolean) => {
     if (toEmail) {
       Animated.parallel([
         Animated.timing(emailOpacity, {
@@ -101,67 +97,64 @@ export default function PingMeScreen() {
         }),
       ]).start();
     }
-  };
-
-  useEffect(() => {
-    animateChannel(activeChannel === 'Email');
-  }, [activeChannel]);
-
-  // Reset fields when leaving the screen (or on re-focus)
-  useFocusEffect(
-    useCallback(() => {
-      resetForm();
-      return () => resetForm();
-    }, [resetForm])
+    },
+    [amountTranslateY, emailOpacity, emailTranslateY]
   );
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: -150,
-            duration: 250,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-    );
+    animateChannel(activeChannel === 'Email');
+  }, [activeChannel, animateChannel]);
 
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 200,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-    );
+  // Reset fields when re-focusing (avoid setState on blur/detach).
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+    }, [resetForm])
+  );
 
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [spacerHeight, translateY]);
+  // Scope keyboard listeners to focus: tab screens stay mounted, so global listeners can
+  // update hidden screens and leave their layout animation state out-of-sync.
+  useFocusEffect(
+    useCallback(() => {
+      const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+      const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+      const showSub = Keyboard.addListener(showEvent, () => {
+        Animated.timing(translateY, {
+          toValue: -150,
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      });
+
+      const hideSub = Keyboard.addListener(hideEvent, () => {
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }).start();
+      });
+
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+        translateY.stopAnimation();
+        translateY.setValue(0);
+      };
+    }, [translateY])
+  );
 
   // ✅ Handle QR navigation params
   useEffect(() => {
-    console.log('PingMeScreen route.params:', route.params);
     if (route.params) {
       const { mode: paramMode, email: paramEmail, amount: paramAmount } = route.params;
       if (paramMode && (paramMode === 'send' || paramMode === 'request')) setMode(paramMode);
       if (paramEmail && typeof paramEmail === 'string') setEmail(paramEmail);
       if (paramAmount && !isNaN(Number(paramAmount))) setAmount(String(paramAmount));
     }
-  }, [route.params, defaultModeFromRoute]);
-
-  const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
+  }, [route.params]);
 
   const handleContinue = async () => {
     Keyboard.dismiss();
@@ -212,8 +205,8 @@ export default function PingMeScreen() {
       return;
     }
 
-    const numericAmount = parseFloat(trimmedAmount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
+    const amountMicro = Utils.toMicro(trimmedAmount);
+    if (amountMicro <= 0n) {
       showFlashMessage({
         title: 'Invalid amount',
         message: 'Please enter a valid payment amount.',
@@ -222,8 +215,9 @@ export default function PingMeScreen() {
       return;
     }
 
-    const normalizedAmount = truncateToCents(numericAmount);
-    if (normalizedAmount < MIN_PAYMENT_AMOUNT) {
+    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+    if (amountMicro < minMicro) {
       showFlashMessage({
         title: 'Amount too low',
         message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
@@ -232,7 +226,7 @@ export default function PingMeScreen() {
       return;
     }
 
-    if (normalizedAmount > MAX_PAYMENT_AMOUNT) {
+    if (amountMicro > maxMicro) {
       showFlashMessage({
         title: 'Amount too high',
         message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
@@ -245,8 +239,14 @@ export default function PingMeScreen() {
     }
 
     if (mode === 'send') {
-      const availableBalance = parseFloat(balanceService.totalBalance || '0');
-      if (Number.isFinite(availableBalance) && normalizedAmount > availableBalance) {
+      const totalMicro = balanceService.balances.reduce((acc, b) => {
+        try {
+          return acc + BigInt(b.amount ?? '0');
+        } catch {
+          return acc;
+        }
+      }, 0n);
+      if (amountMicro > totalMicro) {
         showFlashMessage({
           title: 'Exceed balance',
           message: 'The amount exceed the available balance.',
@@ -271,9 +271,11 @@ export default function PingMeScreen() {
     }
 
     // --- 4️⃣ Proceed with navigation
+    const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: false, empty: '0.00' });
+    const displayUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: true, empty: '0.00' });
     const commonParams = {
-      amount: normalizedAmount,
-      displayAmount: `$${normalizedAmount.toFixed(2)}`,
+      amount: amountUsd,
+      displayAmount: `$${displayUsd}`,
       recipient,
       channel: activeChannel,
       lockboxDuration: lockboxDurationDays,
@@ -322,7 +324,7 @@ export default function PingMeScreen() {
           </Animated.View>
 
           <ContactPickerModal
-            visible={isPickerVisible}
+            visible={isFocused && isPickerVisible}
             onClose={() => setPickerVisible(false)}
             onSelect={(selectedEmail) => {
               setEmail(selectedEmail);
