@@ -21,6 +21,8 @@ export class PingHistoryViewModel {
   private static pageSize = 20;
   private static subscribers = new Set<(transactions: TransactionViewModel[]) => void>();
   private static chunkCursor = 0;
+  private static recordUnsubscribe: (() => void) | null = null;
+  private static recordListenerKey: string | null = null;
 
   private getCacheKey(commitment?: string): string {
     const normalized = (commitment ?? '').toLowerCase();
@@ -35,6 +37,78 @@ export class PingHistoryViewModel {
     this.nextIndex = 0;
     this.pageSize = 20;
     this.chunkCursor = 0;
+  }
+
+  private ensureRecordSubscription(cacheKey: string, commitment: string) {
+    if (PingHistoryViewModel.recordListenerKey === cacheKey && PingHistoryViewModel.recordUnsubscribe) {
+      return;
+    }
+
+    PingHistoryViewModel.recordUnsubscribe?.();
+    PingHistoryViewModel.recordUnsubscribe = null;
+    PingHistoryViewModel.recordListenerKey = cacheKey;
+
+    const listener = (raw: RecordEntry[]) => {
+      try {
+        if (!Array.isArray(raw) || raw.length === 0) return;
+        // Only apply updates for the currently active commitment.
+        const current = (this.contractService.getCrypto()?.commitment ?? '').toLowerCase();
+        if (!current || current !== commitment.toLowerCase()) return;
+
+        const parsed = this.parseTransactions(raw, commitment);
+        if (!parsed.length) return;
+
+        const prev = PingHistoryViewModel.parsedTransactions;
+        const prevKeySet = new Set<string>();
+        for (const tx of prev) {
+          prevKeySet.add(
+            `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+              tx.toCommitment ?? ''
+            ).toLowerCase()}`
+          );
+        }
+
+        const seen = new Set<string>();
+        const merged: TransactionViewModel[] = [];
+        const addTx = (tx: TransactionViewModel) => {
+          const key = `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+            tx.toCommitment ?? ''
+          ).toLowerCase()}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          merged.push(tx);
+        };
+
+        parsed.forEach(addTx);
+        prev.forEach(addTx);
+        merged.sort((a, b) => b.timestamp - a.timestamp);
+
+        let added = 0;
+        for (const tx of merged) {
+          const key = `${tx.actionCode}-${tx.txHash}-${(tx.fromCommitment ?? '').toLowerCase()}-${(
+            tx.toCommitment ?? ''
+          ).toLowerCase()}`;
+          if (!prevKeySet.has(key)) added++;
+        }
+
+        if (added <= 0) return;
+
+        const baselineCursor = PingHistoryViewModel.nextIndex;
+        const nextCursor = Math.min(merged.length, baselineCursor + added);
+
+        PingHistoryViewModel.parsedTransactions = merged;
+        PingHistoryViewModel.nextIndex = nextCursor;
+        PingHistoryViewModel.chunkCursor = nextCursor;
+        PingHistoryViewModel.cachedTransactions = merged.slice(0, nextCursor);
+        PingHistoryViewModel.notify(PingHistoryViewModel.cachedTransactions);
+        void PingHistoryViewModel.saveToLocalCache(PingHistoryViewModel.cachedTransactions, cacheKey);
+      } catch (err) {
+        console.error('[PingHistoryViewModel] Failed to apply RecordService update', err);
+      }
+    };
+
+    this.recordService.onRecordChange(listener);
+    PingHistoryViewModel.recordUnsubscribe = () => this.recordService.offRecordChange(listener);
   }
 
   static subscribe(listener: (transactions: TransactionViewModel[]) => void): () => void {
@@ -63,6 +137,8 @@ export class PingHistoryViewModel {
     if (PingHistoryViewModel.cacheKey !== cacheKey) {
       PingHistoryViewModel.resetCache(cacheKey);
     }
+
+    this.ensureRecordSubscription(cacheKey, commitment);
 
     if (!PingHistoryViewModel.localCacheLoaded) {
       await PingHistoryViewModel.loadFromLocalCache(cacheKey);
@@ -107,11 +183,28 @@ export class PingHistoryViewModel {
    * Keeps only the first occurrence of each unique pair.
    */
   private parseTransactions(rawEvents: RecordEntry[], commitment: string): TransactionViewModel[] {
+    const parseActionCode = (value: unknown): number => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'bigint') return Number(value);
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        const numeric = Number(trimmed);
+        if (!Number.isNaN(numeric)) return numeric;
+      }
+
+      const n = Number(value ?? -1);
+      return Number.isFinite(n) ? n : -1;
+    };
+
     const lockboxesWithPayment = new Set<string>();
     for (const event of rawEvents) {
-      const action = Number(event.action ?? -1);
+      const action = parseActionCode((event as any).action);
       if (action !== 9) continue;
-      const lockboxCommitment = (event.lockboxCommitment ?? '').toLowerCase();
+      const lockboxCommitment = (
+        (event as any).lockboxCommitment ??
+        (event as any).lockbox_commitment ??
+        ''
+      ).toLowerCase();
       if (lockboxCommitment) lockboxesWithPayment.add(lockboxCommitment);
     }
 
@@ -120,29 +213,22 @@ export class PingHistoryViewModel {
     const parsed: TransactionViewModel[] = [];
 
     for (const event of rawEvents) {
-      const action = Number(event.action ?? -1);
-      const rawTo = event.toCommitment ?? event.to_commitment ?? '';
+      const action = parseActionCode((event as any).action);
+      const rawTo = (event as any).toCommitment ?? (event as any).to_commitment ?? '';
 
       // 🔎 Align with web filter: keep Claim only when toCommitment exists, or any action >= 2.
       if (!((action === 0 && rawTo) || action >= 2)) {
         continue;
       }
 
-      const txHash = event.txHash ?? '';
-      const fromCommitment = event.fromCommitment ?? '';
-      const toCommitment = event.toCommitment ?? '';
-      const lockboxCommitment = (event.lockboxCommitment ?? '').toLowerCase();
-
-      if (action === 0 && lockboxCommitment) {
-        if (lockboxesWithPayment.has(lockboxCommitment)) {
-          // Avoid duplicate entries when a Payment exists for the same lockbox.
-          continue;
-        }
-        if (seenLockboxes.has(lockboxCommitment)) {
-          continue;
-        }
-        seenLockboxes.add(lockboxCommitment);
-      }
+      const txHash = (event as any).txHash ?? (event as any).tx_hash ?? '';
+      const fromCommitment = (event as any).fromCommitment ?? (event as any).from_commitment ?? '';
+      const toCommitment = (event as any).toCommitment ?? (event as any).to_commitment ?? '';
+      const lockboxCommitment = (
+        (event as any).lockboxCommitment ??
+        (event as any).lockbox_commitment ??
+        ''
+      ).toLowerCase();
 
       const fallbackHash =
         txHash ||
@@ -150,12 +236,20 @@ export class PingHistoryViewModel {
         fromCommitment ||
         toCommitment ||
         String(event.timestamp ?? '');
-      const key = `${action}-${fallbackHash}-${fromCommitment}-${toCommitment}`;
+      const key = `${action}-${fallbackHash}-${fromCommitment.toLowerCase()}-${toCommitment.toLowerCase()}`;
 
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const tx = parseTransaction(event, commitment);
+      const normalizedEvent = {
+        ...(event as any),
+        action,
+        txHash,
+        fromCommitment,
+        toCommitment,
+        lockboxCommitment,
+      };
+      const tx = parseTransaction(normalizedEvent, commitment);
       if (tx) parsed.push(tx);
     }
 
@@ -165,14 +259,19 @@ export class PingHistoryViewModel {
 
   groupByDate(events: TransactionViewModel[]): Record<string, TransactionViewModel[]> {
     return events.reduce<Record<string, TransactionViewModel[]>>((acc, event) => {
-      if (!event.timestamp) return acc;
+      const timestamp = Number(event.timestamp);
+      const hasValidTimestamp = Number.isFinite(timestamp) && timestamp > 0;
 
       // 🗓 Format as "dd/MM/yyyy"
-      const date = new Date(event.timestamp);
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      const key = `${day}/${month}/${year}`;
+      const key = (() => {
+        if (!hasValidTimestamp) return 'Unknown';
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return 'Unknown';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      })();
 
       if (!acc[key]) acc[key] = [];
       acc[key].push(event);

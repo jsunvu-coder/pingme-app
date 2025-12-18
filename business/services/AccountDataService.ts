@@ -23,7 +23,12 @@ export class AccountDataService {
   private readonly recordService = RecordService.getInstance();
   private readonly contractService = ContractService.getInstance();
 
-  private constructor() {}
+  private constructor() {
+    // Keep AccountDataService.records in sync with the underlying record stream.
+    this.recordService.onRecordChange(() => {
+      this.syncRecords();
+    });
+  }
 
   static getInstance(): AccountDataService {
     if (!AccountDataService.instance) {
@@ -68,8 +73,10 @@ export class AccountDataService {
         this.balances = this.balanceService.currentBalances ?? [];
 
         // 2️⃣ Fetch events
-        const events = this.recordService.getRecords();
-        this.records.push(...events);
+        // Load the first page quickly, then continue pagination in the background.
+        await this.recordService.getFirstPage();
+        this.syncRecords();
+        void this.recordService.getRecord();
 
         // 3️⃣ Optionally refresh forwarder
         await this.getForwarder(true); // refresh cache silently
@@ -142,6 +149,7 @@ export class AccountDataService {
     this.records = [];
     this.forwarder = null;
     this.lastUpdated = null;
+    this.recordService.clear();
     console.log('🧹 AccountDataService cache cleared.');
   }
 

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryButton from 'components/PrimaryButton';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
+import { Utils } from 'business/Utils';
 import { TransactionViewModel } from '../List/TransactionViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
 import SecondaryButton from 'components/ScondaryButton';
@@ -255,20 +256,10 @@ function DetailRow({
   );
 }
 
-const truncateToCents = (val: number) => Math.trunc(val * 100) / 100;
-
 const formatCurrency = (value?: number) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  const truncated = truncateToCents(amount);
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(truncated);
-  } catch {
-    return `$${truncated.toFixed(2)}`;
-  }
+  const micro = Utils.toMicro(String(amount));
+  return `$${Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' })}`;
 };
 
 const formatTimestamp = (seconds?: number) => {
