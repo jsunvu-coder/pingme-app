@@ -2,7 +2,7 @@
 import { Alert } from 'react-native';
 import { CryptoUtils } from '../business/CryptoUtils';
 import { Utils } from '../business/Utils';
-import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS } from '../business/Constants';
+import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES } from '../business/Constants';
 import { AuthService } from 'business/services/AuthService';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
@@ -76,16 +76,18 @@ export class PayService {
   }) {
     try {
       console.log('🚀 [PayService] Starting pay() process...');
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
       // ---------- Validation ----------
       if (!entry?.amount) {
         if (await confirm('_ALERT_SELECT_BALANCE', false)) return;
       }
 
-      username = username.toLowerCase().trim();
+      // Defensive normalization: upstream callers may accidentally pass undefined/null.
+      username = (username ?? '').toString().toLowerCase().trim();
       const isEmail = username.includes('@');
 
-      if (isEmail && !username) {
-        if (await confirm('_ALERT_EMAIL_BLANK', false)) return;
+      if (isEmail && !Utils.isValidEmail(username)) {
+        if (await confirm('_ALERT_INVALID_EMAIL', false)) return;
       }
 
       if (!amount) {
@@ -104,7 +106,7 @@ export class PayService {
 
       passphrase = passphrase.trim();
       const skipPassphraseThreshold = BigInt(SKIP_PASSPHRASE) * Utils.MICRO_FACTOR;
-      if (kAmount >= skipPassphraseThreshold && !passphrase) {
+      if (kAmount > skipPassphraseThreshold && !passphrase) {
         if (await confirm('_ALERT_SKIP_PASSPHRASE', false)) return;
       }
 
@@ -165,7 +167,7 @@ export class PayService {
         async () => {
           const { txHash, payLink } = await this._pay(
             isEmail,
-            entry,
+            { ...entry, token: tokenAddress },
             username,
             days,
             kAmount.toString(),
