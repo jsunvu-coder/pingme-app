@@ -20,6 +20,7 @@ import {
   LOCKBOX_DURATION,
   MAX_PAYMENT_AMOUNT,
   MIN_PAYMENT_AMOUNT,
+  TOKEN_NAMES,
   TOKENS,
 } from 'business/Constants';
 import CloseButton from 'components/CloseButton';
@@ -30,9 +31,10 @@ import { push, setRootScreen } from 'navigation/Navigation';
 import { BalanceService } from 'business/services/BalanceService';
 import { RequestService } from 'api/RequestService';
 import enUS from 'i18n/en-US.json';
+import { Utils } from 'business/Utils';
 
 type RequestConfirmationParams = {
-  amount: number;
+  amount: number | string;
   displayAmount: string;
   recipient?: string;
   channel: 'Email' | 'Link';
@@ -74,7 +76,31 @@ export default function RequestConfirmationScreen() {
         const balances = balanceService.balances;
         console.log('🔄 Balance update received:', balances);
         if (balances && balances.length > 0) {
-          const matched = balances.find((b) => b.token === TOKENS.USDC) || balances[0];
+          const getAmount = (b: any) => {
+            try {
+              return BigInt(b?.amount ?? '0');
+            } catch {
+              return 0n;
+            }
+          };
+
+          const usdcAddress = TOKENS.USDC.toLowerCase();
+          const isUsdc = (b: any) => {
+            const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
+            const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
+            return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+          };
+
+          const bestByAmount = (list: any[]) =>
+            list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
+
+          const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
+          const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
+          const matched =
+            (usdcBalances.length ? bestByAmount(usdcBalances) : undefined) ??
+            (positiveBalances.length ? bestByAmount(positiveBalances) : undefined) ??
+            bestByAmount(balances);
+
           setEntry(matched);
           console.log('🔗 Active token entry:', matched);
         }
@@ -118,8 +144,8 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    const numericAmount = Number(rawAmount);
-    if (!Number.isFinite(numericAmount)) {
+    const amountMicro = Utils.toMicro(typeof rawAmount === 'number' ? String(rawAmount) : rawAmount);
+    if (amountMicro <= 0n) {
       await showLocalizedAlert({
         title: 'Invalid amount',
         message: 'Please enter a valid payment amount.',
@@ -127,8 +153,9 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    const truncatedAmount = Math.trunc(numericAmount * 100) / 100;
-    if (truncatedAmount < MIN_PAYMENT_AMOUNT) {
+    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+    if (amountMicro < minMicro) {
       await showLocalizedAlert({
         title: 'Amount too low',
         message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
@@ -136,7 +163,7 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    if (truncatedAmount > MAX_PAYMENT_AMOUNT) {
+    if (amountMicro > maxMicro) {
       await showLocalizedAlert({
         title: 'Amount too high',
         message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
@@ -170,11 +197,15 @@ export default function RequestConfirmationScreen() {
 
     try {
       console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
+      const amountDecimal = Utils.formatMicroToUsd(amountMicro, undefined, {
+        grouping: false,
+        empty: '0.00',
+      });
 
       if (channel === 'Email') {
-        await sendByEmail(truncatedAmount);
+        await sendByEmail(amountDecimal);
       } else {
-        await sendByLink(truncatedAmount);
+        await sendByLink(amountDecimal);
       }
 
       console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
@@ -189,8 +220,7 @@ export default function RequestConfirmationScreen() {
     }
   };
 
-  const sendByEmail = async (validatedAmount: number) => {
-    const amountString = validatedAmount.toFixed(2);
+  const sendByEmail = async (amountString: string) => {
     await requestService.requestPayment({
       entry,
       requestee: recipient,
@@ -202,12 +232,16 @@ export default function RequestConfirmationScreen() {
         if (sent) {
           console.log('✅ Request sent successfully!');
 
+          const displayUsd = Utils.formatMicroToUsd(Utils.toMicro(amountString), undefined, {
+            grouping: true,
+            empty: '0.00',
+          });
           setRootScreen([
             {
               name: 'RequestSuccessScreen',
               params: {
-                amount: validatedAmount,
-                displayAmount: `$${validatedAmount.toFixed(2)}`,
+                amount: amountString,
+                displayAmount: `$${displayUsd}`,
                 recipient,
                 channel,
                 lockboxDuration,
@@ -219,7 +253,7 @@ export default function RequestConfirmationScreen() {
     });
   };
 
-  const sendByLink = async (validatedAmount: number) => {
+  const sendByLink = async (amountString: string) => {
     if (!entry?.token) {
       await showLocalizedAlert({
         title: 'Select balance',
@@ -228,7 +262,6 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    const amountString = validatedAmount.toFixed(2);
     await requestService.requestPaymentByLink({
       entry,
       requestee: recipient,
@@ -244,7 +277,7 @@ export default function RequestConfirmationScreen() {
             name: 'PaymentLinkCreatedScreen',
             params: {
               payLink: url,
-              amount: validatedAmount,
+              amount: Number(amountString),
               duration: durationInDays,
               linkType: 'request',
             },

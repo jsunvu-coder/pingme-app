@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import {
 	ScrollView,
 	View,
 	Text,
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
-import { push, setRootScreen } from "navigation/Navigation";
+import { setRootScreen } from "navigation/Navigation";
 import SecondaryButton from "components/ScondaryButton";
 import EnvelopIcon from "assets/EnvelopIcon";
 import RequestRecipientCard from "./RequestRecipientCard";
@@ -14,7 +14,8 @@ import RequestRecipientCard from "./RequestRecipientCard";
 /* ✅ Define your expected route params */
 type RequestSuccessParams = {
 	recipient?: string;
-	amount?: number;
+	amount?: number | string;
+	displayAmount?: string;
 	passphrase?: string;
 	txHash?: string;
 	channel?: string;
@@ -28,6 +29,7 @@ export default function RequestSuccessScreen() {
 	const {
 		recipient = "",
 		amount = 0,
+		displayAmount,
 	} = route.params || {};
 
 	const handleBackToHome = () => {
@@ -42,7 +44,7 @@ export default function RequestSuccessScreen() {
 				<Header />
 
 				<View className="my-8">
-					<RequestRecipientCard recipient={recipient} amount={amount} />
+					<RequestRecipientCard recipient={recipient} amount={amount} displayAmount={displayAmount} />
 				</View>
 			</ScrollView>
 
