@@ -8,6 +8,7 @@ type Props = {
   setUsePassphrase: (value: boolean) => void;
   passphrase: string;
   setPassphrase: (value: string) => void;
+  toggleDisabled?: boolean;
   disabled?: boolean;
 };
 
@@ -16,6 +17,7 @@ export default function PassphraseSection({
   setUsePassphrase,
   passphrase,
   setPassphrase,
+  toggleDisabled,
   disabled,
 }: Props) {
   const inputRef = useRef<any>(null);
@@ -44,9 +46,9 @@ export default function PassphraseSection({
 
         <Switch
           value={usePassphrase}
-          disabled={disabled}
+          disabled={disabled || toggleDisabled}
           onValueChange={(val) => {
-            if (disabled) return;
+            if (disabled || toggleDisabled) return;
             setUsePassphrase(val);
             if (val) {
               setTimeout(() => inputRef.current?.focus(), 150);

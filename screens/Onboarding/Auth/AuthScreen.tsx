@@ -71,7 +71,7 @@ export default function AuthScreen() {
       const minLift = headerFull ? 100 : 40;
       if (offset < minLift) offset = minLift;
 
-      if (activeTab === 'login') {
+      if (activeTab === 'login' && !headerFull) {
         offset = 0;
       }
 

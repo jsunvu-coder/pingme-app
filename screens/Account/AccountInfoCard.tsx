@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BalanceService } from 'business/services/BalanceService';
+import { Utils } from 'business/Utils';
 
 type Props = {
   email: string;
@@ -21,8 +22,13 @@ export default function AccountInfoCard({ email }: Props) {
           await balanceService.getBalance();
           const balances = await balanceService.balances;
           if (active && balances?.length > 0) {
-            const total = balanceService.totalBalance || balances[0].amount;
-            setBalance(`$${total}`);
+            const formattedTotal =
+              balanceService.totalBalance ||
+              Utils.formatMicroToUsd(balances[0].amount, undefined, {
+                grouping: true,
+                empty: '0.00',
+              });
+            setBalance(`$${formattedTotal}`);
           }
         } catch (err) {
           console.error('Error loading balance:', err);
