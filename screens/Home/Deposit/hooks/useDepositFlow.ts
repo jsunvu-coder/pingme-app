@@ -256,7 +256,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
 
     try {
       const { txHash } = await submitDepositTransaction({
-        token: entry.token,
+        token: (entry as any)?.tokenAddress ?? entry.token,
         commitment: trimmedCommitment,
         amountDecimal: trimmedAmount,
         availableBalance: entry.amount,

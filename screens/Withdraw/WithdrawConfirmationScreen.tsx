@@ -74,7 +74,6 @@ export default function WithdrawConfirmationScreen() {
             token,
             microAmount.toString(),
             cr.proof,
-            cr.salt,
             nextCommitment,
             walletAddress
           ),

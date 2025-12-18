@@ -21,6 +21,7 @@ export async function submitDepositTransaction({
   amountDecimal,
   availableBalance,
 }: DepositSubmissionParams): Promise<{ txHash: string }> {
+  const tokenAddress = (token ?? '').toString();
   const normalizedAmount = normalizeDecimal(amountDecimal);
 
   if (!normalizedAmount) {
@@ -71,10 +72,9 @@ export async function submitDepositTransaction({
   await authService.commitProtect(
     async () => {
       const result = await contractService.withdrawAndDeposit(
-        token,
+        tokenAddress,
         amountMicro.toString(),
         cr.proof,
-        cr.salt,
         nextCommitment,
         trimmedCommitment
       );

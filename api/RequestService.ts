@@ -119,7 +119,7 @@ export class RequestService {
         amount: kAmount.toString(),
         sender: cr.username,
         receiver: safeRequestee,
-        token: entry.token,
+        token: entry.tokenAddress ?? entry.token,
         tokenSymbol: TOKEN_NAMES.USDC,
         customMessage: customMessage ?? '',
       };
@@ -203,7 +203,8 @@ export class RequestService {
 
       // ---------- Execute Contract ----------
       const encodedRequester = encodeURIComponent(cr.username);
-      const url = `${APP_URL}/pay?token=${entry.token}&amount=${kAmount.toString()}&requester=${encodedRequester}`;
+      const token = entry.tokenAddress ?? entry.token;
+      const url = `${APP_URL}/pay?token=${token}&amount=${kAmount.toString()}&requester=${encodedRequester}`;
 
       setPayLink(url);
       console.log('🎉 [RequestService] Payment request sent successfully.');
