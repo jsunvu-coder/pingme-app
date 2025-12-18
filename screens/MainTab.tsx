@@ -49,6 +49,7 @@ export default function MainTab() {
 
   return (
     <Tab.Navigator
+      detachInactiveScreens={false}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#2563eb',
@@ -57,14 +58,14 @@ export default function MainTab() {
         tabBarStyle: {
           paddingTop: 6,
         },
-        animation: 'fade',
+        animation: 'none',
         tabBarIcon: ({ focused }) => {
-          if (route.name === 'Home') {
-            return <HomeIcon isActive={focused} />;
-          } else if (route.name === 'Ping Now') {
+          if (route.name === 'Ping Now') {
             return <PingIcon isActive={focused} />;
           } else if (route.name === 'Account') {
             return <UserIcon isActive={focused} />;
+          } else {
+            return <HomeIcon isActive={focused} />;
           }
         },
       })}>
