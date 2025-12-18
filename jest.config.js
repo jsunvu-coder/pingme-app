@@ -1,6 +1,7 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'jsdom',
+  watchman: false,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   moduleDirectories: ['node_modules', '<rootDir>'],

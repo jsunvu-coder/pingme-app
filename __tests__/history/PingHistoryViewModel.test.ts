@@ -47,6 +47,8 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
       getRecord: jest.fn().mockResolvedValue(mockRecords),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
     } as any);
   });
 
@@ -103,6 +105,8 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
       getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
     } as any);
 
     const vm = new PingHistoryViewModel();
@@ -137,6 +141,8 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
       getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
     } as any);
 
     const vm = new PingHistoryViewModel();
@@ -183,6 +189,8 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
       getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
     } as any);
 
     const vm = new PingHistoryViewModel();
@@ -217,6 +225,8 @@ describe('PingHistoryViewModel chunk loading', () => {
 
     (mockRecordService.getInstance as jest.Mock).mockReturnValue({
       getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
     } as any);
 
     const vm = new PingHistoryViewModel();
@@ -225,5 +235,130 @@ describe('PingHistoryViewModel chunk loading', () => {
     expect(txs).toHaveLength(1);
     expect(txs[0].txHash).toBe('hash-claim-solo');
     expect(txs[0].lockboxCommitment).toBe('lockbox-solo');
+  });
+
+  it('handles snake_case event fields for Claim/Payment de-dupe', async () => {
+    const records = [
+      {
+        action: 9,
+        from_commitment: 'payer',
+        to_commitment: 'payee',
+        lockbox_commitment: 'lockbox-snake',
+        addr: 'user',
+        token: 'USDC',
+        amount: '2000000',
+        timestamp: '160',
+        duration: 0,
+        tx_hash: 'hash-payment-snake',
+        blockNumber: '9',
+      },
+      {
+        action: 0,
+        from_commitment: 'payer',
+        to_commitment: 'payee',
+        lockbox_commitment: 'lockbox-snake',
+        addr: 'user',
+        token: 'USDC',
+        amount: '2000000',
+        timestamp: '165',
+        duration: 0,
+        tx_hash: 'hash-claim-snake',
+        blockNumber: '10',
+      },
+    ];
+
+    (mockContractService.getInstance as jest.Mock).mockReturnValue({
+      getCrypto: () => ({ commitment: 'payee' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
+    } as any);
+
+    (mockRecordService.getInstance as jest.Mock).mockReturnValue({
+      getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
+    } as any);
+
+    const vm = new PingHistoryViewModel();
+    const txs = await vm.getTransactions({ force: true });
+
+    expect(txs).toHaveLength(1);
+    expect(txs[0].txHash).toBe('hash-payment-snake');
+    expect(txs[0].lockboxCommitment).toBe('lockbox-snake');
+  });
+
+  it('does not drop transactions that have missing timestamps', async () => {
+    const records = [
+      {
+        action: 0,
+        fromCommitment: '',
+        toCommitment: 'recipient',
+        lockboxCommitment: 'lockbox-no-ts',
+        addr: 'user',
+        token: 'USDC',
+        amount: '3000000',
+        // timestamp intentionally missing
+        duration: 0,
+        txHash: 'hash-claim-no-ts',
+        blockNumber: '11',
+      } as any,
+    ];
+
+    (mockContractService.getInstance as jest.Mock).mockReturnValue({
+      getCrypto: () => ({ commitment: 'recipient' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
+    } as any);
+
+    (mockRecordService.getInstance as jest.Mock).mockReturnValue({
+      getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
+    } as any);
+
+    const vm = new PingHistoryViewModel();
+    const txs = await vm.getTransactions({ force: true });
+
+    expect(txs).toHaveLength(1);
+
+    const grouped = vm.groupByDate(txs);
+    expect(Object.keys(grouped)).toContain('Unknown');
+    expect(grouped.Unknown).toHaveLength(1);
+    expect(grouped.Unknown[0].txHash).toBe('hash-claim-no-ts');
+  });
+
+  it('parses string action names like Claim (action 0)', async () => {
+    const records = [
+      {
+        action: 'Claim',
+        fromCommitment: 'other',
+        toCommitment: 'recipient',
+        lockboxCommitment: '',
+        addr: 'user',
+        token: 'USDC',
+        amount: '1000000',
+        timestamp: '170',
+        duration: 0,
+        txHash: 'hash-claim-string-action',
+        blockNumber: '12',
+      } as any,
+    ];
+
+    (mockContractService.getInstance as jest.Mock).mockReturnValue({
+      getCrypto: () => ({ commitment: 'recipient' }),
+      getEvents: jest.fn().mockResolvedValue({ events: records, commitment: '0x0' }),
+    } as any);
+
+    (mockRecordService.getInstance as jest.Mock).mockReturnValue({
+      getRecord: jest.fn().mockResolvedValue(records),
+      onRecordChange: jest.fn(),
+      offRecordChange: jest.fn(),
+    } as any);
+
+    const vm = new PingHistoryViewModel();
+    const txs = await vm.getTransactions({ force: true });
+
+    const claim = txs.find((tx) => tx.txHash === 'hash-claim-string-action');
+    expect(claim).toBeTruthy();
+    expect(claim?.actionCode).toBe(0);
+    expect(claim?.type).toBe('Claim');
   });
 });

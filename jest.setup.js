@@ -1,11 +1,11 @@
 import '@testing-library/react-native/matchers';
+import 'react-native-gesture-handler/jestSetup';
 
 // Polyfill for clearImmediate
 global.clearImmediate = global.clearImmediate || ((id) => clearTimeout(id));
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
 
 // Mock reanimated
-import 'react-native-gesture-handler/jestSetup';
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/jest-runtime').default);
 
 // Mock AsyncStorage
@@ -57,7 +57,7 @@ jest.mock('@react-navigation/native', () => {
       addListener: jest.fn(),
       removeListener: jest.fn(),
     }),
-    useRoute: () => ({ params: {} }),
+    useRoute: jest.fn(() => ({ params: {} })),
     useFocusEffect: jest.fn((callback) => {
       React.useEffect(() => {
         const cleanup = callback();
@@ -96,6 +96,14 @@ jest.mock('react-native-safe-area-context', () => {
     SafeAreaInsetsContext: SafeAreaContext,
   };
 });
+
+jest.mock('@react-native-community/netinfo', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn(() => () => {}),
+    fetch: jest.fn(() => Promise.resolve({ isConnected: true, isInternetReachable: true })),
+  },
+}));
 
 jest.mock('expo-camera', () => ({
   Camera: { requestCameraPermissionsAsync: jest.fn(), scanFromURLAsync: jest.fn() },
