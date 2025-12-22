@@ -31,17 +31,22 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
     autoFocus = false,
     editable = true,
     containerClassName,
+    onFocus,
+    onBlur,
     ...rest
   },
   ref
 ) {
   const isEmpty = !value || value.trim() === '';
+  const isFocusedRef = useRef(false);
 
   // Android-only: keep passwords masked when deleting down to a single character.
   // Some Android IMEs temporarily reveal the remaining character; remounting the input
-  // when length transitions down to 1 reliably re-applies password masking.
+  // when length transitions down to 1 re-applies password masking. Avoid remounting while
+  // focused because unmounting a TextInput will blur and dismiss the keyboard.
   const [androidSecureRemountKey, setAndroidSecureRemountKey] = useState(0);
   const prevLengthRef = useRef<number>(value?.length ?? 0);
+  const pendingAndroidSecureRemountRef = useRef(false);
   useEffect(() => {
     const nextLength = value?.length ?? 0;
     const prevLength = prevLengthRef.current;
@@ -49,6 +54,10 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
 
     if (Platform.OS !== 'android' || !secureTextEntry) return;
     if (nextLength === 1 && prevLength > nextLength) {
+      if (isFocusedRef.current) {
+        pendingAndroidSecureRemountRef.current = true;
+        return;
+      }
       setAndroidSecureRemountKey((k) => k + 1);
     }
   }, [secureTextEntry, value]);
@@ -72,6 +81,18 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         secureTextEntry={secureTextEntry}
         className="h-12 px-1 text-xl text-[#0F0F0F]"
         {...rest}
+        onFocus={(e) => {
+          isFocusedRef.current = true;
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          isFocusedRef.current = false;
+          onBlur?.(e);
+          if (Platform.OS !== 'android' || !secureTextEntry) return;
+          if (!pendingAndroidSecureRemountRef.current) return;
+          pendingAndroidSecureRemountRef.current = false;
+          setAndroidSecureRemountKey((k) => k + 1);
+        }}
       />
 
       <View
