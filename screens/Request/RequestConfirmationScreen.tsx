@@ -32,6 +32,7 @@ import { BalanceService } from 'business/services/BalanceService';
 import { RequestService } from 'api/RequestService';
 import enUS from 'i18n/en-US.json';
 import { Utils } from 'business/Utils';
+import SafeBottomView from 'components/SafeBottomView';
 
 type RequestConfirmationParams = {
   amount: number | string;
@@ -362,6 +363,7 @@ export default function RequestConfirmationScreen() {
               loading={loading}
               onPress={handleSendingRequest}
             />
+            <SafeBottomView />
           </View>
 
           <SafeAreaView edges={['bottom']} />

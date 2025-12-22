@@ -7,6 +7,7 @@ import ShareSection from './ShareSection';
 import CloseButton from 'components/CloseButton';
 import { AdCard } from './AdCard';
 import { setRootScreen } from 'navigation/Navigation';
+import SafeBottomView from 'components/SafeBottomView';
 
 type ShareParams = {
   amount?: number; // for send flow
@@ -94,6 +95,8 @@ export default function ShareScreen() {
           <AdCard />
 
           <ShareSection />
+
+          <SafeBottomView />
         </ScrollView>
       </View>
     </ModalContainer>

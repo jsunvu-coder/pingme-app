@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { ScrollView, View, Text, Dimensions } from 'react-native';
+import { ScrollView, View, Text, Dimensions, Platform } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { push, setRootScreen } from 'navigation/Navigation';
 import PaymentRecipientCard from './PaymentRecipientCard';
 import PaymentClaimCard from 'components/PaymentClaimCard';
 import SecondaryButton from 'components/ScondaryButton';
 import EnvelopIcon from 'assets/EnvelopIcon';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeBottomView from 'components/SafeBottomView';
 
 const screenHeight = Dimensions.get('window').height;
 
@@ -79,6 +81,8 @@ export default function PaymentSuccessScreen() {
 
       <View className="mx-6 my-12">
         <SecondaryButton title="Back to Homepage" onPress={handleBackToHome} />
+
+        <SafeBottomView />
       </View>
     </View>
   );

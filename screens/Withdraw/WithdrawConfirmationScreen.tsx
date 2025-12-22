@@ -16,6 +16,7 @@ import { goBack, push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import WithdrawlIcon from 'assets/WithdrawlIcon';
 import { SummaryTitle, SummaryValue } from 'screens/Send/SendConfirmation/PaymentSummaryCard';
+import SafeBottomView from 'components/SafeBottomView';
 
 type WithdrawConfirmationParams = {
   amount: string;
@@ -219,6 +220,7 @@ export default function WithdrawConfirmationScreen() {
             loading={loading}
             loadingText={t('PROCESSING', undefined, 'Processing...')}
           />
+          <SafeBottomView />
         </View>
       </View>
     </ModalContainer>

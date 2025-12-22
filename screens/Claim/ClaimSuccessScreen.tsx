@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text, Platform } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { push, setRootScreen } from 'navigation/Navigation';
 import SecondaryButton from 'components/ScondaryButton';
 import EnvelopIcon from 'assets/EnvelopIcon';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeBottomView from 'components/SafeBottomView';
 
 type ClaimSuccessParams = {
   amount?: number;
@@ -60,6 +62,8 @@ export default function ClaimSuccessScreen() {
 
       <View className="mx-6 my-12">
         <SecondaryButton title="Back to Homepage" onPress={handleBackToHome} />
+
+        <SafeBottomView />
       </View>
     </View>
   );

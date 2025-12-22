@@ -12,6 +12,8 @@ import { t } from 'i18n';
 import DoubleCheckIcon from 'assets/DoubleCheckIcon';
 import { SummaryTitle, SummaryValue } from 'screens/Send/SendConfirmation/PaymentSummaryCard';
 import { ENV } from 'business/Config';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import SafeBottomView from 'components/SafeBottomView';
 
 type RouteParams = {
   amount?: number;
@@ -109,6 +111,8 @@ export default function WithdrawSuccessScreen() {
             setRootScreen(['MainTab']);
           }}
         />
+
+        <SafeBottomView />
       </View>
     </View>
   );

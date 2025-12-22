@@ -10,6 +10,7 @@ import CloseButton from 'components/CloseButton';
 import { useDepositFlow, type DepositPayload } from 'screens/Home/Deposit/hooks/useDepositFlow';
 import { push, setRootScreen } from 'navigation/Navigation';
 import PayStaticQrView from './PayStaticQrView';
+import SafeBottomView from 'components/SafeBottomView';
 
 type PayQrConfirmationScreenParams = {
   depositPayload?: DepositPayload;
@@ -112,6 +113,7 @@ export default function PayQrConfirmationScreen() {
             loading={loading}
             loadingText="Processing"
           />
+          <SafeBottomView />
         </View>
       </View>
     </ModalContainer>

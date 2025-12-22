@@ -21,6 +21,7 @@ import enUS from 'i18n/en-US.json';
 import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
 import { AccountDataService } from 'business/services/AccountDataService';
 import LockboxDurationView from '../PingMe/LockboxDurationView';
+import SafeBottomView from 'components/SafeBottomView';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -126,9 +127,7 @@ export default function SendConfirmationScreen() {
 
   // ✅ Parse params (supports internal or deep-link)
   useEffect(() => {
-    const parseAmount = (
-      incoming?: number | string
-    ): { amountUsd: string; displayUsd: string } => {
+    const parseAmount = (incoming?: number | string): { amountUsd: string; displayUsd: string } => {
       if (incoming === null || incoming === undefined) {
         return { amountUsd: '0.00', displayUsd: '$0.00' };
       }
@@ -500,6 +499,7 @@ export default function SendConfirmationScreen() {
                   loading={loading || balancesLoading}
                   disabled={loading || balancesLoading || !entry}
                 />
+                <SafeBottomView />
               </View>
             </View>
           </ScrollView>
