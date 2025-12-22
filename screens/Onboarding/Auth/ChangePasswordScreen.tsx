@@ -9,7 +9,7 @@ import { goBack } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { showFlashMessage } from 'utils/flashMessage';
 import NavigationBar from 'components/NavigationBar';
-import { t } from 'i18n';
+import { hasTranslation, t } from 'i18n';
 import { ScrollView } from 'react-native-gesture-handler';
 import { passwordRegex, validatePasswordFields } from './passwordValidation';
 
@@ -53,11 +53,16 @@ export default function ChangePasswordScreen() {
       });
     } catch (err: any) {
       console.error('Change password error:', err);
+      const rawMessage = err?.message;
+      const message =
+        typeof rawMessage === 'string' && hasTranslation(rawMessage)
+          ? t(rawMessage)
+          : rawMessage || t('AUTH_PASSWORD_UPDATE_FAILED_MESSAGE');
       showFlashMessage({
         type: 'danger',
         icon: 'danger',
         title: t('AUTH_PASSWORD_UPDATE_FAILED_TITLE'),
-        message: err?.message || t('AUTH_PASSWORD_UPDATE_FAILED_MESSAGE'),
+        message,
       });
     } finally {
       setLoading(false);

@@ -6,7 +6,7 @@ import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push, presentOverMain } from 'navigation/Navigation';
-import { t } from 'i18n';
+import { hasTranslation, t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
@@ -112,7 +112,7 @@ export class LoginViewModel {
             ? responseStatus >= 500
             : /status code 500/i.test(err.message);
         if (!isServerError) {
-          message = err.message;
+          message = hasTranslation(err.message) ? t(err.message) : err.message;
         }
       }
 

@@ -13,8 +13,12 @@ import { presentOverMain, setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { shareFlowService } from 'business/services/ShareFlowService';
-import { passwordRegex, validatePasswordFields as sharedValidatePasswords } from './passwordValidation';
+import {
+  passwordRegex,
+  validatePasswordFields as sharedValidatePasswords,
+} from './passwordValidation';
 import { showFlashMessage } from 'utils/flashMessage';
+import { hasTranslation, t } from 'i18n';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -93,10 +97,17 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
       }
     } catch (err: any) {
       console.error('Signup error:', err);
-      const message =
-        err?.message === 'CREDENTIAL_EXISTS'
+      const rawMessage = err?.message;
+
+      let message =
+        rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
           ? 'Signup failed: Credentials already exist'
-          : err?.message || 'Unable to create account';
+          : 'Unable to create account';
+
+      if (rawMessage && hasTranslation(rawMessage)) {
+        message = t(rawMessage);
+      }
+
       showFlashMessage({
         title: 'Signup failed',
         message,
@@ -118,6 +129,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
             validateField('email', text);
           }}
           placeholder="Email address"
+          keyboardType="email-address"
           error={!!errors.email}
           errorMessage={errors.email}
           editable={!loading}
