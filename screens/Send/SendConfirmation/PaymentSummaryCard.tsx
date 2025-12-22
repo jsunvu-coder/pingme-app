@@ -8,12 +8,21 @@ type Props = {
   lockboxDuration: number;
 };
 
-const SummaryTitle = ({ children }: { children: React.ReactNode }) => (
+export const SummaryTitle = ({ children }: { children: React.ReactNode }) => (
   <Text className="flex-1 text-lg text-gray-500">{children}</Text>
 );
 
-const SummaryValue = ({ children }: { children: React.ReactNode }) => (
-  <Text className="flex-1 text-lg font-normal text-black" numberOfLines={1} ellipsizeMode="tail">
+export const SummaryValue = ({
+  children,
+  numberOfLines = 1,
+}: {
+  children: React.ReactNode;
+  numberOfLines?: number;
+}) => (
+  <Text
+    className="flex-1 text-lg font-normal text-black"
+    numberOfLines={numberOfLines}
+    ellipsizeMode="tail">
     {children}
   </Text>
 );

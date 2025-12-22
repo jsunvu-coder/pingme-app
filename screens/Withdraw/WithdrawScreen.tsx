@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Alert, TouchableOpacity, Keyboard, Platform } from 'react-native';
+import { View, Alert, TouchableOpacity, Keyboard, Platform, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
@@ -18,6 +18,8 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { push } from 'navigation/Navigation';
 import { showFlashMessage } from 'utils/flashMessage';
+import WithdrawlIcon from 'assets/WithdrawlIcon';
+import WarningIcon from 'assets/WarningIcon';
 
 export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
@@ -26,8 +28,6 @@ export default function WithdrawScreen() {
   const [entry, setEntry] = useState<any>(null);
 
   const balanceService = BalanceService.getInstance();
-  const contractService = ContractService.getInstance();
-  const recordService = RecordService.getInstance();
 
   useEffect(() => {
     const loadBalance = async () => {
@@ -172,9 +172,16 @@ export default function WithdrawScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <NavigationBar title={t('WITHDRAW')} />
+      <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
 
       <ScrollView className="flex-1 px-6">
+        <View className="mt-10 items-center">
+          <WithdrawlIcon width={80} height={80} />
+          <Text className="mt-6 text-center text-3xl font-bold text-black">
+            {t('WITHDRAW_USDC_TITLE', undefined, 'Withdraw USDC to the\naddress below')}
+          </Text>
+        </View>
+
         <View className="mt-10 gap-y-8">
           <PaymentAmountView
             balance={`$${balanceService.totalBalance}`}
@@ -191,13 +198,30 @@ export default function WithdrawScreen() {
               numberOfLines={1}
               editable={!loading}
               placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
-              style={Platform.OS === 'android' ? { paddingRight: 44 } : undefined}
             />
             <TouchableOpacity
               onPress={handlePasteWallet}
               className="absolute right-0 bottom-10 h-8 items-center justify-center self-end bg-white pl-4">
               <Ionicons name="clipboard-outline" size={24} color="#FD4912" />
             </TouchableOpacity>
+          </View>
+        </View>
+
+        <View className="mt-8 flex-row items-start rounded-2xl bg-red-500 p-4">
+          <View className="pt-1">
+            <WarningIcon color="#ffffff" />
+          </View>
+          <View className="ml-4 flex-1">
+            <Text className="mb-1 text-sm font-bold text-white">
+              {t('WARNING', undefined, 'WARNING')}
+            </Text>
+            <Text className="text-sm leading-5 text-white">
+              {t(
+                'WITHDRAW_WARNING_BODY',
+                undefined,
+                'Withdrawing USDC to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.'
+              )}
+            </Text>
           </View>
         </View>
       </ScrollView>

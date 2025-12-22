@@ -1,6 +1,6 @@
 // config.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-let ENV: EnvName = 'staging';
+export let ENV: EnvName = 'staging';
 
 type EnvName = 'staging' | 'production';
 

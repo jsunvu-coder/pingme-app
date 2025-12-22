@@ -14,7 +14,7 @@ type ShareParams = {
   mode?: 'claimed' | 'sent' | 'request';
   amountUsdStr?: string; // for claim flow (preformatted)
   from?: 'login' | 'signup';
-  action?: 'send' | 'claim' | 'request' | 'link';
+  action?: 'send' | 'claim' | 'request' | 'link' | 'withdraw';
   linkType?: 'payment' | 'request';
   closeToRoot?: boolean;
 };
@@ -45,6 +45,9 @@ export default function ShareScreen() {
     const durationText = duration ? `${duration} sec` : 'seconds';
     if (shareAction === 'claim') {
       return `Just claimed $${amtText} in ${durationText}!`;
+    }
+    if (shareAction === 'withdraw') {
+      return `Just withdrew $${amtText} with PingMe!`;
     }
     if (shareAction === 'request') {
       return `Requested $${amtText} with PingMe`;

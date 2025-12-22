@@ -13,6 +13,7 @@ type Props = {
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoFocus?: boolean;
+  containerClassName?: string;
 };
 
 const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInput(
@@ -29,6 +30,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
     autoCapitalize,
     autoFocus = false,
     editable = true,
+    containerClassName,
     ...rest
   },
   ref
@@ -52,7 +54,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
   }, [secureTextEntry, value]);
 
   return (
-    <View className="mb-6">
+    <View className={containerClassName ?? 'mb-6'}>
       {icon && <View className="mb-2">{icon}</View>}
 
       <TextInput

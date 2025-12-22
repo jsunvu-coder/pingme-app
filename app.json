@@ -25,7 +25,8 @@
           "recordAudioAndroid": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -35,12 +36,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#FD4912"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "buildNumber": "2",
       "bundleIdentifier": "xyz.pingme.app",
-      "associatedDomains": ["applinks:app.pingme.xyz", "applinks:app.staging.pingme.xyz"],
+      "associatedDomains": [
+        "applinks:app.pingme.xyz",
+        "applinks:app.staging.pingme.xyz"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -59,7 +65,10 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
       "package": "xyz.pingme.app",
       "intentFilters": [
         {
@@ -77,7 +86,10 @@
               "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
