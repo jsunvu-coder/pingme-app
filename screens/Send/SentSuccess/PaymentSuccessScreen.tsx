@@ -65,7 +65,7 @@ export default function PaymentSuccessScreen() {
         <Header />
 
         <View className="my-8">
-          <PaymentRecipientCard recipient={recipient} amount={amount} />
+          <PaymentRecipientCard recipient={recipient} amount={amount} txHash={txHash} />
         </View>
 
         {showClaimMessage ? (

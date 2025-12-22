@@ -274,7 +274,10 @@ export class PayService {
       contractService.setCrypto(cr);
 
       // ✅ Return transaction hash and link (if applicable)
-      const txHash = ret.txHash;
+      let txHash = ret.txHash;
+      if (txHash.startsWith('0x') === false) {
+        txHash = '0x' + txHash;
+      }
       const payLink = !isEmail ? `${APP_URL}/claim?lockboxSalt=${lockboxSalt}` : undefined;
 
       console.log('📦 [PayService] TX Hash:', txHash);
