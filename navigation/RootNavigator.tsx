@@ -1,4 +1,5 @@
 import { Fragment, type ComponentType } from 'react';
+import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { StackNavigationOptions } from '@react-navigation/stack';
 import { goBack } from 'navigation/Navigation';
@@ -37,6 +38,8 @@ const transparentModalOptions: StackNavigationOptions = {
   presentation: 'transparentModal',
   animation: 'slide_from_bottom',
 };
+
+const modalOptions = Platform.OS === 'ios' ? transparentModalOptions : undefined;
 
 const SCREEN_GROUPS: Array<{
   label: string;
@@ -215,15 +218,15 @@ const SCREEN_GROUPS: Array<{
       {
         name: 'WithdrawConfirmationScreen',
         component: WithdrawConfirmationScreen,
-        options: transparentModalOptions,
+        options: modalOptions,
       },
       {
         name: 'WithdrawSuccessScreen',
         component: WithdrawSuccessScreen,
-        options: {
-          ...transparentModalOptions,
-          gestureEnabled: false,
-        },
+        options:
+          Platform.OS === 'ios'
+            ? { ...transparentModalOptions, gestureEnabled: false }
+            : { gestureEnabled: false },
       },
     ],
   },
