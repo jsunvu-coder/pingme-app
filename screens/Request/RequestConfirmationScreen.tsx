@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import {
   View,
@@ -50,6 +50,9 @@ export default function RequestConfirmationScreen() {
   const params = route.params || {};
 
   const balanceService = BalanceService.getInstance();
+
+  const scrollRef = useRef<ScrollView>(null);
+  const noteInputRef = useRef<TextInput>(null);
 
   const {
     amount = 0,
@@ -144,7 +147,9 @@ export default function RequestConfirmationScreen() {
       return;
     }
 
-    const amountMicro = Utils.toMicro(typeof rawAmount === 'number' ? String(rawAmount) : rawAmount);
+    const amountMicro = Utils.toMicro(
+      typeof rawAmount === 'number' ? String(rawAmount) : rawAmount
+    );
     if (amountMicro <= 0n) {
       await showLocalizedAlert({
         title: 'Invalid amount',
@@ -296,13 +301,14 @@ export default function RequestConfirmationScreen() {
           </View>
 
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'position' : undefined}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-            style={{ flex: 1 }}>
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
             <ScrollView
-              contentInsetAdjustmentBehavior="automatic"
+              ref={scrollRef}
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 140 }}>
               <View className="px-6 pt-10 pb-8">
                 <View className="mt-2 mb-6 items-center">
                   <WalletRequestIcon />
@@ -318,12 +324,13 @@ export default function RequestConfirmationScreen() {
                   lockboxDuration={lockboxDuration}
                 />
 
-                {channel === 'Email' ? (
+                {channel === 'Email' && (
                   <View className="mt-1">
                     <Text className="mb-2 text-xs font-semibold tracking-[1px] text-gray-500">
                       ENTER NOTE
                     </Text>
                     <TextInput
+                      ref={noteInputRef}
                       placeholder="Add an optional message for your request"
                       placeholderTextColor="#9CA3AF"
                       multiline
@@ -332,9 +339,19 @@ export default function RequestConfirmationScreen() {
                       className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
                       value={note}
                       onChangeText={setNote}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          noteInputRef.current?.measureLayout(scrollRef.current as any, (_x, y) => {
+                            scrollRef.current?.scrollTo({
+                              y: Math.max(0, y - 24),
+                              animated: true,
+                            });
+                          });
+                        }, 300); // wait for keyboard animation
+                      }}
                     />
                   </View>
-                ) : null}
+                )}
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
