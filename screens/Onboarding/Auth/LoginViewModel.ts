@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
@@ -11,7 +11,7 @@ import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
 
-export type BiometricType = 'Face ID' | 'Touch ID' | null;
+export type BiometricType = 'Face ID' | 'Touch ID' | 'Biometric Authentication' | null;
 
 export class LoginViewModel {
   biometricType: BiometricType = null;
@@ -20,6 +20,9 @@ export class LoginViewModel {
   async initialize(): Promise<{ biometricType: BiometricType; useBiometric: boolean }> {
     this.useBiometric = await LoginViewModel.isBiometricEnabled();
     this.biometricType = await LoginViewModel.detectBiometricType();
+    if (Platform.OS === 'android') {
+      this.biometricType = 'Biometric Authentication';
+    }
     return {
       biometricType: this.biometricType,
       useBiometric: this.useBiometric,

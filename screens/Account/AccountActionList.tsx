@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Application from 'expo-application';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -21,7 +21,9 @@ type ItemProps = {
 };
 
 export default function AccountActionList() {
-  const [biometricType, setBiometricType] = useState<'Face ID' | 'Touch ID' | null>(null);
+  const [biometricType, setBiometricType] = useState<
+    'Face ID' | 'Touch ID' | 'Biometric Authentication' | null
+  >(null);
   const [useBiometric, setUseBiometric] = useState(false);
   const [env, setEnvState] = useState<'staging' | 'production'>(getEnv());
   const [loggingOut, setLoggingOut] = useState(false);
@@ -35,6 +37,9 @@ export default function AccountActionList() {
       const init = await vm.initialize();
       setUseBiometric(init.useBiometric);
       setBiometricType(init.biometricType);
+      if (Platform.OS === 'android') {
+        setBiometricType('Biometric Authentication');
+      }
       const storedEnv = await loadEnvFromStorage();
       setEnvState(storedEnv);
     })();
