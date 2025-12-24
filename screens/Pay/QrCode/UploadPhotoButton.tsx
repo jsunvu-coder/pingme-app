@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, View, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
+import { copyAsync } from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { showFlashMessage } from 'utils/flashMessage';
 
@@ -11,6 +13,18 @@ type Props = {
 
 export default function UploadPhotoButton({ onScanSuccess }: Props) {
   const [loading, setLoading] = useState(false);
+
+  const ensureFileUri = async (uri: string) => {
+    if (uri.startsWith('file://')) return uri;
+
+    const destination = `${FileSystem.Paths.cache.uri}qr-upload-${Date.now()}.jpg`;
+    try {
+      await copyAsync({ from: uri, to: destination });
+      return destination;
+    } catch {
+      return uri;
+    }
+  };
 
   const handleUpload = async () => {
     if (loading) return; // Prevent multiple presses
@@ -39,17 +53,39 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
     setLoading(true);
 
     try {
-      const scans = await Camera.scanFromURLAsync(result.assets[0].uri);
+      if (Platform.OS === 'android') {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const QrImageReader = require('react-native-qr-image-reader').default as {
+          decode: (options: { path: string }) => Promise<{ result?: string }>;
+        };
 
-      if (scans.length > 0) {
-        const qrData = scans[0].data;
-        onScanSuccess?.(qrData, () => {});
+        const uri = await ensureFileUri(result.assets[0].uri);
+        const decoded = await QrImageReader.decode({ path: uri });
+        const qrData = decoded?.result;
+
+        if (qrData) {
+          onScanSuccess?.(qrData, () => {});
+        } else {
+          showFlashMessage({
+            title: 'No QR Code Found',
+            message: 'Please select a valid QR code image.',
+            type: 'warning',
+          });
+        }
       } else {
-        showFlashMessage({
-          title: 'No QR Code Found',
-          message: 'Please select a valid QR code image.',
-          type: 'warning',
-        });
+        // Keep current iOS implementation (expo-camera).
+        const scans = await Camera.scanFromURLAsync(result.assets[0].uri);
+
+        if (scans.length > 0) {
+          const qrData = scans[0].data;
+          onScanSuccess?.(qrData, () => {});
+        } else {
+          showFlashMessage({
+            title: 'No QR Code Found',
+            message: 'Please select a valid QR code image.',
+            type: 'warning',
+          });
+        }
       }
     } catch (error) {
       console.error(error);

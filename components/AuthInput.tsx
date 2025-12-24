@@ -111,7 +111,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         selection={
           isAndroidSecure ? { start: displayValue.length, end: displayValue.length } : undefined
         }
-        className="h-12 px-1 text-xl text-[#0F0F0F]"
+        className="h-13 px-1 text-xl text-[#0F0F0F]"
         {...rest}
         onFocus={onFocus}
         onBlur={onBlur}
