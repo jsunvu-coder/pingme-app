@@ -1,6 +1,11 @@
 import { t } from 'i18n';
+import {
+  isPasswordValid,
+  PASSWORD_MIN_LENGTH,
+  passwordRegex as sharedPasswordRegex,
+} from 'utils/passwordPolicy';
 
-export const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/; // 8+ chars, upper, lower, digit
+export const passwordRegex = sharedPasswordRegex;
 
 export const validatePasswordFields = (
   password: string,
@@ -9,12 +14,12 @@ export const validatePasswordFields = (
   const validation: { password?: string; confirm?: string } = {};
 
   const ruleMessage =
-    t('AUTH_PASSWORD_RULE') ||
-    'Password must be at least 8 characters and include uppercase, lowercase, and a number';
+    t('AUTH_PASSWORD_RULE', { min: PASSWORD_MIN_LENGTH }) ||
+    `Password must be at least ${PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, and a number`;
 
   if (!password) {
     validation.password = t('AUTH_PASSWORD_REQUIRED') || 'Password is required';
-  } else if (!passwordRegex.test(password)) {
+  } else if (!isPasswordValid(password)) {
     validation.password = ruleMessage;
   }
 

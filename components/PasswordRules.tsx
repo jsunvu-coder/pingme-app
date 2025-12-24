@@ -1,13 +1,18 @@
 import CheckCircleIcon from 'assets/CheckCircleIcon';
 import { View, Text } from 'react-native';
 import { t } from 'i18n';
+import { getPasswordRuleResults, PASSWORD_MIN_LENGTH } from 'utils/passwordPolicy';
 
 export default function PasswordRules({ password }: { password: string }) {
+  const results = getPasswordRuleResults(password);
   const rules = [
-    { text: t('AUTH_PASSWORD_RULE_LENGTH'), valid: password.length >= 8 },
-    { text: t('AUTH_PASSWORD_RULE_NUMBER'), valid: /\d/.test(password) },
-    { text: t('AUTH_PASSWORD_RULE_UPPERCASE'), valid: /[A-Z]/.test(password) },
-    { text: t('AUTH_PASSWORD_RULE_LOWERCASE'), valid: /[a-z]/.test(password) },
+    {
+      text: t('AUTH_PASSWORD_RULE_LENGTH', { min: PASSWORD_MIN_LENGTH }),
+      valid: results.minLength,
+    },
+    { text: t('AUTH_PASSWORD_RULE_NUMBER'), valid: results.hasNumber },
+    { text: t('AUTH_PASSWORD_RULE_UPPERCASE'), valid: results.hasUppercase },
+    { text: t('AUTH_PASSWORD_RULE_LOWERCASE'), valid: results.hasLowercase },
   ];
 
   return (

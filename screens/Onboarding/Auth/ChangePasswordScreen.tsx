@@ -11,7 +11,8 @@ import { showFlashMessage } from 'utils/flashMessage';
 import NavigationBar from 'components/NavigationBar';
 import { hasTranslation, t } from 'i18n';
 import { ScrollView } from 'react-native-gesture-handler';
-import { passwordRegex, validatePasswordFields } from './passwordValidation';
+import { validatePasswordFields } from './passwordValidation';
+import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy';
 
 export default function ChangePasswordScreen() {
   const [password, setPassword] = useState('');
@@ -29,9 +30,9 @@ export default function ChangePasswordScreen() {
     setErrors(validatePasswordFields(password, value));
   };
 
-  const isPasswordValid = passwordRegex.test(password);
+  const passwordOk = isPasswordValidByPolicy(password);
   const doPasswordsMatch = confirm.length > 0 && confirm === password;
-  const isFormValid = !!password && !!confirm && isPasswordValid && doPasswordsMatch;
+  const isFormValid = !!password && !!confirm && passwordOk && doPasswordsMatch;
 
   const handleUpdatePassword = async () => {
     const validation = validatePasswordFields(password, confirm);

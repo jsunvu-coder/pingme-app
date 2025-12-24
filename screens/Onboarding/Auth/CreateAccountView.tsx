@@ -9,16 +9,14 @@ import CheckSquareIcon from 'assets/CheckSquareIcon';
 import { TOC_URL } from 'business/Config';
 import PrimaryButton from 'components/PrimaryButton';
 import { AuthService } from 'business/services/AuthService';
-import { presentOverMain, setRootScreen } from 'navigation/Navigation';
+import { setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { shareFlowService } from 'business/services/ShareFlowService';
-import {
-  passwordRegex,
-  validatePasswordFields as sharedValidatePasswords,
-} from './passwordValidation';
-import { showFlashMessage } from 'utils/flashMessage';
+import { validatePasswordFields as sharedValidatePasswords } from './passwordValidation';
 import { hasTranslation, t } from 'i18n';
+import { showFlashMessage } from 'utils/flashMessage';
+import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -64,10 +62,10 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
 
   const hasErrors = Object.keys(errors).length > 0;
   const isEmailValid = emailRegex.test(email.trim());
-  const isPasswordValid = passwordRegex.test(password);
+  const passwordOk = isPasswordValidByPolicy(password);
 
   const isFormValid =
-    !!email && !!password && !!confirm && isEmailValid && isPasswordValid && !hasErrors && agreeToC;
+    !!email && !!password && !!confirm && isEmailValid && passwordOk && !hasErrors && agreeToC;
 
   const handleRegister = async () => {
     setLoading(true);
