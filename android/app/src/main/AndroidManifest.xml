@@ -15,10 +15,21 @@
     <queries>
         <package android:name="com.facebook.katana" />
         <package android:name="com.instagram.android" />
+        <package android:name="com.twitter.android" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="twitter" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="x-com.twitter.android" />
         </intent>
     </queries>
     <application

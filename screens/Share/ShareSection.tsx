@@ -177,10 +177,18 @@ export default function ShareSection() {
   const handleTwitterShare = useCallback(async () => {
     const confirmOpenX = () =>
       new Promise<boolean>((resolve) => {
-        Alert.alert(t('OPEN_X_TITLE', undefined, 'Open X'), t('OPEN_X_MESSAGE', undefined, 'Open X to share?'), [
-          { text: t('CANCEL', undefined, 'Cancel'), style: 'cancel', onPress: () => resolve(false) },
-          { text: t('OPEN', undefined, 'Open'), onPress: () => resolve(true) },
-        ]);
+        Alert.alert(
+          t('OPEN_X_TITLE', undefined, 'Open X'),
+          t('OPEN_X_MESSAGE', undefined, 'Open X to share?'),
+          [
+            {
+              text: t('CANCEL', undefined, 'Cancel'),
+              style: 'cancel',
+              onPress: () => resolve(false),
+            },
+            { text: t('OPEN', undefined, 'Open'), onPress: () => resolve(true) },
+          ]
+        );
       });
 
     const proceed = await confirmOpenX();
@@ -195,19 +203,24 @@ export default function ShareSection() {
 
     const tryOpen = async (url: string) => {
       try {
-        const canOpen = await Linking.canOpenURL(url);
-        if (canOpen) {
+        if (Platform.OS === 'android') {
           await Linking.openURL(url);
           return true;
         }
-        return false;
+
+        const canOpen = await Linking.canOpenURL(url);
+        if (!canOpen) return false;
+        await Linking.openURL(url);
+        return true;
       } catch {
         return false;
       }
     };
 
     const opened =
-      (await tryOpen(xAppUrl)) || (await tryOpen(xAndroidUrl)) || (await tryOpen(webUrl));
+      Platform.OS === 'android'
+        ? (await tryOpen(xAndroidUrl)) || (await tryOpen(xAppUrl)) || (await tryOpen(webUrl))
+        : (await tryOpen(xAppUrl)) || (await tryOpen(webUrl));
 
     if (!opened) await handleSystemShare();
   }, [shareText, handleSystemShare]);
