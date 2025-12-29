@@ -1,4 +1,4 @@
-import { View, Text, Alert, Linking } from 'react-native';
+import { View, Text, Alert, Linking, Platform } from 'react-native';
 import IconButton from 'components/IconButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import XTwitterIcon from 'assets/XTwitterIcon';
@@ -8,6 +8,10 @@ import { APP_URL } from 'business/Config';
 import { Asset } from 'expo-asset';
 import RNShare from 'react-native-share';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
+import { t } from 'i18n';
+import { showFlashMessage } from 'utils/flashMessage';
 
 type ShareParams = {
   amount?: number;
@@ -51,7 +55,11 @@ export default function ShareSection() {
 
   const normalizeFileUri = useCallback((uri: string | null | undefined) => {
     if (!uri) return null;
-    return uri.startsWith('file://') ? uri : `file://${uri}`;
+    if (uri.startsWith('file://') || uri.startsWith('content://')) return uri;
+    if (uri.startsWith('http://') || uri.startsWith('https://')) return uri;
+    if (uri.startsWith('asset:')) return null;
+    if (uri.startsWith('/')) return `file://${uri}`;
+    return uri;
   }, []);
 
   const adImageAsset = useRef<Asset | null>(null);
@@ -84,17 +92,58 @@ export default function ShareSection() {
     const imageUri = await getShareImageUri();
     try {
       await RNShare.open({
+        title: 'Share More',
         message: shareContent,
-        url: imageUri ?? APP_URL,
+        url: imageUri ?? undefined,
         failOnCancel: false,
       });
       return true;
     } catch (err: any) {
       if (err?.message?.includes('User did not share')) return false;
       console.error('System share error:', err);
+
+      if (Platform.OS === 'android' && imageUri) {
+        try {
+          await RNShare.open({
+            title: 'Share More',
+            message: shareContent,
+            failOnCancel: false,
+          });
+          return true;
+        } catch (err2: any) {
+          if (err2?.message?.includes('User did not share')) return false;
+          console.error('System share retry (no url) error:', err2);
+        }
+      }
+
+      Alert.alert('Share', 'Unable to open share options.');
       return false;
     }
   }, [getShareImageUri, shareContent]);
+
+  const openInstagramWebFallback = useCallback(async () => {
+    try {
+      await Clipboard.setStringAsync(shareContent);
+      showFlashMessage({
+        title: t('NOTICE', undefined, 'Notice'),
+        message: t(
+          'INSTAGRAM_WEB_FALLBACK',
+          undefined,
+          'Instagram is not installed. Share text copied — paste it in Instagram.'
+        ),
+        type: 'info',
+      });
+    } catch (err) {
+      console.warn('Failed to copy share content to clipboard:', err);
+    }
+
+    try {
+      await WebBrowser.openBrowserAsync('https://www.instagram.com/');
+    } catch (err) {
+      console.error('Open Instagram web failed:', err);
+      await handleSystemShare();
+    }
+  }, [handleSystemShare, shareContent]);
 
   const shareViaSocial = useCallback(
     async (social: RNShare.Social, extra?: RNShare.Options) => {
@@ -126,6 +175,17 @@ export default function ShareSection() {
   }, [shareViaSocial, handleSystemShare]);
 
   const handleTwitterShare = useCallback(async () => {
+    const confirmOpenX = () =>
+      new Promise<boolean>((resolve) => {
+        Alert.alert(t('OPEN_X_TITLE', undefined, 'Open X'), t('OPEN_X_MESSAGE', undefined, 'Open X to share?'), [
+          { text: t('CANCEL', undefined, 'Cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('OPEN', undefined, 'Open'), onPress: () => resolve(true) },
+        ]);
+      });
+
+    const proceed = await confirmOpenX();
+    if (!proceed) return;
+
     const encodedText = encodeURIComponent(shareText);
     const encodedUrl = encodeURIComponent(APP_URL);
 
@@ -153,26 +213,33 @@ export default function ShareSection() {
   }, [shareText, handleSystemShare]);
 
   const handleInstagramShare = useCallback(async () => {
+    const imageUri = await getShareImageUri();
+    if (!imageUri) return;
+
     try {
-      // Load share image
-      const asset = Asset.fromModule(require('assets/share_card.png'));
-      await asset.downloadAsync();
-      const fileUri = asset.localUri ?? asset.uri;
-      if (!fileUri) {
-        Alert.alert('Error', 'Unable to load image for Instagram.');
-        return;
-      }
-
-      // Convert to base64 for Instagram Story
-      const base64 = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      // Build attribution URL with message (Option 2)
       const encodedMessage = encodeURIComponent(shareText);
       const storyLink = `${APP_URL}?msg=${encodedMessage}`;
 
-      // Share to Instagram Story
+      if (Platform.OS === 'android') {
+        const installed = await RNShare.isPackageInstalled('com.instagram.android');
+        if (!installed?.isInstalled) {
+          await openInstagramWebFallback();
+          return;
+        }
+
+        await RNShare.shareSingle({
+          social: RNShare.Social.INSTAGRAM_STORIES,
+          backgroundImage: imageUri,
+          attributionURL: storyLink,
+        });
+        return;
+      }
+
+      // iOS: Convert to base64 for Instagram Story
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
       await RNShare.shareSingle({
         social: RNShare.Social.INSTAGRAM_STORIES,
         backgroundImage: `data:image/png;base64,${base64}`,
@@ -181,9 +248,15 @@ export default function ShareSection() {
       });
     } catch (err) {
       console.error('Instagram Story error:', err);
+      const maybeMessage = (err as any)?.message?.toString?.() ?? '';
+      if (maybeMessage.toLowerCase().includes('not installed')) {
+        await openInstagramWebFallback();
+        return;
+      }
+
       Alert.alert('Share', 'Unable to share on Instagram Story.');
     }
-  }, [shareText]);
+  }, [getShareImageUri, openInstagramWebFallback, shareText]);
 
   return (
     <View className="mt-10">

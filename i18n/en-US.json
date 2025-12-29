@@ -66,6 +66,8 @@
   "NEW_OFFER": "New offer",
   "NO_FUNDS": "No funds available",
   "OPEN": "Open",
+  "OPEN_X_TITLE": "Open X",
+  "OPEN_X_MESSAGE": "Open X to share?",
   "OK_BUTTON": "OK",
   "PASSWORD_RECOVERY": "Password recovery",
   "PASSWORD_TOO_SHORT": "The password was too short",
