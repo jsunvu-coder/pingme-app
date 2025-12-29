@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { showFlashMessage } from 'utils/flashMessage';
 import { t } from 'i18n';
 import { ENV } from 'business/Config';
+import { normalizeTxHash } from 'utils/txHash';
 
 export default function PaymentRecipientCard({
   recipient,
@@ -17,7 +18,8 @@ export default function PaymentRecipientCard({
 }) {
   const handleViewDetails = async () => {
     if (!txHash) return;
-    const normalizedHash = txHash.trim().replace(/[^\da-fA-Fx]/g, '');
+    const normalizedHash = normalizeTxHash(txHash);
+    if (!normalizedHash) return;
     const baseUrl =
       ENV === 'staging' ? 'https://testnet.monadvision.com' : 'https://monadvision.com';
     const url = `${baseUrl}/tx/${normalizedHash}`;
@@ -38,7 +40,7 @@ export default function PaymentRecipientCard({
   return (
     <View className="rounded-2xl bg-white px-6 py-8">
       <Text className="text-xl text-gray-800">
-        You've sent payment to <Text className="font-semibold">{recipient}</Text>
+        You have sent payment to <Text className="font-semibold">{recipient}</Text>
       </Text>
 
       <TouchableOpacity className="mt-2" style={{ opacity: 0 }}>

@@ -12,8 +12,8 @@ import { t } from 'i18n';
 import DoubleCheckIcon from 'assets/DoubleCheckIcon';
 import { SummaryTitle, SummaryValue } from 'screens/Send/SendConfirmation/PaymentSummaryCard';
 import { ENV } from 'business/Config';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import SafeBottomView from 'components/SafeBottomView';
+import { normalizeTxHash } from 'utils/txHash';
 
 type RouteParams = {
   amount?: number;
@@ -49,7 +49,8 @@ export default function WithdrawSuccessScreen() {
 
   const handleViewDetails = async () => {
     if (!txHash) return;
-    const normalizedHash = txHash.trim().replace(/[^\da-fA-Fx]/g, '');
+    const normalizedHash = normalizeTxHash(txHash);
+    if (!normalizedHash) return;
     const baseUrl =
       ENV === 'staging' ? 'https://testnet.monadvision.com' : 'https://monadvision.com';
     const url = `${baseUrl}/tx/${normalizedHash}`;

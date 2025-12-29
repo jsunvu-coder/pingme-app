@@ -1,5 +1,5 @@
-import { View, ActivityIndicator, Text, Alert } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { View, ActivityIndicator, Text, Alert, Linking } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SecurityNotice } from './SecurityNotice';
 import { InstructionList } from './InstructionList';
@@ -17,14 +17,67 @@ import { Utils } from 'business/Utils';
 import { GLOBALS, GLOBAL_SALT, ZERO_BYTES32 } from 'business/Constants';
 import { AuthService } from 'business/services/AuthService';
 import NavigationBar from 'components/NavigationBar';
+import * as SecureStore from 'expo-secure-store';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function AccountRecoveryScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recoveryPk, setRecoveryPk] = useState<string | null>(null);
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [recoveryCodeStorageKey, setRecoveryCodeStorageKey] = useState<string | null>(null);
+  const [photoPermissionGranted, setPhotoPermissionGranted] = useState<boolean | null>(null);
   const qrRef = useRef<any | null>(null);
   const sheetRef = useRef<BottomSheet>(null);
+
+  const ensurePhotoPermission = useCallback(async (): Promise<boolean> => {
+    try {
+      const current = await MediaLibrary.getPermissionsAsync();
+      if (current.granted) {
+        setPhotoPermissionGranted(true);
+        return true;
+      }
+
+      if (!current.canAskAgain) {
+        setPhotoPermissionGranted(false);
+        return false;
+      }
+
+      const requested = await MediaLibrary.requestPermissionsAsync();
+      setPhotoPermissionGranted(requested.granted);
+      return requested.granted;
+    } catch (e) {
+      console.warn('Failed to get/request photo permission', e);
+      setPhotoPermissionGranted(false);
+      return false;
+    }
+  }, []);
+
+  const promptOpenSettingsForPhotos = useCallback(() => {
+    Alert.alert(
+      'Photo Library Access Required',
+      'Please allow Photo Library access to save your recovery QR code.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            Linking.openSettings().catch((e) =>
+              console.warn('Failed to open settings', e)
+            );
+          },
+        },
+      ]
+    );
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void ensurePhotoPermission().then((granted) => {
+        if (!granted) promptOpenSettingsForPhotos();
+      });
+    }, [ensurePhotoPermission, promptOpenSettingsForPhotos])
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -45,9 +98,22 @@ export default function AccountRecoveryScreen() {
         const rvCommit = CryptoUtils.globalHash(rvProof);
         if (!rvCommit) throw new Error('Failed to compute recovery commitment.');
 
+        const storageKeyHash = CryptoUtils.globalHash(rvCommit);
+        const storageKey = `recoveryCode:${storageKeyHash ?? rvCommit}`;
+        if (isMounted) setRecoveryCodeStorageKey(storageKey);
+
         const ret = await contract.rvGetRecoveryPk(rvCommit);
         if (!isMounted) return;
         setRecoveryPk(ret?.recoveryPk ?? null);
+
+        // If the app was restarted (e.g., user toggled permissions in Settings),
+        // resume showing the recovery code if it was already generated.
+        try {
+          const storedCode = await SecureStore.getItemAsync(storageKey);
+          if (storedCode && isMounted) setRecoveryCode(storedCode);
+        } catch (e) {
+          console.warn('Failed to load persisted recovery code', e);
+        }
       } catch (e: any) {
         console.error('Recovery mount failed', e);
         Alert.alert('Error', e?.message || 'Failed to load recovery status');
@@ -62,6 +128,12 @@ export default function AccountRecoveryScreen() {
 
   const handleSetup = async () => {
     try {
+      const granted = await ensurePhotoPermission();
+      if (!granted) {
+        promptOpenSettingsForPhotos();
+        return;
+      }
+
       setLoading(true);
 
       const contract = ContractService.getInstance();
@@ -122,8 +194,15 @@ export default function AccountRecoveryScreen() {
         recoveryPkHash
       );
 
+      if (recoveryCodeStorageKey) {
+        try {
+          await SecureStore.setItemAsync(recoveryCodeStorageKey, code);
+        } catch (e) {
+          console.warn('Failed to persist recovery code', e);
+        }
+      }
+
       setRecoveryPk(recoveryPkHex);
-      // Keep recovery code in-memory only for this session
       setRecoveryCode(code);
     } catch (e: any) {
       console.error('Recovery initialize failed', e);
@@ -137,13 +216,9 @@ export default function AccountRecoveryScreen() {
     // Export QR as base64 PNG then save to Photos
     qrRef.current?.toDataURL(async (data: string) => {
       try {
-        const permission = await MediaLibrary.requestPermissionsAsync();
-        if (!permission.granted) {
-          console.warn('Photo library permission not granted');
-          Alert.alert(
-            'Permission Required',
-            'Please allow Photo Library access to save the QR image.'
-          );
+        const granted = await ensurePhotoPermission();
+        if (!granted) {
+          promptOpenSettingsForPhotos();
           return;
         }
 
@@ -164,14 +239,25 @@ export default function AccountRecoveryScreen() {
   };
 
   const handleConfirmHide = () => {
-    setRecoveryCode(null);
-    setIsCompleted(true);
-    sheetRef.current?.close();
+    (async () => {
+      try {
+        if (recoveryCodeStorageKey) {
+          await SecureStore.deleteItemAsync(recoveryCodeStorageKey);
+        }
+      } catch (e) {
+        console.warn('Failed to clear persisted recovery code', e);
+      } finally {
+        setRecoveryCode(null);
+        setIsCompleted(true);
+        sheetRef.current?.close();
+      }
+    })();
   };
 
   if (isCompleted) {
     return (
       <View className="flex-1 bg-white">
+        <NavigationBar title="Account Recovery" />
         <View className="flex-1 p-4">
           <SuccessView />
         </View>
@@ -182,6 +268,7 @@ export default function AccountRecoveryScreen() {
   if (loading || recoveryPk == null) {
     return (
       <View className="flex-1 bg-black">
+        <NavigationBar title="Account Recovery" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#ffffff" />
         </View>
@@ -192,6 +279,7 @@ export default function AccountRecoveryScreen() {
   if (recoveryPk === ZERO_BYTES32) {
     return (
       <View className="flex-1 bg-black">
+        <NavigationBar title="Account Recovery" />
         <View className="flex-1 gap-6 px-6 py-8">
           <View className="items-center">
             <Text className="mt-8 text-center text-2xl font-semibold text-white">
@@ -209,6 +297,11 @@ export default function AccountRecoveryScreen() {
               onPress={handleSetup}
               loading={loading}
             />
+            {photoPermissionGranted === false && (
+              <Text className="mt-3 text-center text-xs text-[#CCCCCC]">
+                Enable Photo Library access to save your recovery QR code.
+              </Text>
+            )}
           </View>
         </View>
       </View>
@@ -218,6 +311,7 @@ export default function AccountRecoveryScreen() {
   if (recoveryCode) {
     return (
       <View className="flex-1 bg-black">
+        <NavigationBar title="Account Recovery" />
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="flex-1 justify-between px-6 py-8">
             <View>
@@ -238,6 +332,7 @@ export default function AccountRecoveryScreen() {
 
   return (
     <View className="flex-1 bg-black">
+      <NavigationBar title="Account Recovery" />
       <View className="flex-1 items-center justify-center px-6 py-8">
         <Text className="text-center text-lg font-semibold text-white">
           Recovery credential already exists

@@ -40,7 +40,7 @@
   "CONFIRMATION_TITLE": "Confirmation",
   "CONTINUE": "Continue",
   "CREATE_TIME": "Create time",
-  "CREDENTIALS_ALREADY_EXISTS": "We couldn't update your password. Please try again or contact support.",
+  "CREDENTIALS_ALREADY_EXISTS": "Account already exists",
   "CURRENT_TIME": "Current time",
   "CUSTOMIZE": "Customize",
   "DAYS": "Days",
