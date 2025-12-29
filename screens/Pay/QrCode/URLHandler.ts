@@ -42,7 +42,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
     if (!decodedData.startsWith(APP_URL)) {
       console.warn('❌ Unsupported URL base:', decodedData);
       showError({
-        title: t('Oops', undefined, 'Oops'),
+        title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
         message: t('ALERT_UNSUPPORTED_QR', undefined, 'The provided QR code is not supported.'),
       });
       return;
@@ -57,7 +57,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
       if (!lockboxSalt) {
         console.warn('⚠️ Missing lockboxSalt in claim URL');
         showError({
-          title: t('Oops', undefined, 'Oops'),
+          title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
           message: t('ALERT_INVALID_CLAIM_QR', undefined, 'Invalid claim QR code.'),
         });
         return;
@@ -73,7 +73,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
       const { payload, errorKey } = parseDepositLink(decodedData);
       if (!payload) {
         showError({
-          title: t('Oops', undefined, 'Oops'),
+          title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
           message: t(errorKey ?? '_ALERT_INVALID_QR_CODE', undefined, 'Invalid QR code.'),
         });
         return;
@@ -148,7 +148,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
   } catch (err) {
     console.error('❌ [handleUrl] Failed to handle URL:', err);
     showError({
-      title: t('Oops', undefined, 'Oops'),
+      title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
       message: t('ALERT_INVALID_QR_CODE', undefined, 'Invalid QR code.'),
     });
   }
