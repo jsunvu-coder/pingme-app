@@ -1,5 +1,15 @@
-import { useState, useEffect } from 'react';
-import { View, Alert, TouchableOpacity, Keyboard, Platform, Text } from 'react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Alert,
+  TouchableOpacity,
+  Keyboard,
+  Platform,
+  Text,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  TextInput,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
@@ -7,8 +17,6 @@ import NavigationBar from 'components/NavigationBar';
 import { t } from 'i18n';
 import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 import { BalanceService } from 'business/services/BalanceService';
-import { ContractService } from 'business/services/ContractService';
-import { RecordService } from 'business/services/RecordService';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS } from 'business/Constants';
@@ -22,12 +30,24 @@ import WithdrawlIcon from 'assets/WithdrawlIcon';
 import WarningIcon from 'assets/WarningIcon';
 
 export default function WithdrawScreen() {
+  const WALLET_MAX_LENGTH = 42;
   const [amount, setAmount] = useState('');
-  const [wallet, setWallet] = useState('');
+  const [wallet, setWallet] = useState('0xe3234829D5DaB025f18C356504172ADe07E606DC');
   const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState<any>(null);
+  const [formY, setFormY] = useState<number | null>(null);
+  const [walletInputYInForm, setWalletInputYInForm] = useState<number | null>(null);
+  const scrollRef = useRef<any>(null);
+  const walletInputRef = useRef<TextInput | null>(null);
 
   const balanceService = BalanceService.getInstance();
+
+  const setWalletNormalized = useCallback(
+    (next: string) => {
+      setWallet(next.trim().slice(0, WALLET_MAX_LENGTH));
+    },
+    [WALLET_MAX_LENGTH]
+  );
 
   useEffect(() => {
     const loadBalance = async () => {
@@ -63,7 +83,7 @@ export default function WithdrawScreen() {
       setEntry(selected);
     };
     loadBalance();
-  }, []);
+  }, [balanceService]);
 
   const confirm = async (
     message: string,
@@ -97,11 +117,26 @@ export default function WithdrawScreen() {
   const handlePasteWallet = async () => {
     try {
       const txt = await Clipboard.getStringAsync();
-      if (txt) setWallet(txt.trim());
+      if (txt) setWalletNormalized(txt);
     } catch (err) {
       console.error('Failed to paste wallet address:', err);
     }
   };
+
+  const scrollToWalletInput = useCallback(() => {
+    if (formY == null || walletInputYInForm == null) return;
+    const walletInputY = formY + walletInputYInForm;
+    const targetY = Math.max(0, walletInputY - 24);
+
+    requestAnimationFrame(() => {
+      setTimeout(
+        () => {
+          scrollRef.current?.scrollTo?.({ y: targetY, animated: true });
+        },
+        Platform.OS === 'android' ? 150 : 80
+      );
+    });
+  }, [formY, walletInputYInForm]);
 
   const handleWithdraw = async () => {
     Keyboard.dismiss();
@@ -171,70 +206,87 @@ export default function WithdrawScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
+    <KeyboardAvoidingView
+      className="flex-1 bg-white"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View className="flex-1 bg-white">
+          <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
 
-      <ScrollView className="flex-1 px-6">
-        <View className="mt-10 items-center">
-          <WithdrawlIcon width={80} height={80} />
-          <Text className="mt-6 text-center text-3xl font-bold text-black">
-            {t('WITHDRAW_USDC_TITLE', undefined, 'Withdraw USDC to the\naddress below')}
-          </Text>
-        </View>
+          <ScrollView
+            ref={scrollRef}
+            className="flex-1 px-6"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 140 }}>
+            <View className="mt-10 items-center">
+              <WithdrawlIcon width={80} height={80} />
+              <Text className="mt-6 text-center text-3xl font-bold text-black">
+                {t('WITHDRAW_USDC_TITLE', undefined, 'Withdraw USDC to the\naddress below')}
+              </Text>
+            </View>
 
-        <View className="mt-10 gap-y-8">
-          <PaymentAmountView
-            balance={`$${balanceService.totalBalance}`}
-            value={amount}
-            onChange={setAmount}
-            mode="send"
-          />
+            <View
+              className="mt-10 gap-y-8"
+              onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
+              <PaymentAmountView
+                balance={`$${balanceService.totalBalance}`}
+                value={amount}
+                onChange={setAmount}
+                mode="send"
+              />
 
-          <View>
-            <AuthInput
-              icon={<WalletAddIcon size={32} color="#000" />}
-              value={wallet}
-              onChangeText={setWallet}
-              numberOfLines={1}
-              editable={!loading}
-              placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
+              <View onLayout={(e) => setWalletInputYInForm(e.nativeEvent.layout.y)}>
+                <AuthInput
+                  ref={walletInputRef}
+                  icon={<WalletAddIcon size={32} color="#000" />}
+                  value={wallet}
+                  onChangeText={setWalletNormalized}
+                  numberOfLines={1}
+                  editable={!loading}
+                  placeholder={t('WITHDRAW_WALLET_PLACEHOLDER')}
+                  maxLength={WALLET_MAX_LENGTH}
+                  style={{ paddingRight: 52 }}
+                  onFocus={scrollToWalletInput}
+                />
+                <TouchableOpacity
+                  onPress={handlePasteWallet}
+                  className="absolute right-0 bottom-10 h-8 items-center justify-center self-end bg-white pl-4">
+                  <Ionicons name="clipboard-outline" size={24} color="#FD4912" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View className="mt-8 flex-row items-start rounded-2xl bg-red-500 p-4">
+              <View className="pt-1">
+                <WarningIcon color="#ffffff" />
+              </View>
+              <View className="ml-4 flex-1">
+                <Text className="mb-1 text-sm font-bold text-white">
+                  {t('WARNING', undefined, 'WARNING')}
+                </Text>
+                <Text className="text-sm leading-5 text-white">
+                  {t(
+                    'WITHDRAW_WARNING_BODY',
+                    undefined,
+                    'Withdrawing USDC to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.'
+                  )}
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View className="px-6 pb-6">
+            <PrimaryButton
+              title={t('WITHDRAW')}
+              onPress={handleWithdraw}
+              loading={loading}
+              loadingText={t('PROCESSING')}
             />
-            <TouchableOpacity
-              onPress={handlePasteWallet}
-              className="absolute right-0 bottom-10 h-8 items-center justify-center self-end bg-white pl-4">
-              <Ionicons name="clipboard-outline" size={24} color="#FD4912" />
-            </TouchableOpacity>
+            <SafeAreaView edges={['bottom']} />
           </View>
         </View>
-
-        <View className="mt-8 flex-row items-start rounded-2xl bg-red-500 p-4">
-          <View className="pt-1">
-            <WarningIcon color="#ffffff" />
-          </View>
-          <View className="ml-4 flex-1">
-            <Text className="mb-1 text-sm font-bold text-white">
-              {t('WARNING', undefined, 'WARNING')}
-            </Text>
-            <Text className="text-sm leading-5 text-white">
-              {t(
-                'WITHDRAW_WARNING_BODY',
-                undefined,
-                'Withdrawing USDC to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.'
-              )}
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-
-      <View className="px-6 pb-6">
-        <PrimaryButton
-          title={t('WITHDRAW')}
-          onPress={handleWithdraw}
-          loading={loading}
-          loadingText={t('PROCESSING')}
-        />
-        <SafeAreaView edges={['bottom']} />
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
