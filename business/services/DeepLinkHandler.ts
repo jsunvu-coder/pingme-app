@@ -1,7 +1,6 @@
 import { navigationRef, push, replace, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
-import { Alert } from 'react-native';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -89,9 +88,8 @@ class DeepLinkHandler {
           console.log('[DeepLinkHandler] Cold start claim → open ClaimPaymentScreen');
           const params = Object.fromEntries(u.searchParams);
           if (isLoggedIn) {
-            this.setPendingURL(url);
             setRootScreen(['MainTab']);
-            setTimeout(() => this.confirmLogoutAndClaim(params), 400);
+            setTimeout(() => this.navigateClaim(params), 400);
           } else {
             this.navigateClaim(params, true); // reset stack so splash isn't behind
           }
@@ -151,10 +149,6 @@ class DeepLinkHandler {
 
     switch (path) {
       case 'claim': {
-        if (isLoggedIn) {
-          this.confirmLogoutAndClaim(params);
-          return;
-        }
         this.navigateClaim(params);
         return;
       }
@@ -213,34 +207,6 @@ class DeepLinkHandler {
   private navigatePayQr(params: Record<string, string>) {
     console.log('[DeepLinkHandler] Navigating to PayQrConfirmationScreen', params);
     push('PayQrConfirmationScreen', params);
-  }
-
-  private confirmLogoutAndClaim(params: Record<string, string>) {
-    Alert.alert(
-      'Confirmation',
-      'To claim, you must log out first. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          style: 'destructive',
-          onPress: () => {
-            void this.logoutAndNavigateClaim(params);
-          },
-        },
-      ]
-    );
-  }
-
-  private async logoutAndNavigateClaim(params: Record<string, string>) {
-    try {
-      this.clearPendingURL();
-      await AuthService.getInstance().logout();
-    } catch (err) {
-      console.warn('[DeepLinkHandler] Logout before claim failed', err);
-    }
-    setRootScreen(['OnboardingPager']);
-    setTimeout(() => this.navigateClaim(params), 300);
   }
 }
 
