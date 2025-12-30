@@ -23,6 +23,7 @@
   "AUTH_PASSWORD_RULE_UPPERCASE": "1 uppercase letter",
   "AUTH_PASSWORD_UPDATED_MESSAGE": "Your password has been updated.",
   "AUTH_PASSWORD_UPDATED_TITLE": "Password updated",
+  "AUTH_PASSWORD_UPDATE_ALREADY_EXISTS": "We couldn't update your password. Please try again or contact support.",
   "AUTH_PASSWORD_UPDATE_FAILED_MESSAGE": "Unable to update password",
   "AUTH_PASSWORD_UPDATE_FAILED_TITLE": "Update failed",
   "AUTH_UPDATE_PASSWORD_BUTTON": "Update Password",

@@ -56,9 +56,11 @@ export default function ChangePasswordScreen() {
       console.error('Change password error:', err);
       const rawMessage = err?.message;
       const message =
-        typeof rawMessage === 'string' && hasTranslation(rawMessage)
-          ? t(rawMessage)
-          : rawMessage || t('AUTH_PASSWORD_UPDATE_FAILED_MESSAGE');
+        rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
+          ? t('AUTH_PASSWORD_UPDATE_ALREADY_EXISTS')
+          : typeof rawMessage === 'string' && hasTranslation(rawMessage)
+            ? t(rawMessage)
+            : rawMessage || t('AUTH_PASSWORD_UPDATE_FAILED_MESSAGE');
       showFlashMessage({
         type: 'danger',
         icon: 'danger',

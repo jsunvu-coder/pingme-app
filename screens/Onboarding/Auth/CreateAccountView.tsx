@@ -99,7 +99,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
 
       let message =
         rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
-          ? 'Signup failed: Credentials already exist'
+          ? 'Account already exists'
           : 'Unable to create account';
 
       if (rawMessage && hasTranslation(rawMessage)) {
