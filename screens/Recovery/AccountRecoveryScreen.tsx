@@ -62,9 +62,7 @@ export default function AccountRecoveryScreen() {
         {
           text: 'Open Settings',
           onPress: () => {
-            Linking.openSettings().catch((e) =>
-              console.warn('Failed to open settings', e)
-            );
+            Linking.openSettings().catch((e) => console.warn('Failed to open settings', e));
           },
         },
       ]
@@ -257,7 +255,6 @@ export default function AccountRecoveryScreen() {
   if (isCompleted) {
     return (
       <View className="flex-1 bg-white">
-        <NavigationBar title="Account Recovery" />
         <View className="flex-1 p-4">
           <SuccessView />
         </View>
@@ -268,7 +265,6 @@ export default function AccountRecoveryScreen() {
   if (loading || recoveryPk == null) {
     return (
       <View className="flex-1 bg-black">
-        <NavigationBar title="Account Recovery" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#ffffff" />
         </View>
@@ -279,7 +275,6 @@ export default function AccountRecoveryScreen() {
   if (recoveryPk === ZERO_BYTES32) {
     return (
       <View className="flex-1 bg-black">
-        <NavigationBar title="Account Recovery" />
         <View className="flex-1 gap-6 px-6 py-8">
           <View className="items-center">
             <Text className="mt-8 text-center text-2xl font-semibold text-white">
@@ -311,7 +306,6 @@ export default function AccountRecoveryScreen() {
   if (recoveryCode) {
     return (
       <View className="flex-1 bg-black">
-        <NavigationBar title="Account Recovery" />
         <ScrollView showsVerticalScrollIndicator={false}>
           <View className="flex-1 justify-between px-6 py-8">
             <View>
@@ -332,7 +326,6 @@ export default function AccountRecoveryScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <NavigationBar title="Account Recovery" />
       <View className="flex-1 items-center justify-center px-6 py-8">
         <Text className="text-center text-lg font-semibold text-white">
           Recovery credential already exists

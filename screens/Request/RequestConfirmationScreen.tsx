@@ -315,7 +315,7 @@ export default function RequestConfirmationScreen() {
                   <WalletRequestIcon />
                 </View>
 
-                <Text className="mb-8 text-center text-4xl font-bold text-black">
+                <Text className="mb-8 text-center text-3xl font-bold text-black">
                   You’re about to request a payment
                 </Text>
 

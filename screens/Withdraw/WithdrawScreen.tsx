@@ -32,7 +32,7 @@ import WarningIcon from 'assets/WarningIcon';
 export default function WithdrawScreen() {
   const WALLET_MAX_LENGTH = 42;
   const [amount, setAmount] = useState('');
-  const [wallet, setWallet] = useState('0xe3234829D5DaB025f18C356504172ADe07E606DC');
+  const [wallet, setWallet] = useState('');
   const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState<any>(null);
   const [formY, setFormY] = useState<number | null>(null);
@@ -226,9 +226,7 @@ export default function WithdrawScreen() {
               </Text>
             </View>
 
-            <View
-              className="mt-10 gap-y-8"
-              onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
+            <View className="mt-10 gap-y-8" onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
               <PaymentAmountView
                 balance={`$${balanceService.totalBalance}`}
                 value={amount}
