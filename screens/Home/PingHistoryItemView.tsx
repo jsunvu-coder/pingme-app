@@ -1,8 +1,14 @@
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TransactionViewModel } from './History/List/TransactionViewModel';
 
-export default function PingHistoryItemView({ item }: { item: TransactionViewModel }) {
+export default function PingHistoryItemView({
+  item,
+  onPress,
+}: {
+  item: TransactionViewModel;
+  onPress?: () => void;
+}) {
   const isPositive = item.isPositive;
   const iconName = isPositive ? 'arrow-down' : 'arrow-up';
   const iconColor = isPositive ? '#fff' : '#EF4444';
@@ -11,7 +17,11 @@ export default function PingHistoryItemView({ item }: { item: TransactionViewMod
   const label = item.displayLabel || item.type;
 
   return (
-    <View className="mr-4 w-[280px] rounded-2xl border border-gray-300 bg-white p-4">
+    <TouchableOpacity
+      disabled={!onPress}
+      onPress={onPress}
+      activeOpacity={0.7}
+      className="mr-4 w-[280px] rounded-2xl border border-gray-300 bg-white p-4">
       <View className="mb-1 flex-row items-center justify-between">
         <Text className="text-xs text-gray-400">{formatDate(item.timestamp)}</Text>
         <View className={`ml-2 h-7 w-7 items-center justify-center rounded-full ${iconBackground}`}>
@@ -25,7 +35,7 @@ export default function PingHistoryItemView({ item }: { item: TransactionViewMod
       <Text className={`mt-1 text-lg font-semibold ${amountColor}`}>
         {item.formattedAmount}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 

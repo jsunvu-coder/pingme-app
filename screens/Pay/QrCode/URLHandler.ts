@@ -54,6 +54,7 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
     // ---------- Handle /claim ----------
     if (path === '/claim') {
       const lockboxSalt = url.searchParams.get('lockboxSalt');
+      const username = url.searchParams.get('username') ?? url.searchParams.get('email') ?? undefined;
       if (!lockboxSalt) {
         console.warn('⚠️ Missing lockboxSalt in claim URL');
         showError({
@@ -63,8 +64,8 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
         return;
       }
 
-      console.log('📦 Navigating to ClaimPaymentScreen:', { lockboxSalt });
-      push('ClaimPaymentScreen', { lockboxSalt });
+      console.log('📦 Navigating to ClaimPaymentScreen:', { lockboxSalt, username });
+      push('ClaimPaymentScreen', { lockboxSalt, username });
       return;
     }
 

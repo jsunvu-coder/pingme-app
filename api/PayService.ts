@@ -9,6 +9,7 @@ import { BalanceService } from 'business/services/BalanceService';
 import { SKIP_PASSPHRASE, APP_URL } from 'business/Config';
 import { RecordService } from 'business/services/RecordService';
 import { AccountDataService } from 'business/services/AccountDataService';
+import { LockboxMetadataStorage } from 'business/services/LockboxMetadataStorage';
 
 export class PayService {
   private static instance: PayService;
@@ -178,6 +179,16 @@ export class PayService {
             nextCommitment,
             sender ?? ''
           );
+
+          try {
+            await LockboxMetadataStorage.upsert(sender ?? '', lockboxCommitment, {
+              lockboxSalt,
+              passphrase,
+              recipient_email: username,
+            });
+          } catch (e) {
+            console.warn('⚠️ Failed to persist lockbox metadata', e);
+          }
 
           setTxHash(txHash);
           console.log('✅ [PayService] Payment success! TX Hash:', txHash);

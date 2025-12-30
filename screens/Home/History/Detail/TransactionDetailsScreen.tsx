@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import NavigationBar from 'components/NavigationBar';
@@ -8,10 +8,18 @@ import PrimaryButton from 'components/PrimaryButton';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
 import { Utils } from 'business/Utils';
+import { AccountDataService } from 'business/services/AccountDataService';
+import {
+  buildPayLink,
+  LockboxMetadata,
+  LockboxMetadataStorage,
+} from 'business/services/LockboxMetadataStorage';
 import { TransactionViewModel } from '../List/TransactionViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
 import SecondaryButton from 'components/ScondaryButton';
 import GhostButton from 'components/GhostButton';
+import CopyIcon from 'assets/CopyIcon';
+import * as Clipboard from 'expo-clipboard';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -73,10 +81,32 @@ export default function TransactionDetailsScreen() {
   const [fetchingDetail, setFetchingDetail] = useState(false);
   const [reclaiming, setReclaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localMeta, setLocalMeta] = useState<LockboxMetadata | null>(null);
 
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const lockboxCommitment = transaction?.lockboxCommitment;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!lockboxCommitment) {
+          if (!cancelled) setLocalMeta(null);
+          return;
+        }
+        const userEmail = AccountDataService.getInstance().email ?? '';
+        const meta = await LockboxMetadataStorage.get(userEmail, lockboxCommitment);
+        if (!cancelled) setLocalMeta(meta);
+      } catch (e) {
+        console.warn('⚠️ Failed to load local lockbox metadata', e);
+        if (!cancelled) setLocalMeta(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lockboxCommitment]);
 
   const fetchLockboxDetail = useCallback(async () => {
     if (!lockboxCommitment) {
@@ -121,6 +151,19 @@ export default function TransactionDetailsScreen() {
 
   const statusMeta = STATUS_META[lockboxStatus];
   const showStatusRow = !!lockboxDetail && !error;
+  const localPayLink = localMeta
+    ? buildPayLink(localMeta.lockboxSalt, localMeta.recipient_email)
+    : null;
+  const handleCopyPayLink = useCallback(async () => {
+    if (!localPayLink) return;
+    try {
+      await Clipboard.setStringAsync(localPayLink);
+      showFlashMessage({ message: 'Copied' });
+    } catch (e) {
+      console.warn('Failed to copy pay link:', e);
+      showFlashMessage({ message: 'Copy failed', type: 'warning' });
+    }
+  }, [localPayLink]);
 
   const createdSeconds =
     Number(lockboxDetail?.createTime ?? 0) > 0
@@ -198,6 +241,29 @@ export default function TransactionDetailsScreen() {
                 <Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />
               }
             />
+          ) : null}
+          {localPayLink ? (
+            <View className="mb-6 flex-row items-center justify-between">
+              <Text className="mb-1 text-[15px] text-[#909090]">Pay link</Text>
+              <View className="min-w-0 flex-1 flex-row items-center justify-end">
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
+                  className="w-2/3 min-w-0 text-right text-[16px] text-[#0F0F0F]">
+                  {localPayLink}
+                </Text>
+
+                <TouchableOpacity
+                  className="ml-3 active:opacity-80"
+                  onPress={handleCopyPayLink}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <CopyIcon />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+          {localMeta ? (
+            <DetailRow label="Passphrase" value={localMeta.passphrase || '-'} autoAdjustFontSize />
           ) : null}
         </View>
 

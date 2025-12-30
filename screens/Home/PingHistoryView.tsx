@@ -88,7 +88,15 @@ export default function PingHistoryView() {
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
           {history.map((item, i) => (
-            <PingHistoryItemView key={`${item.txHash}-${i}`} item={item} />
+            <PingHistoryItemView
+              key={`${item.txHash}-${i}`}
+              item={item}
+              onPress={() =>
+                push('TransactionDetailsScreen', {
+                  transaction: item,
+                })
+              }
+            />
           ))}
         </ScrollView>
       )}
