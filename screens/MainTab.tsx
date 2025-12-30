@@ -29,14 +29,14 @@ export default function MainTab() {
           });
         }, 1000);
 
-        shareTimer = setTimeout(() => {
-          push('ShareScreen', {
-            mode: 'claimed',
-            amountUsdStr: pending.amountUsdStr,
-            from: pending.from,
-            action: 'claim',
-          });
-        }, 3000);
+        // shareTimer = setTimeout(() => {
+        //   push('ShareScreen', {
+        //     mode: 'claimed',
+        //     amountUsdStr: pending.amountUsdStr,
+        //     from: pending.from,
+        //     action: 'claim',
+        //   });
+        // }, 3000);
       }
     }, 0);
 

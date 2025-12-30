@@ -18,8 +18,13 @@ type PaymentLinkParams = {
 
 export default function PaymentLinkCreatedScreen() {
   const route = useRoute();
-  const { payLink, amount, duration, passphrase, linkType: rawLinkType } =
-    (route.params as PaymentLinkParams) || {};
+  const {
+    payLink,
+    amount,
+    duration,
+    passphrase,
+    linkType: rawLinkType,
+  } = (route.params as PaymentLinkParams) || {};
   const linkType: 'payment' | 'request' =
     rawLinkType ?? (passphrase !== undefined ? 'payment' : 'request');
   const hasNavigated = useRef(false);
@@ -28,13 +33,13 @@ export default function PaymentLinkCreatedScreen() {
     const timer = setTimeout(() => {
       if (hasNavigated.current) return;
       hasNavigated.current = true;
-      push('ShareScreen', {
-        amount,
-        duration,
-        action: linkType === 'request' ? 'request' : 'link',
-        linkType,
-        closeToRoot: false,
-      });
+      // push('ShareScreen', {
+      //   amount,
+      //   duration,
+      //   action: linkType === 'request' ? 'request' : 'link',
+      //   linkType,
+      //   closeToRoot: false,
+      // });
     }, 3000);
 
     return () => clearTimeout(timer);

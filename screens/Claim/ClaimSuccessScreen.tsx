@@ -33,12 +33,12 @@ export default function ClaimSuccessScreen() {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         hasNavigated.current = true;
-        push('ShareScreen', {
-          mode: 'claimed',
-          amountUsdStr: displayAmount,
-          from,
-          action: 'claim',
-        });
+        // push('ShareScreen', {
+        //   mode: 'claimed',
+        //   amountUsdStr: displayAmount,
+        //   from,
+        //   action: 'claim',
+        // });
       }
     }, autoShareDelayMs);
 

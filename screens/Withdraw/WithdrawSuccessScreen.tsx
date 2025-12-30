@@ -36,12 +36,12 @@ export default function WithdrawSuccessScreen() {
     const timer = setTimeout(() => {
       if (hasNavigated.current) return;
       hasNavigated.current = true;
-      push('ShareScreen', {
-        amount: Number(amount) || 0,
-        duration: 2,
-        action: 'withdraw',
-        closeToRoot: false,
-      });
+      // push('ShareScreen', {
+      //   amount: Number(amount) || 0,
+      //   duration: 2,
+      //   action: 'withdraw',
+      //   closeToRoot: false,
+      // });
     }, 2000);
 
     return () => clearTimeout(timer);
