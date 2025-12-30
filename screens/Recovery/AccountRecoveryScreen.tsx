@@ -91,10 +91,10 @@ export default function AccountRecoveryScreen() {
 
         const globals = Utils.getSessionObject(GLOBALS);
         const saltHex = globals?.[GLOBAL_SALT];
-        const rvProof = CryptoUtils.globalHash2(cr.input_data, saltHex);
-        if (!rvProof) throw new Error('Failed to compute recovery proof.');
-        const rvCommit = CryptoUtils.globalHash(rvProof);
-        if (!rvCommit) throw new Error('Failed to compute recovery commitment.');
+        if (!saltHex || !CryptoUtils.isHex(saltHex) || saltHex.length !== 66) {
+          throw new Error('Missing GLOBAL_SALT');
+        }
+        const rvCommit = CryptoUtils.recoveryVaultCommitmentFromInputData(cr.input_data, saltHex);
 
         const storageKeyHash = CryptoUtils.globalHash(rvCommit);
         const storageKey = `recoveryCode:${storageKeyHash ?? rvCommit}`;
@@ -142,10 +142,10 @@ export default function AccountRecoveryScreen() {
       // Compute recovery commitment
       const globals = Utils.getSessionObject(GLOBALS);
       const saltHex = globals?.[GLOBAL_SALT];
-      const rvProof = CryptoUtils.globalHash2(cr.input_data, saltHex);
-      if (!rvProof) throw new Error('Failed to compute recovery proof');
-      const rvCommitment = CryptoUtils.globalHash(rvProof);
-      if (!rvCommitment) throw new Error('Failed to compute recovery commitment');
+      if (!saltHex || !CryptoUtils.isHex(saltHex) || saltHex.length !== 66) {
+        throw new Error('Missing GLOBAL_SALT');
+      }
+      const rvCommitment = CryptoUtils.recoveryVaultCommitmentFromInputData(cr.input_data, saltHex);
 
       // Generate recovery code and derive keys
       const code = CryptoUtils.randomString(50);

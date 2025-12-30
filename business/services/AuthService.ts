@@ -194,21 +194,15 @@ export class AuthService {
       const newCommitment = CryptoUtils.globalHash(newProof);
       if (!newCommitment) throw new Error('Failed to generate new commitment.');
 
-      const rvProof = CryptoUtils.globalHash2(
-        cr.input_data,
-        Utils.getSessionObject(GLOBALS)[GLOBAL_SALT]
-      );
-      if (!rvProof) throw new Error('Failed to generate recovery proof.');
-      const rvCommitment = CryptoUtils.globalHash(rvProof);
-      if (!rvCommitment) throw new Error('Failed to generate recovery commitment.');
-      const rvNewCommitmentInput = CryptoUtils.globalHash2(
-        newInputData,
-        Utils.getSessionObject(GLOBALS)[GLOBAL_SALT]
-      );
-      if (!rvNewCommitmentInput)
-        throw new Error('Failed to generate recovery new commitment input.');
-      const rvNewCommitment = CryptoUtils.globalHash(rvNewCommitmentInput);
-      if (!rvNewCommitment) throw new Error('Failed to generate recovery new commitment.');
+      const globalSaltHex = Utils.getSessionObject(GLOBALS)[GLOBAL_SALT];
+      if (!globalSaltHex || !CryptoUtils.isHex(globalSaltHex) || globalSaltHex.length !== 66) {
+        throw new Error('Missing GLOBAL_SALT');
+      }
+
+      const rvProof = CryptoUtils.globalHash2Raw(cr.input_data, globalSaltHex);
+      const rvCommitment = CryptoUtils.globalHashWithSalt(rvProof, globalSaltHex);
+      const rvNewProof = CryptoUtils.globalHash2Raw(newInputData, globalSaltHex);
+      const rvNewCommitment = CryptoUtils.globalHashWithSalt(rvNewProof, globalSaltHex);
 
       const hasSalt = await this.contractService.hasSalt(newSalt);
       if (hasSalt.has_salt) throw new Error(CREDENTIALS_ALREADY_EXISTS);

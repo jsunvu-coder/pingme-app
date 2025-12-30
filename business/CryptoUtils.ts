@@ -20,6 +20,56 @@ export class CryptoUtils {
     copy.set(view);
     return copy.buffer;
   }
+
+  /**
+   * Deterministic global hash: keccak256(solidityPacked([data, globalSalt])).
+   * - `hexData` is `0x...` bytes or bytes32.
+   * - `globalSaltHex` must be a `0x...` bytes32.
+   */
+  static globalHashWithSalt(hexData: string, globalSaltHex: string): string {
+    if (!CryptoUtils.isHex(hexData)) throw new Error(NOT_HEX);
+    if (!CryptoUtils.isHex(globalSaltHex) || globalSaltHex.length !== 66) {
+      throw new Error('globalSaltHex must be a bytes32 hex string');
+    }
+
+    const dataType = hexData.length === 66 ? 'bytes32' : 'bytes';
+    const packed = solidityPacked([dataType, 'bytes32'], [hexData, globalSaltHex]);
+    return keccak256(packed);
+  }
+
+  /**
+   * Deterministic salted hash: keccak256(solidityPacked([data, salt])).
+   * - `hexData` is `0x...` bytes
+   * - `hexSalt` must be a `0x...` bytes32
+   */
+  static globalHash2Raw(hexData: string, hexSalt: string): string {
+    if (!CryptoUtils.isHex(hexData)) throw new Error(NOT_HEX);
+    if (!CryptoUtils.isHex(hexSalt) || hexSalt.length !== 66) {
+      throw new Error('hexSalt must be a bytes32 hex string');
+    }
+    const packed = solidityPacked(['bytes', 'bytes32'], [hexData, hexSalt]);
+    return keccak256(packed);
+  }
+
+  /**
+   * Recovery-vault commitment per spec:
+   * commitment = globalHash(globalHash2(input_data, GLOBAL_SALT))
+   * where input_data = bytes("email:password")
+   */
+  static recoveryVaultCommitmentFromInputData(inputDataHex: string, globalSaltHex: string): string {
+    const proof = CryptoUtils.globalHash2Raw(inputDataHex, globalSaltHex);
+    return CryptoUtils.globalHashWithSalt(proof, globalSaltHex);
+  }
+
+  static recoveryVaultCommitmentFromCredentials(
+    email: string,
+    password: string,
+    globalSaltHex: string
+  ): string {
+    const inputDataHex = CryptoUtils.strToHex2(email, password);
+    return CryptoUtils.recoveryVaultCommitmentFromInputData(inputDataHex, globalSaltHex);
+  }
+
   static globalHash(hexData: string): string | null {
     if (!CryptoUtils.isHex(hexData)) {
       throw new Error(NOT_HEX);

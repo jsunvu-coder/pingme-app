@@ -1,4 +1,5 @@
 import { CryptoUtils } from 'business/CryptoUtils';
+import { keccak256, solidityPacked } from 'ethers';
 
 // Mock crypto.getRandomValues for deterministic tests
 const mockRandomValues = jest.fn((arr: Uint8Array) => {
@@ -138,6 +139,34 @@ describe('CryptoUtils', () => {
 
       expect(result).toEqual(bytes);
       expect(CryptoUtils.isHex(hex)).toBe(true);
+    });
+  });
+
+  describe('deterministic keccak helpers', () => {
+    const globalSaltHex = '0x' + '11'.repeat(32);
+
+    it('globalHash2Raw should match keccak256(solidityPacked([data, salt]))', () => {
+      const dataHex = CryptoUtils.strToHex('email:password');
+      const expected = keccak256(solidityPacked(['bytes', 'bytes32'], [dataHex, globalSaltHex]));
+      expect(CryptoUtils.globalHash2Raw(dataHex, globalSaltHex)).toBe(expected);
+    });
+
+    it('globalHashWithSalt should match keccak256(solidityPacked([data, GLOBAL_SALT]))', () => {
+      const dataHex = '0x1234';
+      const expected = keccak256(solidityPacked(['bytes', 'bytes32'], [dataHex, globalSaltHex]));
+      expect(CryptoUtils.globalHashWithSalt(dataHex, globalSaltHex)).toBe(expected);
+    });
+
+    it('recoveryVaultCommitmentFromInputData should match the spec formula', () => {
+      const inputDataHex = CryptoUtils.strToHex2('alice@example.com', 'pw123');
+      const proof = keccak256(solidityPacked(['bytes', 'bytes32'], [inputDataHex, globalSaltHex]));
+      const expectedCommitment = keccak256(
+        solidityPacked(['bytes32', 'bytes32'], [proof, globalSaltHex])
+      );
+
+      expect(CryptoUtils.recoveryVaultCommitmentFromInputData(inputDataHex, globalSaltHex)).toBe(
+        expectedCommitment
+      );
     });
   });
 
