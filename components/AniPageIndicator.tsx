@@ -14,8 +14,6 @@ type Props = {
 };
 
 export default function AniPageIndicator({ scrollX, length }: Props) {
-  console.log('length', length);
-  console.log('Array.from({ length: length })', Array.from({ length: length }));
   return (
     <View className="mt-4 flex-row items-center justify-center gap-x-2">
       {Array.from({ length: length }).map((_, index) => (
@@ -31,7 +29,6 @@ function IndicatorDot({ position, scrollX }: { position: number; scrollX: Shared
     const activeIndex = scrollX.value / width;
     const inputRange = [position - 2, position - 1, position, position + 1, position + 2];
     const dotWidth = interpolate(activeIndex, inputRange, [8, 8, 32, 8, 8]);
-    console.log('dotWidth', dotWidth);
     return {
       width: dotWidth,
       backgroundColor: interpolateColor(activeIndex, inputRange, [
