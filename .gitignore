@@ -19,3 +19,33 @@ web-build/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+
+
+# Fastlane
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+**/fastlane/.env
+
+# Google Play service account JSON
+google-play-service-account.json
+
+# Keystore files (keep structure but ignore actual keystores)
+android-keystore/*.jks
+android-keystore/*.keystore
+!android-keystore/.gitkeep
+
+# Android build artifacts
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+
+
+# iOS build artifacts
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/

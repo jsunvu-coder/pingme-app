@@ -1,0 +1,12 @@
+# Appfile for iOS
+# More information: https://docs.fastlane.tools/advanced/#appfile
+
+app_identifier("xyz.pingme.app") # The bundle identifier of your app
+apple_id("jsun.vu@hailstonelab.com") # Your Apple email address
+
+itc_team_id("BMN9N6C39P") # App Store Connect Team ID
+team_id("BMN9N6C39P") # Apple Developer Portal Team ID
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
+

@@ -53,7 +53,7 @@ module.exports = {
           'x-com.twitter.android',
         ],
       },
-      appleTeamId: '698L9G9LDH',
+      appleTeamId: 'BMN9N6C39P',
     },
     android: {
       versionCode: 1,

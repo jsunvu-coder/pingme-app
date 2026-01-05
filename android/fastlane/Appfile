@@ -1,0 +1,6 @@
+# Appfile for Android
+# More information: https://docs.fastlane.tools/advanced/#appfile
+
+json_key_file("../google-play-service-account.json") # Path to the json secret file - Follow https://docs.fastlane.tools/getting-started/android/setup/#collect-your-google-credentials
+package_name("xyz.pingme.app") # e.g. com.krausefx.app
+
