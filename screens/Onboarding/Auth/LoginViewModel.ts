@@ -10,6 +10,8 @@ import { hasTranslation, t } from 'i18n';
 import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
+import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
+import { keyboardRecoveryService } from 'business/services/KeyboardRecoveryService';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | 'Biometric Authentication' | null;
 
@@ -167,12 +169,15 @@ export class LoginViewModel {
   async logout() {
     await this.clearStoredCredentials();
     try {
-      await AsyncStorage.clear();
+      const keys = await AsyncStorage.getAllKeys();
+      const keysToRemove = keys.filter((k) => !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX));
+      if (keysToRemove.length) await AsyncStorage.multiRemove(keysToRemove);
     } catch (err) {
       console.warn('⚠️ Failed to clear AsyncStorage on logout', err);
     }
     AuthService.getInstance().logout();
     push('SplashScreen');
+    void keyboardRecoveryService.recover();
   }
 
   handleSuccessfulLogin(
@@ -187,6 +192,11 @@ export class LoginViewModel {
       });
     }
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
+    // iOS: keychain/password-manager autofill can leave the keyboard in a bad state until app restart.
+    // This "focus + blur" recovery prevents the post-login "keyboard never shows" issue.
+    setTimeout(() => {
+      void keyboardRecoveryService.recover();
+    }, 250);
 
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {

@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import NavigationBar from 'components/NavigationBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import PrimaryButton from 'components/PrimaryButton';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
 import { Utils } from 'business/Utils';
@@ -16,7 +15,6 @@ import {
 } from 'business/services/LockboxMetadataStorage';
 import { TransactionViewModel } from '../List/TransactionViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
-import SecondaryButton from 'components/ScondaryButton';
 import GhostButton from 'components/GhostButton';
 import CopyIcon from 'assets/CopyIcon';
 import * as Clipboard from 'expo-clipboard';
@@ -165,6 +163,18 @@ export default function TransactionDetailsScreen() {
     }
   }, [localPayLink]);
 
+  const handleCopyPassphrase = useCallback(async () => {
+    const passphrase = localMeta?.passphrase;
+    if (!passphrase) return;
+    try {
+      await Clipboard.setStringAsync(passphrase);
+      showFlashMessage({ message: 'Copied' });
+    } catch (e) {
+      console.warn('Failed to copy passphrase:', e);
+      showFlashMessage({ message: 'Copy failed', type: 'warning' });
+    }
+  }, [localMeta?.passphrase]);
+
   const createdSeconds =
     Number(lockboxDetail?.createTime ?? 0) > 0
       ? Number(lockboxDetail?.createTime)
@@ -246,12 +256,14 @@ export default function TransactionDetailsScreen() {
             <View className="mb-6 flex-row items-center justify-between">
               <Text className="mb-1 text-[15px] text-[#909090]">Pay link</Text>
               <View className="min-w-0 flex-1 flex-row items-center justify-end">
-                <Text
-                  numberOfLines={1}
-                  ellipsizeMode="middle"
-                  className="w-2/3 min-w-0 text-right text-[16px] text-[#0F0F0F]">
-                  {localPayLink}
-                </Text>
+                <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                    className="min-w-0 text-right text-[16px]">
+                    {localPayLink}
+                  </Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   className="ml-3 active:opacity-80"
@@ -263,7 +275,25 @@ export default function TransactionDetailsScreen() {
             </View>
           ) : null}
           {localMeta ? (
-            <DetailRow label="Passphrase" value={localMeta.passphrase || '-'} autoAdjustFontSize />
+            <View className="mb-6 flex-row items-center justify-between">
+              <Text className="mb-1 text-[15px] text-[#909090]">Passphrase</Text>
+              <View className="min-w-0 flex-1 flex-row items-center justify-end">
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
+                  className="w-2/3 min-w-0 text-right text-[16px] text-[#0F0F0F]">
+                  {localMeta.passphrase || '-'}
+                </Text>
+
+                <TouchableOpacity
+                  className="ml-3 active:opacity-80"
+                  onPress={handleCopyPassphrase}
+                  disabled={!localMeta.passphrase}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <CopyIcon />
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : null}
         </View>
 

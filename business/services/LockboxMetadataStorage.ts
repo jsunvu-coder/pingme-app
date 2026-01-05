@@ -10,7 +10,9 @@ export type LockboxMetadata = {
 
 type LockboxMetadataMap = Record<string, LockboxMetadata>;
 
-const STORAGE_PREFIX = 'lockbox_metadata_v1:';
+export const LOCKBOX_METADATA_STORAGE_PREFIX = 'lockbox_metadata_v1:';
+const STORAGE_PREFIX = LOCKBOX_METADATA_STORAGE_PREFIX;
+const GLOBAL_STORAGE_KEY = `${STORAGE_PREFIX}global`;
 
 function normalizeEmail(email?: string | null): string {
   return (email ?? '').toString().trim().toLowerCase();
@@ -42,10 +44,29 @@ export function buildPayLink(lockboxSalt: string, recipientEmail?: string): stri
 
 export const LockboxMetadataStorage = {
   async get(userEmail: string, lockboxCommitment: string): Promise<LockboxMetadata | null> {
-    const key = storageKeyForUser(userEmail);
-    const raw = await AsyncStorage.getItem(key);
-    const map = safeParseMap(raw);
-    return map[lockboxCommitment] ?? null;
+    // Device-global storage so metadata survives logout and user switches.
+    const rawGlobal = await AsyncStorage.getItem(GLOBAL_STORAGE_KEY);
+    const globalMap = safeParseMap(rawGlobal);
+    const fromGlobal = globalMap[lockboxCommitment];
+    if (fromGlobal) return fromGlobal;
+
+    // Backward-compatible read: older builds stored per-user.
+    const legacyKey = storageKeyForUser(userEmail);
+    const rawLegacy = await AsyncStorage.getItem(legacyKey);
+    const legacyMap = safeParseMap(rawLegacy);
+    const fromLegacy = legacyMap[lockboxCommitment] ?? null;
+    if (!fromLegacy) return null;
+
+    // Migrate to global for future lookups.
+    await AsyncStorage.setItem(
+      GLOBAL_STORAGE_KEY,
+      JSON.stringify({
+        ...globalMap,
+        [lockboxCommitment]: fromLegacy,
+      })
+    );
+
+    return fromLegacy;
   },
 
   async upsert(
@@ -53,8 +74,8 @@ export const LockboxMetadataStorage = {
     lockboxCommitment: string,
     payload: Omit<LockboxMetadata, 'updatedAtMs'>
   ): Promise<void> {
-    const key = storageKeyForUser(userEmail);
-    const raw = await AsyncStorage.getItem(key);
+    void userEmail;
+    const raw = await AsyncStorage.getItem(GLOBAL_STORAGE_KEY);
     const map = safeParseMap(raw);
 
     map[lockboxCommitment] = {
@@ -62,7 +83,6 @@ export const LockboxMetadataStorage = {
       updatedAtMs: Date.now(),
     };
 
-    await AsyncStorage.setItem(key, JSON.stringify(map));
+    await AsyncStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(map));
   },
 };
-

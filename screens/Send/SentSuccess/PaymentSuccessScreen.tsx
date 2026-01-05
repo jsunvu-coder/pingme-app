@@ -41,13 +41,13 @@ export default function PaymentSuccessScreen() {
     const timer = setTimeout(() => {
       if (!hasNavigated.current) {
         hasNavigated.current = true;
-        push('ShareScreen', {
-          amount,
-          duration,
-          recipient,
-          txHash,
-          action: 'send',
-        });
+        // push('ShareScreen', {
+        //   amount,
+        //   duration,
+        //   recipient,
+        //   txHash,
+        //   action: 'send',
+        // });
       }
     }, 5000);
 

@@ -206,13 +206,11 @@ export default function WithdrawScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-white"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View className="flex-1 bg-white">
-          <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View className="flex-1 bg-white">
+        <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
 
+        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
             ref={scrollRef}
             className="flex-1 px-6"
@@ -273,18 +271,18 @@ export default function WithdrawScreen() {
               </View>
             </View>
           </ScrollView>
+        </KeyboardAvoidingView>
 
-          <View className="px-6 pb-6">
-            <PrimaryButton
-              title={t('WITHDRAW')}
-              onPress={handleWithdraw}
-              loading={loading}
-              loadingText={t('PROCESSING')}
-            />
-            <SafeAreaView edges={['bottom']} />
-          </View>
+        <View className="px-6 pb-6">
+          <PrimaryButton
+            title={t('WITHDRAW')}
+            onPress={handleWithdraw}
+            loading={loading}
+            loadingText={t('PROCESSING')}
+          />
+          <SafeAreaView edges={['bottom']} />
         </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }

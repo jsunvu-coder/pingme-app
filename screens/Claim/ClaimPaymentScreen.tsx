@@ -22,11 +22,13 @@ export default function ClaimPaymentScreen() {
     setPassphrase,
     loading,
     lockbox,
+    lockboxProof,
     verifyError,
     derivedStatus,
     statusColorClass,
     headerSubtitle,
     handleVerify,
+    handleClaim,
     username,
     lockboxSalt,
   } = useClaimPayment();
@@ -88,7 +90,9 @@ export default function ClaimPaymentScreen() {
             status={derivedStatus}
             loading={loading}
             onVerify={handleVerify}
+            onClaim={handleClaim}
             onBack={handleBack}
+            hasLockbox={!!lockbox && !!lockboxProof}
           />
         </View>
       </ScrollView>

@@ -36,7 +36,7 @@ export const setRootScreen = (items: (string | { name: string; params?: any })[]
   );
 
   navigationRef.reset({
-    index: 0,
+    index: Math.max(0, routes.length - 1),
     routes,
   });
 };

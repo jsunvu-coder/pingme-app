@@ -1,4 +1,4 @@
-import { navigationRef, push, replace, setRootScreen } from 'navigation/Navigation';
+import { navigationRef, presentOverMain, push, replace, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
 
@@ -100,7 +100,7 @@ class DeepLinkHandler {
         if (!isLoggedIn) {
           console.log('[DeepLinkHandler] Not logged in → save pending URL & open AuthScreen');
           this.setPendingURL(url);
-          setRootScreen(['AuthScreen']);
+          setRootScreen([{ name: 'AuthScreen', params: { mode: 'login' } }]);
           return;
         }
 
@@ -158,7 +158,8 @@ class DeepLinkHandler {
         if (!isLoggedIn) {
           this.setPendingURL(url);
           console.log(`[DeepLinkHandler] Not logged in → AuthScreen (${path})`);
-          push('AuthScreen', { mode: 'login' });
+          // Ensure we always surface the login screen even if the user is deep in another flow.
+          setRootScreen([{ name: 'AuthScreen', params: { mode: 'login' } }]);
           return;
         }
 
@@ -200,13 +201,42 @@ class DeepLinkHandler {
   }
 
   private navigatePay(params: Record<string, string>) {
-    console.log('[DeepLinkHandler] Navigating to SendConfirmationScreen', params);
-    push('SendConfirmationScreen', params);
+    const amount = params.amount;
+    const token = params.token;
+    const recipient = params.requester ?? params.recipient ?? params.email ?? params.requestee;
+
+    const payload = {
+      amount,
+      token,
+      recipient,
+      channel: 'Email',
+    };
+
+    console.log('[DeepLinkHandler] Navigating to SendConfirmationScreen', payload);
+    this.clearPendingURL();
+
+    const isPayOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'SendConfirmationScreen';
+    if (isPayOnTop) {
+      replace('SendConfirmationScreen', payload);
+      return;
+    }
+
+    // Always surface the send flow, even if the user is currently deep in another stack.
+    presentOverMain('SendConfirmationScreen', payload);
   }
 
   private navigatePayQr(params: Record<string, string>) {
     console.log('[DeepLinkHandler] Navigating to PayQrConfirmationScreen', params);
-    push('PayQrConfirmationScreen', params);
+    this.clearPendingURL();
+    const isPayQrOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'PayQrConfirmationScreen';
+    if (isPayQrOnTop) {
+      replace('PayQrConfirmationScreen', params);
+      return;
+    }
+
+    presentOverMain('PayQrConfirmationScreen', params);
   }
 }
 

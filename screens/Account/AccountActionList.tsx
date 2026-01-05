@@ -9,6 +9,7 @@ import { AccountDataService } from 'business/services/AccountDataService';
 import { ENV_STORAGE_KEY, getEnv, loadEnvFromStorage, setEnv } from 'business/Config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginViewModel } from 'screens/Onboarding/Auth/LoginViewModel';
+import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
 
 const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
@@ -51,7 +52,11 @@ export default function AccountActionList() {
     try {
       const preservedEnv = await AsyncStorage.getItem(ENV_STORAGE_KEY);
       await AuthService.getInstance().logout();
-      await AsyncStorage.clear();
+      const keys = await AsyncStorage.getAllKeys();
+      const keysToRemove = keys.filter(
+        (k) => k !== ENV_STORAGE_KEY && !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX)
+      );
+      if (keysToRemove.length) await AsyncStorage.multiRemove(keysToRemove);
       if (preservedEnv) {
         await AsyncStorage.setItem(ENV_STORAGE_KEY, preservedEnv);
       }

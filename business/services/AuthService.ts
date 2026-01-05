@@ -308,6 +308,38 @@ export class AuthService {
     }
   }
 
+  /**
+   * Claims a lockbox using the currently cached login-derived crypto (salt + balance commitment).
+   * This avoids forcing a re-login when the user is already signed in.
+   */
+  async claimWithCurrentCrypto(lockboxProof: string): Promise<void> {
+    const cr = this.contractService.getCrypto();
+    if (!cr?.salt || !cr?.commitment) {
+      throw new Error('Missing cached credentials for claim.');
+    }
+
+    const lockboxProofHash = CryptoUtils.globalHash(lockboxProof);
+    if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
+    const saltHash = CryptoUtils.globalHash(cr.salt);
+    if (!saltHash) throw new Error('Failed to generate salt hash.');
+    const commitmentHash = CryptoUtils.globalHash(cr.commitment);
+    if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
+
+    await this.commitProtect(
+      () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment),
+      lockboxProofHash,
+      saltHash,
+      commitmentHash
+    );
+
+    try {
+      await this.balanceService.getBalance();
+      this.recordService.updateRecord();
+    } catch (refreshErr) {
+      console.warn('⚠️ [AuthService] Failed to refresh balance after claim', refreshErr);
+    }
+  }
+
   // ---------- Signup ----------
   async signup(username: string, password: string, lockboxProof: string): Promise<boolean> {
     try {

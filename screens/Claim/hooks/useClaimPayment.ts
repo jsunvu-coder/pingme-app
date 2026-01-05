@@ -3,8 +3,11 @@ import { useRoute } from '@react-navigation/native';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { Utils } from 'business/Utils';
 import { ContractService } from 'business/services/ContractService';
+import { AuthService } from 'business/services/AuthService';
+import { shareFlowService } from 'business/services/ShareFlowService';
 import { solidityPacked } from 'ethers';
 import { push } from 'navigation/Navigation';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export type LockboxStatus = 'OPEN' | 'EXPIRED' | 'CLAIMED' | 'RECLAIMED' | 'UNKNOWN';
 
@@ -21,12 +24,14 @@ export interface ClaimPaymentParams {
   lockboxSalt?: string;
   code?: string;
   paymentId?: string;
+  onClaimSuccess?: () => void;
 }
 
 export const useClaimPayment = () => {
   const route = useRoute<any>();
   const params = useMemo(() => route?.params ?? {}, [route?.params]);
-  const { username, lockboxSalt, code, paymentId, ...restParams } = params as ClaimPaymentParams;
+  const { username, lockboxSalt, code, paymentId, onClaimSuccess, ...restParams } =
+    params as ClaimPaymentParams;
 
   const [passphrase, setPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,6 +40,7 @@ export const useClaimPayment = () => {
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const contractService = useMemo(() => ContractService.getInstance(), []);
+  const authService = useMemo(() => AuthService.getInstance(), []);
 
   // Validate deep link params
   useEffect(() => {
@@ -113,6 +119,67 @@ export const useClaimPayment = () => {
     }
   };
 
+  const amountUsdStrFromLockbox = (lb?: LockboxData | null) => {
+    try {
+      if (!lb?.amount) return undefined;
+      const formatted = Utils.formatMicroToUsd(lb.amount, undefined, {
+        grouping: true,
+        empty: '',
+      });
+      return formatted || undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const handleClaim = useCallback(async () => {
+    const proof = lockboxProof;
+    if (!proof) {
+      showFlashMessage({
+        title: 'Claim failed',
+        message: 'Missing lockbox proof. Please verify the passphrase again.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      const amountUsdStr = amountUsdStrFromLockbox(lockbox);
+
+      const isLoggedIn = await authService.isLoggedIn();
+      if (!isLoggedIn) {
+        push('AuthScreen', {
+          mode: 'login',
+          headerFull: true,
+          lockboxProof: proof,
+          amountUsdStr,
+          from: 'login',
+        });
+        return;
+      }
+
+      await authService.claimWithCurrentCrypto(proof);
+      if (typeof onClaimSuccess === 'function') {
+        shareFlowService.setPendingClaim({ amountUsdStr, from: 'login' });
+        onClaimSuccess();
+      } else {
+        push('ClaimSuccessScreen', { amountUsdStr, from: 'login' });
+      }
+    } catch (err: any) {
+      console.error('❌ Claim failed:', err);
+      showFlashMessage({
+        title: 'Claim failed',
+        message: err?.response?.data?.message || err?.message || 'Unable to claim payment',
+        type: 'danger',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [authService, loading, lockbox, lockboxProof, onClaimSuccess]);
+
   // Verify passphrase and get lockbox data
   const handleVerify = async () => {
     const normalizedPassphrase = passphrase.trim();
@@ -120,7 +187,9 @@ export const useClaimPayment = () => {
       console.log('⚠️ Passphrase empty – attempting claim with blank value');
     }
 
+    let phase: 'verify' | 'claim' = 'verify';
     try {
+      if (loading) return;
       setLoading(true);
       setVerifyError(null);
       setLockbox(null);
@@ -150,31 +219,45 @@ export const useClaimPayment = () => {
       console.log('✅ getLockbox response:', ret);
       setLockbox(ret);
 
-      if (ret.status === 0) {
-        const amountUsdStr = (() => {
-          try {
-            if (!ret.amount) return undefined;
-            const formatted = Utils.formatMicroToUsd(ret.amount, undefined, {
-              grouping: true,
-              empty: '',
-            });
-            return formatted || undefined;
-          } catch {
-            return undefined;
-          }
-        })();
+      if (ret.status !== 0) return;
 
-        push('AuthScreen', {
-          mode: 'login',
-          headerFull: true,
-          lockboxProof: finalProof,
-          amountUsdStr,
-          from: 'login',
-        });
+      const amountUsdStr = amountUsdStrFromLockbox(ret);
+
+      const unlockTime = Number(ret.unlockTime ?? 0);
+      const currentTime = Number(ret.currentTime ?? 0);
+      const isOpen = unlockTime > currentTime;
+      if (!isOpen) return;
+
+      const isLoggedIn = await authService.isLoggedIn();
+      if (isLoggedIn) {
+        phase = 'claim';
+        await authService.claimWithCurrentCrypto(finalProof);
+        if (typeof onClaimSuccess === 'function') {
+          shareFlowService.setPendingClaim({ amountUsdStr, from: 'login' });
+          onClaimSuccess();
+        } else {
+          push('ClaimSuccessScreen', { amountUsdStr, from: 'login' });
+        }
+        return;
       }
+
+      push('AuthScreen', {
+        mode: 'login',
+        headerFull: true,
+        lockboxProof: finalProof,
+        amountUsdStr,
+        from: 'login',
+      });
     } catch (err: any) {
       console.error('❌ Verify failed:', err);
-      setVerifyError('Incorrect passphrase, please try again');
+      showFlashMessage({
+        title: 'Claim failed',
+        message: err?.response?.data?.message || err?.message || 'Unable to claim payment',
+        type: 'danger',
+      });
+      if (phase === 'verify') {
+        setVerifyError('Incorrect passphrase, please try again');
+      }
     } finally {
       setLoading(false);
     }
@@ -204,6 +287,7 @@ export const useClaimPayment = () => {
 
     // Actions
     handleVerify,
+    handleClaim,
     formatUsdFromLockbox,
 
     // Params
