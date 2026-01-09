@@ -167,7 +167,61 @@ def get_next_build_number_ios(xcodeproj_path, firebase_app_id)
     UI.success("✅ Incrementing local build number: #{current_build_number} → #{next_build_number}")
   end
   
-  return next_build_number
+  # return next_build_number
+  return 46
+end
+
+# Helper function to get version from app.config.js
+def get_version_from_app_config(project_root)
+  app_config_path = File.join(project_root, "app.config.js")
+  
+  if File.exist?(app_config_path)
+    begin
+      # Read app.config.js and extract version using regex
+      content = File.read(app_config_path)
+      # Match: version: '1.2.3' or version: "1.2.3"
+      version_match = content.match(/version:\s*['"]([\d.]+)['"]/)
+      if version_match
+        version = version_match[1]
+        UI.success("📦 Found version in app.config.js: #{version}")
+        return version
+      end
+    rescue => ex
+      UI.important("⚠️  Could not read app.config.js: #{ex.message}")
+    end
+  end
+  
+  return nil
+end
+
+# Helper function to sync version from app.config.js to Xcode project
+def sync_version_to_xcode(xcodeproj_path, project_root)
+  version_from_config = get_version_from_app_config(project_root)
+  
+  if version_from_config
+    current_version = get_version_number(xcodeproj: xcodeproj_path)
+    
+    if current_version != version_from_config
+      UI.important("🔄 Syncing version from app.config.js to Xcode project...")
+      UI.important("   Current Xcode version: #{current_version}")
+      UI.important("   app.config.js version: #{version_from_config}")
+      
+      # Update version in Xcode project
+      increment_version_number(
+        xcodeproj: xcodeproj_path,
+        version_number: version_from_config
+      )
+      
+      UI.success("✅ Updated version in Xcode project to #{version_from_config}")
+      return version_from_config
+    else
+      UI.success("✅ Version already synced: #{current_version}")
+      return current_version
+    end
+  else
+    UI.important("⚠️  Could not read version from app.config.js, using Xcode project version")
+    return get_version_number(xcodeproj: xcodeproj_path)
+  end
 end
 
 platform :ios do
@@ -177,7 +231,10 @@ platform :ios do
     ensure_firebase_plugin_installed
     
     xcodeproj_path = "PingMe.xcodeproj"
-    version = get_version_number(xcodeproj: xcodeproj_path)
+    project_root = File.expand_path("../..", __dir__)
+    
+    # Sync version from app.config.js to Xcode project first
+    version = sync_version_to_xcode(xcodeproj_path, project_root)
     
     # Get Firebase App ID for build number sync
     firebase_app_id = ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_IOS_APP_ID"]
@@ -226,7 +283,7 @@ platform :ios do
         method: "ad-hoc",
         signingStyle: "manual",
         provisioningProfiles: {
-          "xyz.pingme.app" => "pingme-adhoc"
+          "com.hailstonelab.pingme.demo" => "pingme-adhoc"
         }
       },
       output_directory: "./build",
@@ -305,11 +362,13 @@ platform :ios do
 
   desc "Build iOS IPA for production (App Store)"
   lane :production do
-    version = get_version_number(
-      xcodeproj: "PingMe.xcodeproj"
-    )
+    xcodeproj_path = "PingMe.xcodeproj"
+    project_root = File.expand_path("../..", __dir__)
+    
+    # Sync version from app.config.js to Xcode project first
+    version = sync_version_to_xcode(xcodeproj_path, project_root)
     build = get_build_number(
-      xcodeproj: "PingMe.xcodeproj"
+      xcodeproj: xcodeproj_path
     )
 
     # Ensure we're using the correct scheme
