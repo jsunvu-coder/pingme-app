@@ -101,7 +101,11 @@ export default function AccountRecoveryScreen() {
         if (isMounted) setRecoveryCodeStorageKey(storageKey);
 
         const ret = await contract.rvGetRecoveryPk(rvCommit);
+        if (ret === null) {
+          return;
+        }
         if (!isMounted) return;
+
         setRecoveryPk(ret?.recoveryPk ?? null);
 
         // If the app was restarted (e.g., user toggled permissions in Settings),
