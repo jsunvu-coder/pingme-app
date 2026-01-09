@@ -42,10 +42,12 @@ export const LOCKBOX_DURATION = 14; // 14 day
 // ####################################################
 export const TOKENS = {
   USDC: '0x32F62bDC2BE3E1B1C0265143831155253cd5A248',
+  pWMON: '0xd4873a2127C2cCA4d8Ed156d7fd96a5d7D8C2f1c',
 };
 
 export const TOKEN_NAMES = {
   USDC: 'USDC',
+  pWMON: 'pWMON',
 };
 
 export const EMAIL_KEY = 'lastEmail';
