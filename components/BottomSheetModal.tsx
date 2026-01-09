@@ -231,6 +231,7 @@ const BottomSheetModal = forwardRef<BottomSheetModalRef, BottomSheetModalProps>(
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
+                flexGrow: 1,
                 paddingBottom:
                   keyboardHeight > 0
                     ? Platform.OS === 'android'
