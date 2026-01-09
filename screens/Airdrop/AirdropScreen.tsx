@@ -51,13 +51,6 @@ function TokenCard({
     onWithdraw(tokenInfo);
   };
 
-  // Generate a color based on token name for the icon
-  const getTokenColor = (name: string) => {
-    if (name === 'USDC') return '#8B5CF6'; // Purple
-    if (name === 'pWMON') return '#6366F1'; // Indigo
-    return '#A855F7'; // Default purple
-  };
-
   return (
     <View className="mb-3 flex-row items-center rounded-2xl p-4">
       {/* Token Icon */}
@@ -74,9 +67,10 @@ function TokenCard({
         title={t('WITHDRAW', undefined, 'Withdraw')}
         onPress={handleWithdraw}
         disabled={!hasBalance}
+        fontWeight="bold"
         borderColor={hasBalance ? '#FD4912' : '#D1D5DB'}
         textColor={hasBalance ? '#0F0F0F' : '#909090'}
-        className="h-9 rounded-full border bg-white px-4 py-2"
+        className="h-9 rounded-full border-2 px-4 py-2"
       />
     </View>
   );
@@ -365,24 +359,6 @@ export default function AirdropScreen() {
             </Text>
           </View>
         )}
-
-        {/* TEST BUTTON - Remove after testing UI */}
-        {/* <TouchableOpacity
-          onPress={() => {
-            setSuccessData({
-              amount: '1000000000', // 1.00 token (in micro units)
-              tokenName: 'pWMON',
-              walletAddress: '0x1234567890123456789012345678901234567890',
-              txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-            });
-            setSuccessModalVisible(true);
-          }}
-          className="mt-8 rounded-full bg-[#FD4912] px-6 py-4"
-          activeOpacity={0.8}>
-          <Text className="text-center text-lg font-bold text-white">
-            [TEST] Show Success Modal
-          </Text>
-        </TouchableOpacity> */}
       </ScrollView>
 
       {/* Withdraw Bottom Sheet */}
