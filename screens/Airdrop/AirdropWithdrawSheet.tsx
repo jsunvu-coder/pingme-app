@@ -46,9 +46,10 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
 
     const displayWalletAddress = useMemo(() => {
       if (!walletAddress) return '';
-      // Show full address when focused, truncated when not focused
-      if (isFocused || loading) return walletAddress;
-      // Truncate when not focused
+      // Show full address only when focused AND not loading
+      // When loading, always truncate (even if focused)
+      if (isFocused) return walletAddress;
+      // Truncate when not focused or loading
       if (walletAddress.length <= 10) return walletAddress;
       return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
     }, [walletAddress, loading, isFocused]);

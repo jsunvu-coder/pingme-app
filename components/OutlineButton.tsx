@@ -37,27 +37,17 @@ export default function OutlineButton({
             ? 'border-[#D1D5DB]'
             : 'border-[#333]';
 
-  const textColorClass =
-    textColor === 'white'
-      ? 'text-white'
-      : textColor === '#FD4912'
-        ? isDisabled
-          ? 'text-[#9CA3AF]'
-          : 'text-[#FD4912]'
-        : textColor === '#9CA3AF'
-          ? 'text-[#9CA3AF]'
-          : isDisabled
-            ? 'text-[#9CA3AF]'
-            : 'text-[#333]';
-
-  const fontWeightClass =
-    fontWeight === 'normal'
-      ? 'font-normal'
-      : fontWeight === 'medium'
-        ? 'font-medium'
-        : fontWeight === 'bold'
-          ? 'font-bold'
-          : 'font-semibold'; // default: semibold
+  const getTextColorStyle = () => {
+    if (isDisabled) {
+      return { color: '#909090' };
+    }
+    if (textColor) {
+      // If textColor is provided, use it directly
+      return { color: textColor };
+    }
+    // Default color
+    return { color: '#0F0F0F' };
+  };
 
   const hasCustomHeight = className.includes('h-');
   const defaultClasses = hasCustomHeight ? '' : 'h-16 rounded-full py-4';
@@ -70,15 +60,26 @@ export default function OutlineButton({
       activeOpacity={0.8}
       className={`${baseClasses} ${borderColorClass} ${className}`}>
       <Text
-        className={`text-center ${fontWeightClass} ${textColorClass}`}
-        style={
-          Platform.OS === 'android'
+        className="text-center"
+        style={{
+          ...(Platform.OS === 'android'
             ? {
                 includeFontPadding: false,
                 textAlignVertical: 'center',
               }
-            : undefined
-        }>
+            : {}),
+          fontWeight:
+            fontWeight === 'bold'
+              ? '700'
+              : fontWeight === 'semibold'
+                ? '600'
+                : fontWeight === 'medium'
+                  ? '500'
+                  : fontWeight === 'normal'
+                    ? '400'
+                    : '600', // default semibold
+          ...getTextColorStyle(),
+        }}>
         {title}
       </Text>
       {icon && <View className="absolute right-3">{icon}</View>}
