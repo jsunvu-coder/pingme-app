@@ -1,0 +1,384 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+require "fileutils"
+
+default_platform(:android)
+
+# Helper function to load .env file
+def load_env_file(env_path)
+  if File.exist?(env_path)
+    File.readlines(env_path).each do |line|
+      line = line.strip
+      next if line.empty? || line.start_with?("#")
+      
+      if line.include?("=")
+        key, value = line.split("=", 2)
+        key = key.strip
+        value = value.strip.gsub(/^["']|["']$/, "") # Remove quotes
+        ENV[key] = value unless ENV[key] # Don't override existing env vars
+      end
+    end
+    UI.success("✅ Loaded environment variables from #{env_path}")
+  end
+end
+
+# Helper function to ensure Firebase plugin is installed
+def ensure_firebase_plugin_installed
+  fastlane_dir = File.dirname(__FILE__)
+  pluginfile_path = File.join(fastlane_dir, "Pluginfile")
+  pluginfile_content = File.exist?(pluginfile_path) ? File.read(pluginfile_path) : ""
+  
+  # Check if plugin is mentioned in Pluginfile
+  plugin_mentioned = pluginfile_content.include?("firebase_app_distribution")
+  
+  # Check if plugin is actually installed (check for Gemfile.lock or plugin directory)
+  gemfile_lock_path = File.join(fastlane_dir, "Gemfile.lock")
+  plugin_installed = false
+  if File.exist?(gemfile_lock_path)
+    gemfile_lock_content = File.read(gemfile_lock_path)
+    plugin_installed = gemfile_lock_content.include?("firebase_app_distribution")
+  end
+  
+  if !plugin_mentioned || !plugin_installed
+    UI.important("📦 Firebase App Distribution plugin not found. Installing...")
+    UI.important("   This may take a moment...")
+    
+    begin
+      # Change to fastlane directory and install plugin
+      Dir.chdir(fastlane_dir) do
+        install_result = system("fastlane add_plugin firebase_app_distribution --yes 2>&1")
+        if install_result
+          UI.success("✅ Plugin installed successfully!")
+          # Reload pluginfile if it was updated
+          if !plugin_mentioned
+            UI.important("   Please restart fastlane to use the plugin")
+          end
+        else
+          UI.important("⚠️  Plugin installation may have failed. Please run manually:")
+          UI.important("   cd android && fastlane add_plugin firebase_app_distribution")
+        end
+      end
+    rescue => ex
+      UI.important("⚠️  Could not auto-install plugin: #{ex.message}")
+      UI.important("   Please run manually:")
+      UI.important("   cd android && fastlane add_plugin firebase_app_distribution")
+    end
+  end
+end
+
+# Load .env files (project root and android directory)
+project_root = File.expand_path("../..", __dir__)
+android_root = File.expand_path("..", __dir__)
+
+# Try to load .env files in order of priority
+load_env_file(File.join(android_root, ".env.local")) # Highest priority
+load_env_file(File.join(android_root, ".env"))
+load_env_file(File.join(project_root, ".env.local"))
+load_env_file(File.join(project_root, ".env")) # Lowest priority
+
+# Helper function to get version name from build.gradle
+def get_version_name_from_gradle(gradle_file_path)
+  gradle_content = File.read(gradle_file_path)
+  version_match = gradle_content.match(/versionName\s+"([^"]+)"/)
+  if version_match
+    return version_match[1]
+  else
+    UI.user_error!("Could not find versionName in #{gradle_file_path}")
+  end
+end
+
+# Helper function to get version code from build.gradle
+def get_version_code_from_gradle(gradle_file_path)
+  gradle_content = File.read(gradle_file_path)
+  version_match = gradle_content.match(/versionCode\s+(\d+)/)
+  if version_match
+    return version_match[1].to_i
+  else
+    UI.user_error!("Could not find versionCode in #{gradle_file_path}")
+  end
+end
+
+# Helper function to update version code in build.gradle
+def update_version_code_in_gradle(gradle_file_path, new_version_code)
+  gradle_content = File.read(gradle_file_path)
+  updated_content = gradle_content.gsub(/versionCode\s+\d+/, "versionCode #{new_version_code}")
+  File.write(gradle_file_path, updated_content)
+  UI.success("✅ Updated versionCode to #{new_version_code} in build.gradle")
+end
+
+# Helper function to get latest build number from Firebase App Distribution
+def get_latest_build_number_from_firebase(firebase_app_id)
+  begin
+    # Get latest release from Firebase App Distribution
+    params = {
+      app: firebase_app_id
+    }
+    params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+    
+    latest_release = firebase_app_distribution_get_latest_release(params)
+    
+    # Firebase response has buildVersion field directly - use it first
+    if latest_release.is_a?(Hash)
+      build_version = latest_release[:buildVersion] || latest_release["buildVersion"]
+      
+      if build_version && !build_version.to_s.empty?
+        build_number = build_version.to_i
+        UI.success("📦 Found latest build number from Firebase buildVersion: #{build_number}")
+        return build_number
+      end
+      
+      # Fallback: Try to parse from release notes if buildVersion is not available
+      release_notes_obj = latest_release[:releaseNotes] || latest_release["releaseNotes"] || latest_release[:release_notes] || latest_release["release_notes"]
+      
+      # releaseNotes can be a Hash with :text key or a String
+      release_notes = ""
+      if release_notes_obj.is_a?(Hash)
+        release_notes = release_notes_obj[:text] || release_notes_obj["text"] || ""
+      elsif release_notes_obj.is_a?(String)
+        release_notes = release_notes_obj
+      end
+      
+      UI.important("   Release notes: '#{release_notes}'")
+      
+      # Try multiple patterns to find build number in release notes
+      # Pattern 1: (123) at the end
+      build_number_match = release_notes.match(/\((\d+)\)\s*$/)
+      
+      # Pattern 2: (123) anywhere in the string
+      if !build_number_match
+        build_number_match = release_notes.match(/\((\d+)\)/)
+      end
+      
+      # Pattern 3: Look for version format v1.0.0(123)
+      if !build_number_match
+        build_number_match = release_notes.match(/v[\d.]+\((\d+)\)/)
+      end
+      
+      if build_number_match
+        build_number = build_number_match[1].to_i
+        UI.success("📦 Found latest build number from Firebase release notes: #{build_number}")
+        return build_number
+      end
+    end
+    
+    UI.important("⚠️  Could not find build number in Firebase response")
+    return nil
+  rescue => ex
+    UI.important("⚠️  Could not get latest release from Firebase: #{ex.message}")
+    UI.important("   This might be the first build. Will use build number from build.gradle")
+    return nil
+  end
+end
+
+# Helper function to get next build number
+def get_next_build_number(gradle_file_path, firebase_app_id)
+  current_build_number = get_version_code_from_gradle(gradle_file_path)
+  UI.important("📋 Current build number in build.gradle: #{current_build_number}")
+  
+  # Try to get latest build number from Firebase
+  # latest_firebase_build = get_latest_build_number_from_firebase(firebase_app_id)
+  latest_firebase_build = 9
+  
+  # Use the larger number + 1
+  if latest_firebase_build && latest_firebase_build > current_build_number
+    next_build_number = latest_firebase_build + 1
+    UI.success("✅ Using Firebase build number: #{latest_firebase_build} → #{next_build_number}")
+  else
+    next_build_number = current_build_number + 1
+    UI.success("✅ Incrementing local build number: #{current_build_number} → #{next_build_number}")
+  end
+  
+  return next_build_number
+end
+
+platform :android do
+  desc "Build Android APK for staging"
+  lane :staging do
+    # Ensure Firebase plugin is installed
+    ensure_firebase_plugin_installed
+    
+    # Get the android project root directory (parent of fastlane directory)
+    android_root = File.expand_path("..", __dir__)
+    gradle_file = File.join(android_root, "app", "build.gradle")
+    
+    # Get Firebase App ID for build number sync
+    firebase_app_id = ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_ANDROID_APP_ID"]
+    
+    # Auto-increment build number based on Firebase latest release
+    if firebase_app_id && !firebase_app_id.empty?
+      UI.important("🔄 Syncing build number with Firebase App Distribution...")
+      next_build_number = get_next_build_number(gradle_file, firebase_app_id.strip)
+      update_version_code_in_gradle(gradle_file, next_build_number)
+    else
+      UI.important("⚠️  FIREBASE_APP_ID not set, skipping build number sync")
+      UI.important("   Build number will use current value from build.gradle")
+    end
+    
+    version_name = get_version_name_from_gradle(gradle_file)
+    version_code = get_version_code_from_gradle(gradle_file)
+
+    # Ensure keystore exists (copied by expo plugin during prebuild)
+    keystore_path = File.join(android_root, "app", "dev.jks")
+    if !File.exist?(keystore_path)
+      UI.important("⚠️  Keystore not found at #{keystore_path}")
+      UI.important("   Make sure to run 'expo prebuild' first or copy keystore manually")
+    end
+    
+    gradle(
+      task: "assembleRelease",
+      project_dir: android_root,
+      properties: {
+        # These properties are already set in gradle.properties by app.plugin.js
+        # But we can override them here if needed
+      }
+    )
+    
+    # APK will be generated at: app/build/outputs/apk/release/app-release.apk
+    apk_path = File.join(android_root, "app", "build", "outputs", "apk", "release", "app-release.apk")
+    if !File.exist?(apk_path)
+      UI.user_error!("APK not found at #{apk_path}")
+    end
+    
+    new_apk_name = "PingMe-Android-Staging-v#{version_name}(#{version_code}).apk"
+    new_apk_path = File.join(File.dirname(apk_path), new_apk_name)
+    FileUtils.mv(apk_path, new_apk_path)
+    UI.success("✅ Staging APK built successfully!")
+    UI.message("APK location: #{new_apk_path}")
+    
+    # Upload to Firebase App Distribution
+    # Get Firebase App ID from environment variable
+    firebase_app_id = ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_ANDROID_APP_ID"]
+    if firebase_app_id.nil? || firebase_app_id.empty?
+      UI.user_error!("FIREBASE_APP_ID or FIREBASE_ANDROID_APP_ID environment variable is required")
+    end
+    firebase_app_id = firebase_app_id.strip
+    
+    # Get testers and groups from environment variable (comma-separated strings)
+    # Plugin requires String, not Array. Empty strings should be nil
+    testers = ENV["FIREBASE_TESTERS"]&.strip
+    testers = nil if testers.nil? || testers.empty?
+    
+    groups = ENV["FIREBASE_TESTER_GROUPS"]&.strip
+    groups = nil if groups.nil? || groups.empty?
+    
+    release_notes = "Staging build v#{version_name} (#{version_code})"
+    if ENV["FIREBASE_RELEASE_NOTES"]
+      release_notes = ENV["FIREBASE_RELEASE_NOTES"]
+    end
+    
+    UI.important("📤 Uploading to Firebase App Distribution...")
+    UI.important("   App ID: #{firebase_app_id}")
+    UI.important("   Testers: #{testers || 'none'}")
+    UI.important("   Groups: #{groups || 'none'}")
+    
+    begin
+      # Build parameters hash, only include non-nil values
+      params = {
+        app: firebase_app_id,
+        apk_path: new_apk_path,
+        release_notes: release_notes
+      }
+      params[:testers] = testers if testers
+      params[:groups] = groups if groups
+      params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+      
+      firebase_app_distribution(params)
+      UI.success("✅ Successfully uploaded to Firebase App Distribution!")
+    rescue => ex
+      UI.important("⚠️  Failed to upload to Firebase App Distribution: #{ex.message}")
+      UI.important("   APK is still available at: #{new_apk_path}")
+      
+      if ex.message.include?("status_code: 400") || ex.message.include?("Invalid request")
+        UI.important("")
+        UI.important("💡 Troubleshooting 400 Bad Request error:")
+        UI.important("   1. Check Firebase App ID format:")
+        UI.important("      - Short name: 'ping-me-test-delivery'")
+        UI.important("      - Full format: '1:PROJECT_ID:android:APP_ID'")
+        UI.important("   2. Verify App ID in Firebase Console:")
+        UI.important("      Project Settings > Your apps > Android app")
+        UI.important("   3. Ensure you have permission to upload to this app")
+        UI.important("   4. Check if testers/groups exist in Firebase Console")
+      elsif ex.message.include?("Could not find action") || ex.message.include?("firebase_app_distribution")
+        UI.important("   Make sure plugin is installed: bundle add fastlane-plugin-firebase_app_distribution")
+        UI.important("   Then run: bundle exec fastlane staging")
+      end
+      raise ex
+    end
+  end
+
+  desc "Build Android AAB for production (Play Store)"
+  lane :production do
+    # Get the android project root directory (parent of fastlane directory)
+    android_root = File.expand_path("..", __dir__)
+    gradle_file = File.join(android_root, "app", "build.gradle")
+    version_name = get_version_name_from_gradle(gradle_file)
+    version_code = get_version_code_from_gradle(gradle_file)
+
+    # Ensure keystore exists (copied by expo plugin during prebuild)
+    keystore_path = File.join(android_root, "app", "dev.jks")
+    if !File.exist?(keystore_path)
+      UI.important("⚠️  Keystore not found at #{keystore_path}")
+      UI.important("   Make sure to run 'expo prebuild' first or copy keystore manually")
+    end
+    
+    gradle(
+      task: "bundleRelease",
+      project_dir: android_root,
+      properties: {
+        # These properties are already set in gradle.properties by app.plugin.js
+        # But we can override them here if needed
+      }
+    )
+    
+    # AAB will be generated at: app/build/outputs/bundle/release/app-release.aab
+    aab_path = File.join(android_root, "app", "build", "outputs", "bundle", "release", "app-release.aab")
+    if File.exist?(aab_path)
+      new_aab_name = "PingMe-Android-Production-v#{version_name}(#{version_code}).aab"
+      new_aab_path = File.join(File.dirname(aab_path), new_aab_name)
+      FileUtils.mv(aab_path, new_aab_path)
+      UI.success("✅ Production AAB built successfully!")
+      UI.message("AAB location: #{new_aab_path}")
+    else
+      UI.important("⚠️  AAB not found at #{aab_path}")
+    end
+    
+    # Optional: Upload to Play Store
+    # upload_to_play_store(
+    #   track: "internal",
+    #   aab: new_aab_path
+    # )
+  end
+
+  desc "Build and upload to Play Store Internal Testing"
+  lane :production_upload do
+    production
+    
+    # Find the renamed AAB file
+    android_root = File.expand_path("..", __dir__)
+    aab_dir = File.join(android_root, "app", "build", "outputs", "bundle", "release")
+    aab_files = Dir[File.join(aab_dir, "PingMe-Android-Production-v*.aab")]
+    if aab_files.empty?
+      UI.user_error!("Could not find AAB file in #{aab_dir}")
+    end
+    aab_path = aab_files.sort.last
+    
+    upload_to_play_store(
+      track: "internal",
+      aab: aab_path,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
+

@@ -1,0 +1,377 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+require "fileutils"
+
+default_platform(:ios)
+
+# Helper function to load .env file
+def load_env_file(env_path)
+  if File.exist?(env_path)
+    File.readlines(env_path).each do |line|
+      line = line.strip
+      next if line.empty? || line.start_with?("#")
+      
+      if line.include?("=")
+        key, value = line.split("=", 2)
+        key = key.strip
+        value = value.strip.gsub(/^["']|["']$/, "") # Remove quotes
+        ENV[key] = value unless ENV[key] # Don't override existing env vars
+      end
+    end
+    UI.success("✅ Loaded environment variables from #{env_path}")
+  end
+end
+
+# Helper function to ensure Firebase plugin is installed
+def ensure_firebase_plugin_installed
+  fastlane_dir = File.dirname(__FILE__)
+  pluginfile_path = File.join(fastlane_dir, "Pluginfile")
+  pluginfile_content = File.exist?(pluginfile_path) ? File.read(pluginfile_path) : ""
+  
+  # Check if plugin is mentioned in Pluginfile
+  plugin_mentioned = pluginfile_content.include?("firebase_app_distribution")
+  
+  # Check if plugin is actually installed (check for Gemfile.lock or plugin directory)
+  gemfile_lock_path = File.join(fastlane_dir, "Gemfile.lock")
+  plugin_installed = false
+  if File.exist?(gemfile_lock_path)
+    gemfile_lock_content = File.read(gemfile_lock_path)
+    plugin_installed = gemfile_lock_content.include?("firebase_app_distribution")
+  end
+  
+  if !plugin_mentioned || !plugin_installed
+    UI.important("📦 Firebase App Distribution plugin not found. Installing...")
+    UI.important("   This may take a moment...")
+    
+    begin
+      # Change to fastlane directory and install plugin
+      Dir.chdir(fastlane_dir) do
+        install_result = system("fastlane add_plugin firebase_app_distribution --yes 2>&1")
+        if install_result
+          UI.success("✅ Plugin installed successfully!")
+          # Reload pluginfile if it was updated
+          if !plugin_mentioned
+            UI.important("   Please restart fastlane to use the plugin")
+          end
+        else
+          UI.important("⚠️  Plugin installation may have failed. Please run manually:")
+          UI.important("   cd ios && fastlane add_plugin firebase_app_distribution")
+        end
+      end
+    rescue => ex
+      UI.important("⚠️  Could not auto-install plugin: #{ex.message}")
+      UI.important("   Please run manually:")
+      UI.important("   cd ios && fastlane add_plugin firebase_app_distribution")
+    end
+  end
+end
+
+# Load .env files (project root and ios directory)
+project_root = File.expand_path("../..", __dir__)
+ios_root = File.expand_path("..", __dir__)
+
+# Try to load .env files in order of priority
+load_env_file(File.join(ios_root, ".env.local")) # Highest priority
+load_env_file(File.join(ios_root, ".env"))
+load_env_file(File.join(project_root, ".env.local"))
+load_env_file(File.join(project_root, ".env")) # Lowest priority
+
+# Helper function to get latest build number from Firebase App Distribution
+def get_latest_build_number_from_firebase_ios(firebase_app_id)
+  begin
+    # Get latest release from Firebase App Distribution
+    params = {
+      app: firebase_app_id
+    }
+    params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+    
+    latest_release = firebase_app_distribution_get_latest_release(params)
+    
+    # Firebase response has buildVersion field directly - use it first
+    if latest_release.is_a?(Hash)
+      build_version = latest_release[:buildVersion] || latest_release["buildVersion"]
+      
+      if build_version && !build_version.to_s.empty?
+        build_number = build_version.to_i
+        UI.success("📦 Found latest build number from Firebase buildVersion: #{build_number}")
+        return build_number
+      end
+      
+      # Fallback: Try to parse from release notes if buildVersion is not available
+      release_notes_obj = latest_release[:releaseNotes] || latest_release["releaseNotes"] || latest_release[:release_notes] || latest_release["release_notes"]
+      
+      # releaseNotes can be a Hash with :text key or a String
+      release_notes = ""
+      if release_notes_obj.is_a?(Hash)
+        release_notes = release_notes_obj[:text] || release_notes_obj["text"] || ""
+      elsif release_notes_obj.is_a?(String)
+        release_notes = release_notes_obj
+      end
+      
+      UI.important("   Release notes: '#{release_notes}'")
+      
+      # Try multiple patterns to find build number in release notes
+      # Pattern 1: (123) at the end
+      build_number_match = release_notes.match(/\((\d+)\)\s*$/)
+      
+      # Pattern 2: (123) anywhere in the string
+      if !build_number_match
+        build_number_match = release_notes.match(/\((\d+)\)/)
+      end
+      
+      # Pattern 3: Look for version format v1.0.0(123)
+      if !build_number_match
+        build_number_match = release_notes.match(/v[\d.]+\((\d+)\)/)
+      end
+      
+      if build_number_match
+        build_number = build_number_match[1].to_i
+        UI.success("📦 Found latest build number from Firebase release notes: #{build_number}")
+        return build_number
+      end
+    end
+    
+    UI.important("⚠️  Could not find build number in Firebase response")
+    return nil
+  rescue => ex
+    UI.important("⚠️  Could not get latest release from Firebase: #{ex.message}")
+    UI.important("   This might be the first build. Will use build number from Xcode project")
+    return nil
+  end
+end
+
+# Helper function to get next build number for iOS
+def get_next_build_number_ios(xcodeproj_path, firebase_app_id)
+  current_build_number = get_build_number(xcodeproj: xcodeproj_path).to_i
+  UI.important("📋 Current build number in Xcode project: #{current_build_number}")
+  
+  # Try to get latest build number from Firebase
+  latest_firebase_build = get_latest_build_number_from_firebase_ios(firebase_app_id)
+  
+  # Use the larger number + 1
+  if latest_firebase_build && latest_firebase_build >= current_build_number
+    next_build_number = latest_firebase_build + 1
+    UI.success("✅ Using Firebase build number: #{latest_firebase_build} → #{next_build_number}")
+  else
+    next_build_number = current_build_number + 1
+    UI.success("✅ Incrementing local build number: #{current_build_number} → #{next_build_number}")
+  end
+  
+  return next_build_number
+end
+
+platform :ios do
+  desc "Build iOS IPA for staging (Ad-hoc) - For Firebase App Distribution"
+  lane :staging do
+    # Ensure Firebase plugin is installed
+    ensure_firebase_plugin_installed
+    
+    xcodeproj_path = "PingMe.xcodeproj"
+    version = get_version_number(xcodeproj: xcodeproj_path)
+    
+    # Get Firebase App ID for build number sync
+    firebase_app_id = ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_IOS_APP_ID"]
+    
+    # Auto-increment build number based on Firebase latest release
+    if firebase_app_id && !firebase_app_id.empty?
+      UI.important("🔄 Syncing build number with Firebase App Distribution...")
+      next_build_number = get_next_build_number_ios(xcodeproj_path, firebase_app_id.strip)
+      
+      # Update build number in Xcode project
+      increment_build_number(
+        xcodeproj: xcodeproj_path,
+        build_number: next_build_number
+      )
+      UI.success("✅ Updated build number to #{next_build_number}")
+    else
+      UI.important("⚠️  FIREBASE_APP_ID not set, skipping build number sync")
+      UI.important("   Build number will use current value from Xcode project")
+    end
+    
+    build = get_build_number(xcodeproj: xcodeproj_path)
+
+    # Ensure we're using the correct scheme
+    scheme = "PingMe-Develop"
+    
+    # Run pod install to ensure dependencies are up to date
+    cocoapods(
+      podfile: "./Podfile"
+    )
+    
+    # Manual signing - uses provisioning profile and certificate configured in Xcode project
+    # Ensure Xcode project has configured:
+    # - Signing Certificate
+    # - Provisioning Profile for Ad-hoc distribution
+    UI.important("📝 Using manual signing from Xcode project settings")
+    
+    # Build the app with Ad-hoc export method
+    ipa_name = "PingMe-Staging-v#{version}(#{build}).ipa"
+    
+    # Build with manual signing - need to specify provisioning profile in export_options
+    build_app(
+      workspace: "PingMe.xcworkspace",
+      scheme: scheme,
+      export_method: "ad-hoc",
+      export_options: {
+        method: "ad-hoc",
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "xyz.pingme.app" => "pingme-adhoc"
+        }
+      },
+      output_directory: "./build",
+      output_name: ipa_name,
+      clean: true,
+      skip_codesigning: false
+    )
+    
+    UI.success("✅ Staging IPA built successfully!")
+    UI.message("IPA location: ./build/#{ipa_name}")
+    
+    # Upload to Firebase App Distribution
+    # Get Firebase App ID from environment variable
+    firebase_app_id = ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_IOS_APP_ID"]
+    if firebase_app_id.nil? || firebase_app_id.empty?
+      UI.important("⚠️  FIREBASE_APP_ID or FIREBASE_IOS_APP_ID not set, skipping upload")
+      UI.important("   IPA is available at: ./build/#{ipa_name}")
+      return
+    end
+    firebase_app_id = firebase_app_id.strip
+    
+    # Get testers and groups from environment variable (comma-separated strings)
+    # Plugin requires String, not Array. Empty strings should be nil
+    testers = ENV["FIREBASE_TESTERS"]&.strip
+    testers = nil if testers.nil? || testers.empty?
+    
+    groups = ENV["FIREBASE_TESTER_GROUPS"]&.strip
+    groups = nil if groups.nil? || groups.empty?
+    
+    release_notes = "Staging build v#{version} (#{build})"
+    if ENV["FIREBASE_RELEASE_NOTES"]
+      release_notes = ENV["FIREBASE_RELEASE_NOTES"]
+    end
+    
+    ipa_path = File.join("./build", ipa_name)
+    
+    UI.important("📤 Uploading to Firebase App Distribution...")
+    UI.important("   App ID: #{firebase_app_id}")
+    UI.important("   Testers: #{testers || 'none'}")
+    UI.important("   Groups: #{groups || 'none'}")
+    
+    begin
+      # Build parameters hash, only include non-nil values
+      params = {
+        app: firebase_app_id,
+        ipa_path: ipa_path,
+        release_notes: release_notes
+      }
+      params[:testers] = testers if testers
+      params[:groups] = groups if groups
+      params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+      
+      firebase_app_distribution(params)
+      UI.success("✅ Successfully uploaded to Firebase App Distribution!")
+    rescue => ex
+      UI.important("⚠️  Failed to upload to Firebase App Distribution: #{ex.message}")
+      UI.important("   IPA is still available at: #{ipa_path}")
+      
+      if ex.message.include?("status_code: 400") || ex.message.include?("Invalid request")
+        UI.important("")
+        UI.important("💡 Troubleshooting 400 Bad Request error:")
+        UI.important("   1. Check Firebase App ID format:")
+        UI.important("      - Short name: 'app-id-name'")
+        UI.important("      - Full format: '1:PROJECT_ID:ios:APP_ID'")
+        UI.important("   2. Verify App ID in Firebase Console:")
+        UI.important("      Project Settings > Your apps > iOS app")
+        UI.important("   3. Ensure you have permission to upload to this app")
+        UI.important("   4. Check if testers/groups exist in Firebase Console")
+      elsif ex.message.include?("Could not find action") || ex.message.include?("firebase_app_distribution")
+        UI.important("   Make sure plugin is installed: bundle add fastlane-plugin-firebase_app_distribution")
+        UI.important("   Then run: bundle exec fastlane staging")
+      end
+      raise ex
+    end
+  end
+
+  desc "Build iOS IPA for production (App Store)"
+  lane :production do
+    version = get_version_number(
+      xcodeproj: "PingMe.xcodeproj"
+    )
+    build = get_build_number(
+      xcodeproj: "PingMe.xcodeproj"
+    )
+
+    # Ensure we're using the correct scheme
+    scheme = "PingMe-Production"
+    
+    # Run pod install to ensure dependencies are up to date
+    cocoapods(
+      podfile: "./Podfile"
+    )
+    
+    # Manual signing - uses provisioning profile and certificate configured in Xcode project
+    # Ensure Xcode project has configured:
+    # - Signing Certificate
+    # - Provisioning Profile for App Store distribution
+    UI.important("📝 Using manual signing from Xcode project settings")
+    
+    # Build the app with App Store export method
+    ipa_name = "PingMe-Production-v#{version}(#{build}).ipa"
+    
+    # Build with manual signing - need to specify provisioning profile in export_options
+    build_app(
+      workspace: "PingMe.xcworkspace",
+      scheme: scheme,
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "xyz.pingme.app" => "pingme-appstore"
+        }
+      },
+      output_directory: "./build",
+      output_name: ipa_name,
+      clean: true,
+      skip_codesigning: false
+    )
+    
+    UI.success("✅ Production IPA built successfully!")
+    UI.message("IPA location: ./build/#{ipa_name}")
+  end
+
+  desc "Build and upload to App Store"
+  lane :production_upload do
+    production
+    
+    upload_to_app_store(
+      ipa: Dir["./build/PingMe-Production-v*.ipa"].sort.last,
+      skip_metadata: true,
+      skip_screenshots: true,
+      force: true
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :production_testflight do
+    production
+    
+    upload_to_testflight(
+      ipa: Dir["./build/PingMe-Production-v*.ipa"].sort.last,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true
+    )
+  end
+end
+
