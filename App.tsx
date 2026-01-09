@@ -11,10 +11,14 @@ import { checkFirstRunAndClear } from 'screens/Claim/utils/AppLaunchCheck';
 import { loadEnvFromStorage } from 'business/Config';
 import NetInfo from '@react-native-community/netinfo';
 import { NetworkBanner } from 'components/NetworkBanner';
+import { useCommitmentGuard } from 'hooks/useCommitmentGuard';
 
 export default function App() {
   const [offline, setOffline] = useState(false);
   const hasWarnedRef = useRef(false);
+
+  // Global commitment/session guard
+  useCommitmentGuard();
 
   // Install crypto polyfill
   useEffect(() => {

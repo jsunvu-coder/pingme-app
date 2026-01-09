@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { API_URL } from 'business/Config';
 import { SESSION_EXPIRED, TOKEN_NAMES } from 'business/Constants';
+import { showBlockingLogoutFlashMessage } from 'utils/flashMessage';
+import { AuthService } from './AuthService';
+import { setRootScreen } from 'navigation/Navigation';
 
 /**
  * React Native version of Angular ContractService
@@ -131,6 +134,56 @@ export class ContractService {
       throw new Error(SESSION_EXPIRED);
     }
     return await call();
+  }
+
+  /**
+   * Check the current in-memory commitment with the backend and, if invalid,
+   * show a blocking flash message that can only be dismissed via a Logout action.
+   *
+   * Returns:
+   * - true  → commitment still valid (or no active session)
+   * - false → commitment invalid, blocking flash message shown
+   */
+  async ensureCommitmentValidWithLogoutFlash(): Promise<boolean> {
+    const cr = this.getCrypto();
+    if (!cr?.commitment) {
+      // No active crypto/session → treat as "nothing to validate".
+      return true;
+    }
+
+    try {
+      const result = await this.hasBalance(cr.commitment);
+      const hasBalance = !!result?.has_balance;
+
+      if (!hasBalance) {
+        console.warn(
+          '[ContractService] Commitment has no balance / invalid. Showing logout flash message.',
+          { commitment: cr.commitment }
+        );
+
+        showBlockingLogoutFlashMessage({
+          title: 'Session invalid',
+          message: 'Your current session is no longer valid. Please log out to continue.',
+          onLogout: () => {
+            void (async () => {
+              try {
+                await AuthService.getInstance().logout();
+              } finally {
+                setRootScreen(['SplashScreen']);
+              }
+            })();
+          },
+        });
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('[ContractService] Failed to validate commitment state with backend', error);
+      // On network / transient failures, do not forcibly logout.
+      return true;
+    }
   }
 
   // ========================================================
@@ -341,6 +394,12 @@ export class ContractService {
   }
 
   async rvGetRecoveryPk(commitment: string) {
+    // Ensure current commitment/session is still valid before calling recovery API.
+    const ok = await this.ensureCommitmentValidWithLogoutFlash();
+    if (!ok) {
+      return Promise.resolve(null as any);
+    }
+
     return this.sessionGuard(() => this.post('/rv_get_recovery_pk', { commitment }));
   }
 
