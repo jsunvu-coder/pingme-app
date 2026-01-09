@@ -35,7 +35,7 @@ const BottomSheetModal = forwardRef<BottomSheetModalRef, BottomSheetModalProps>(
   (
     {
       visible,
-      snapPoints = ['95%'],
+      snapPoints = ['90%'],
       onClose,
       children,
       enablePanDownToClose = true,
