@@ -11,7 +11,6 @@ import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
-import { keyboardRecoveryService } from 'business/services/KeyboardRecoveryService';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | 'Biometric Authentication' | null;
 
@@ -177,7 +176,6 @@ export class LoginViewModel {
     }
     AuthService.getInstance().logout();
     push('SplashScreen');
-    void keyboardRecoveryService.recover();
   }
 
   handleSuccessfulLogin(
@@ -192,11 +190,6 @@ export class LoginViewModel {
       });
     }
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
-    // iOS: keychain/password-manager autofill can leave the keyboard in a bad state until app restart.
-    // This "focus + blur" recovery prevents the post-login "keyboard never shows" issue.
-    setTimeout(() => {
-      void keyboardRecoveryService.recover();
-    }, 250);
 
     const pendingLink = deepLinkHandler.getPendingLink();
     if (pendingLink) {
