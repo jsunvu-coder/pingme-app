@@ -9,6 +9,14 @@
           "/deposit*",
           "/pay*"
         ]
+      },
+      {
+        "appID": "698L9G9LDH.com.hailstonelab.pingme.demo",
+        "paths": [
+          "/claim*",
+          "/deposit*",
+          "/pay*"
+        ]
       }
     ]
   }

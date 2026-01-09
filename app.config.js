@@ -1,8 +1,27 @@
+// Determine environment from EXPO_PUBLIC_ENV or default to 'production'
+const env = process.env.EXPO_PUBLIC_ENV || process.env.EAS_BUILD_PROFILE || 'production';
+const isStaging = env === 'staging' || env === 'preview' || env === 'development';
+
+// Configuration based on environment
+const iosConfig = isStaging
+  ? {
+      // Staging configuration
+      bundleIdentifier: 'com.hailstonelab.pingme.demo',
+      appleTeamId: '698L9G9LDH',
+      associatedDomains: ['applinks:app.staging.pingme.xyz'],
+    }
+  : {
+      // Production configuration
+      bundleIdentifier: 'xyz.pingme.app',
+      appleTeamId: 'BMN9N6C39P',
+      associatedDomains: ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'],
+    };
+
 module.exports = {
   expo: {
-    name: 'PingMe',
+    name: 'PingMe', // Always use same name, only bundle ID differs
     slug: 'pingme',
-    version: '1.0.0',
+    version: '1.1.1',
     scheme: 'pingme',
     web: {
       favicon: './assets/intro_1.png',
@@ -41,8 +60,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       buildNumber: '2',
-      bundleIdentifier: 'xyz.pingme.app',
-      associatedDomains: ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'],
+      ...iosConfig,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: [
@@ -53,7 +71,6 @@ module.exports = {
           'x-com.twitter.android',
         ],
       },
-      appleTeamId: 'BMN9N6C39P',
     },
     android: {
       versionCode: 1,

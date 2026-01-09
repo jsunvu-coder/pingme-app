@@ -299,11 +299,13 @@ const withIOSConfig = (config) => {
     // Add URL Schemes if not already present
     if (!modResults.CFBundleURLTypes) {
       modResults.CFBundleURLTypes = [];
+      console.log('  ✓ Initialized CFBundleURLTypes array');
     }
 
     // Ensure it's an array
     if (!Array.isArray(modResults.CFBundleURLTypes)) {
-      modResults.CFBundleURLTypes = [modResults.CFBundleURLTypes];
+      modResults.CFBundleURLTypes = [modResults.CFBundleURLTypes].filter(Boolean);
+      console.log('  ✓ Converted CFBundleURLTypes to array');
     }
 
     // Add URL schemes: com.hailstonelab.pingme, exp+pingme, pingme
@@ -311,6 +313,7 @@ const withIOSConfig = (config) => {
     requiredSchemes.forEach((scheme) => {
       const exists = modResults.CFBundleURLTypes.some(
         (urlType) =>
+          urlType &&
           urlType.CFBundleURLSchemes &&
           Array.isArray(urlType.CFBundleURLSchemes) &&
           urlType.CFBundleURLSchemes.includes(scheme)
@@ -321,8 +324,12 @@ const withIOSConfig = (config) => {
           CFBundleURLSchemes: [scheme],
         });
         console.log(`  ✓ Added URL scheme: ${scheme}`);
+      } else {
+        console.log(`  - URL scheme already exists: ${scheme}`);
       }
     });
+
+    console.log('  Final CFBundleURLTypes:', JSON.stringify(modResults.CFBundleURLTypes, null, 2));
 
     // Add LSApplicationQueriesSchemes for social sharing
     if (!modResults.LSApplicationQueriesSchemes) {
@@ -365,27 +372,70 @@ const withIOSConfig = (config) => {
   config = withEntitlementsPlist(config, (config) => {
     const { modResults } = config;
     console.log('🔐 Modifying Entitlements...');
+    console.log('  Current entitlements:', JSON.stringify(modResults, null, 2));
+
+    // modResults should always be an object from withEntitlementsPlist
+    if (!modResults || typeof modResults !== 'object') {
+      console.error('  ❌ modResults is not an object! This should not happen.');
+      return config;
+    }
+
+    // Get bundle ID from config to determine which domains to use
+    const bundleId = config.ios?.bundleIdentifier || 'xyz.pingme.app';
+    const isStaging = bundleId === 'com.hailstonelab.pingme.demo';
+
+    console.log(`  📦 Bundle ID: ${bundleId}`);
+    console.log(`  🏷️  Environment: ${isStaging ? 'Staging' : 'Production'}`);
 
     // Add associated domains for Universal Links
-    if (!modResults['com.apple.developer.associated-domains']) {
-      modResults['com.apple.developer.associated-domains'] = [];
+    const associatedDomainsKey = 'com.apple.developer.associated-domains';
+
+    if (!modResults[associatedDomainsKey]) {
+      modResults[associatedDomainsKey] = [];
+      console.log('  ✓ Initialized associated-domains array');
     }
 
-    if (!Array.isArray(modResults['com.apple.developer.associated-domains'])) {
-      modResults['com.apple.developer.associated-domains'] = [
-        modResults['com.apple.developer.associated-domains'],
-      ];
+    // Ensure it's an array
+    if (!Array.isArray(modResults[associatedDomainsKey])) {
+      modResults[associatedDomainsKey] = [modResults[associatedDomainsKey]].filter(Boolean);
+      console.log('  ✓ Converted associated-domains to array');
     }
 
-    const requiredDomains = ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'];
+    // Determine required domains based on bundle ID
+    // Staging: only staging domain
+    // Production: both production and staging domains
+    const requiredDomains = isStaging
+      ? ['applinks:app.staging.pingme.xyz']
+      : ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'];
+
+    console.log(
+      `  📋 Required domains for ${isStaging ? 'staging' : 'production'}:`,
+      requiredDomains
+    );
 
     requiredDomains.forEach((domain) => {
-      if (!modResults['com.apple.developer.associated-domains'].includes(domain)) {
-        modResults['com.apple.developer.associated-domains'].push(domain);
+      if (!modResults[associatedDomainsKey].includes(domain)) {
+        modResults[associatedDomainsKey].push(domain);
         console.log(`  ✓ Added associated domain: ${domain}`);
+      } else {
+        console.log(`  - Domain already exists: ${domain}`);
       }
     });
 
+    // Remove domains that shouldn't be there
+    const allPossibleDomains = ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'];
+    allPossibleDomains.forEach((domain) => {
+      if (!requiredDomains.includes(domain) && modResults[associatedDomainsKey].includes(domain)) {
+        modResults[associatedDomainsKey] = modResults[associatedDomainsKey].filter(
+          (d) => d !== domain
+        );
+        console.log(
+          `  🗑️  Removed domain (not needed for ${isStaging ? 'staging' : 'production'}): ${domain}`
+        );
+      }
+    });
+
+    console.log('  Final associated-domains:', modResults[associatedDomainsKey]);
     return config;
   });
 
