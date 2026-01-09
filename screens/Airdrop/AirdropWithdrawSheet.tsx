@@ -44,16 +44,6 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
       });
     }, [tokenInfo.entry.amount]);
 
-    const displayWalletAddress = useMemo(() => {
-      if (!walletAddress) return '';
-      // Show full address only when focused AND not loading
-      // When loading, always truncate (even if focused)
-      if (isFocused) return walletAddress;
-      // Truncate when not focused or loading
-      if (walletAddress.length <= 10) return walletAddress;
-      return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
-    }, [walletAddress, loading, isFocused]);
-
     const handlePasteWallet = useCallback(async () => {
       try {
         const txt = await Clipboard.getStringAsync();
@@ -120,11 +110,6 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
 
     const handleInputFocus = useCallback(() => {
       setIsFocused(true);
-      // Restore full address when focusing (in case it was truncated)
-      if (inputRef.current && walletAddress) {
-        // The value will be restored automatically since we use walletAddress state
-        inputRef.current.setNativeProps({ text: walletAddress });
-      }
       // Expand bottom sheet immediately (no delay for smooth animation)
       (ref as any)?.current?.expand();
 
@@ -228,30 +213,28 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
             <View className="mb-4">
               <WalletSimpleIcon />
             </View>
-            <View className="relative">
-              <TextInput
-                ref={inputRef}
-                placeholder={t('WITHDRAW_WALLET_PLACEHOLDER', undefined, 'Enter wallet address')}
-                placeholderTextColor="#909090"
-                value={displayWalletAddress}
-                onChangeText={setWalletAddress}
-                onFocus={handleInputFocus}
-                onBlur={() => setIsFocused(false)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-                multiline={false}
-                className="h-12 flex-1 px-1 text-base text-[#0F0F0F]"
-                style={{ textAlignVertical: 'center' }}
-              />
-              <View
-                style={{
-                  height: 2,
-                  backgroundColor: walletAddress ? '#BEBEBE' : '#3B3A3A',
-                  marginTop: 6,
-                }}
-              />
-            </View>
+            <TextInput
+              ref={inputRef}
+              placeholder={t('WITHDRAW_WALLET_PLACEHOLDER', undefined, 'Enter wallet address')}
+              placeholderTextColor="#909090"
+              value={walletAddress}
+              onChangeText={setWalletAddress}
+              onFocus={handleInputFocus}
+              onBlur={() => setIsFocused(false)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+              multiline={false}
+              numberOfLines={1}
+              scrollEnabled={true}
+              className="mb-4 px-1 text-base text-[#0F0F0F]"
+            />
+            <View
+              style={{
+                height: 2,
+                backgroundColor: walletAddress ? '#BEBEBE' : '#3B3A3A',
+              }}
+            />
           </View>
 
           {/* Warning Box */}
