@@ -4,11 +4,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from './Home/HomeScreen';
 import PingMeScreen from './Send/PingMe/PingMeScreen';
 import AccountScreen from './Account/AccountScreen';
+import AirdropScreen from './Airdrop/AirdropScreen';
 import HomeIcon from 'assets/HomeIcon';
 import PingIcon from 'assets/PingIcon';
 import UserIcon from 'assets/UserIcon';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { push } from 'navigation/Navigation';
+import AirdropIcon from 'assets/AirdropIcon';
 
 const Tab = createBottomTabNavigator();
 
@@ -62,6 +64,8 @@ export default function MainTab() {
         tabBarIcon: ({ focused }) => {
           if (route.name === 'Ping Now') {
             return <PingIcon isActive={focused} />;
+          } else if (route.name === 'Airdrop') {
+            return <AirdropIcon isActive={focused} />;
           } else if (route.name === 'Account') {
             return <UserIcon isActive={focused} />;
           } else {
@@ -71,6 +75,7 @@ export default function MainTab() {
       })}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Ping Now" component={PingMeScreen} />
+      <Tab.Screen name="Airdrop" component={AirdropScreen} />
       <Tab.Screen name="Account" component={AccountScreen} />
     </Tab.Navigator>
   );
