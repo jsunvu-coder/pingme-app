@@ -1,12 +1,11 @@
 import { useMemo, forwardRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheetModal, { BottomSheetModalRef } from 'components/BottomSheetModal';
 import CloseButton from 'components/CloseButton';
 import * as WebBrowser from 'expo-web-browser';
 import { showFlashMessage } from 'utils/flashMessage';
 import { Utils } from 'business/Utils';
-import DoubleCheckIcon from 'assets/DoubleCheckIcon';
 import { ENV } from 'business/Config';
 import * as Clipboard from 'expo-clipboard';
 import CheckAllIcon from 'assets/CheckAllIcon';
@@ -68,10 +67,11 @@ const AirdropWithdrawSuccessModal = forwardRef<
 
   return (
     <BottomSheetModal visible={visible} onClose={onClose} ref={ref}>
-      <View className="p-6">
+      <View style={{ flex: 1, minHeight: '100%', padding: 24 }}>
         <CloseButton className="flex-row justify-end" onPress={handleClose} />
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Scrollable Content */}
+        <View style={{ flexGrow: 1 }}>
           {/* Success Icon and Title */}
           <View className="mt-8 items-center">
             <CheckAllIcon color="#14B957" width={80} height={80} />
@@ -81,8 +81,8 @@ const AirdropWithdrawSuccessModal = forwardRef<
           </View>
 
           {/* Success Message */}
-          <View className="mt-8 items-center p-4">
-            <Text className="text-lg text-[#0F0F0F]">
+          <View className="mt-8 items-center px-4">
+            <Text className="text-lg font-medium text-[#0F0F0F]">
               {t(
                 'AIRDROP_SUCCESS_MESSAGE',
                 { amount: formattedAmount, tokenName },
@@ -90,9 +90,9 @@ const AirdropWithdrawSuccessModal = forwardRef<
               )}
             </Text>
           </View>
-
+          <View className="mx-4 mt-4 h-px bg-[#FFDBD0]"></View>
           {/* Details Card */}
-          <View className="mt-6 flex-row rounded-2xl p-4">
+          <View className="mt-4 mb-8 flex-row rounded-2xl px-4">
             <View>
               <Text className="mb-4 text-base text-[#909090]">
                 {t('AIRDROP_TOTAL_AMOUNT', undefined, 'Total Amount')}
@@ -100,12 +100,12 @@ const AirdropWithdrawSuccessModal = forwardRef<
               <Text className="mb-4 text-base text-[#909090]">
                 {t('WALLET_ADDRESS', undefined, 'Wallet Address')}
               </Text>
-              <Text className="mb-4 text-base text-[#909090]">
+              <Text className="text-base text-[#909090]">
                 {t('TX_HASH', undefined, 'Transaction Hash')}
               </Text>
             </View>
             <View className="ml-4">
-              <Text className="mb-4 text-base font-normal text-[#0F0F0F]">
+              <Text className="mb-4 text-sm font-normal text-[#0F0F0F]">
                 {formattedAmount} ${tokenName}
               </Text>
               <Text className="mb-4 text-base font-normal text-[#0F0F0F]">{truncatedWallet}</Text>
@@ -113,26 +113,26 @@ const AirdropWithdrawSuccessModal = forwardRef<
                 onPress={handleViewOnMonadScan}
                 className="flex-row items-center"
                 activeOpacity={0.8}>
-                <Text className="mr-1 text-base font-semibold text-[#FD4912]">
+                <Text className="mr-2 text-base font-semibold text-[#FD4912]">
                   {t('AIRDROP_VIEW_ON_MONADSCAN', undefined, 'View on MonadScan')}
                 </Text>
-                <Ionicons name="open-outline" size={18} color="#FD4912" />
+                <Ionicons name="open-outline" size={18} color="#3B3A3A" />
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
-          {/* Back Button */}
-          <View className="mt-8 mb-8">
-            <TouchableOpacity
-              onPress={handleClose}
-              className="rounded-full bg-[#FFF2EB] px-8 py-4"
-              activeOpacity={0.8}>
-              <Text className="text-center text-lg font-bold text-[#FD4912]">
-                {t('AIRDROP_BACK_TO_REWARDS', undefined, 'Back to Rewards')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+        {/* Back Button - Sticky at bottom */}
+        <View style={{ marginTop: 'auto', marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={handleClose}
+            className="rounded-full bg-[#FFEDE7] px-8 py-4"
+            activeOpacity={0.8}>
+            <Text className="text-center text-lg font-bold text-[#FD4912]">
+              {t('AIRDROP_BACK_TO_REWARDS', undefined, 'Back to Rewards')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </BottomSheetModal>
   );
