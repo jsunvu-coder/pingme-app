@@ -439,6 +439,216 @@ const withIOSConfig = (config) => {
     return config;
   });
 
+  // Configure iOS signing for multiple build configurations
+  config = withDangerousMod(config, [
+    'ios',
+    async (config) => {
+      try {
+        const projectRoot = config.modRequest?.projectRoot || process.cwd();
+        const projectPbxprojPath = path.join(
+          projectRoot,
+          'ios',
+          'PingMe.xcodeproj',
+          'project.pbxproj'
+        );
+
+        if (!fs.existsSync(projectPbxprojPath)) {
+          console.warn('  ⚠ project.pbxproj not found, skipping signing configuration');
+          return config;
+        }
+
+        console.log('🔐 Configuring iOS signing for multiple build configurations...');
+        let projectContent = fs.readFileSync(projectPbxprojPath, 'utf8');
+
+        // Helper function to generate UUID for Xcode project
+        const generateUUID = () => {
+          const crypto = require('crypto');
+          return crypto.randomBytes(12).toString('hex').toUpperCase();
+        };
+
+        // Check if DevelopDebug and DevelopRelease configurations exist
+        const hasDevelopDebug = projectContent.includes('/* DevelopDebug */');
+        const hasDevelopRelease = projectContent.includes('/* DevelopRelease */');
+
+        if (!hasDevelopDebug || !hasDevelopRelease) {
+          console.log('📦 Creating DevelopDebug and DevelopRelease build configurations...');
+
+          // Find Debug configuration as template
+          const debugConfigMatch = projectContent.match(
+            /(\t\t13B07F941A680F5B00A75B9A \/\* Debug \*\/ = \{[\s\S]*?name = Debug;[\s\S]*?\t\t\};)/
+          );
+          const releaseConfigMatch = projectContent.match(
+            /(\t\t13B07F951A680F5B00A75B9A \/\* Release \*\/ = \{[\s\S]*?name = Release;[\s\S]*?\t\t\};)/
+          );
+
+          if (debugConfigMatch && releaseConfigMatch) {
+            const developDebugUUID = generateUUID();
+            const developReleaseUUID = generateUUID();
+
+            // Create DevelopDebug based on Debug
+            let developDebugConfig = debugConfigMatch[1];
+            developDebugConfig = developDebugConfig.replace(
+              '13B07F941A680F5B00A75B9A',
+              developDebugUUID
+            );
+            developDebugConfig = developDebugConfig.replace(
+              /\/\* Debug \*\//,
+              '/* DevelopDebug */'
+            );
+            developDebugConfig = developDebugConfig.replace(
+              /name = Debug;/,
+              'name = DevelopDebug;'
+            );
+            // Replace baseConfigurationReference first (before other replacements)
+            developDebugConfig = developDebugConfig.replace(
+              /baseConfigurationReference = [^;]+;/,
+              'baseConfigurationReference = 32E8FF4A68F6BB31923561F9 /* Pods-PingMe.developdebug.xcconfig */;'
+            );
+            // Replace DEVELOPMENT_TEAM - must be exact match
+            developDebugConfig = developDebugConfig.replace(
+              /DEVELOPMENT_TEAM = BMN9N6C39P;/,
+              'DEVELOPMENT_TEAM = 698L9G9LDH;'
+            );
+            // Replace PRODUCT_BUNDLE_IDENTIFIER - must be exact match (match any value, not just xyz.pingme.app)
+            developDebugConfig = developDebugConfig.replace(
+              /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/,
+              'PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;'
+            );
+
+            // Add CODE_SIGN_STYLE if not present (insert after buildSettings = {)
+            if (!developDebugConfig.includes('CODE_SIGN_STYLE')) {
+              developDebugConfig = developDebugConfig.replace(
+                /(buildSettings = \{[\s\n]*)/,
+                '$1\t\t\t\tCODE_SIGN_STYLE = Automatic;\n'
+              );
+            }
+
+            // Create DevelopRelease based on Release
+            let developReleaseConfig = releaseConfigMatch[1];
+            developReleaseConfig = developReleaseConfig.replace(
+              '13B07F951A680F5B00A75B9A',
+              developReleaseUUID
+            );
+            developReleaseConfig = developReleaseConfig.replace(
+              /\/\* Release \*\//,
+              '/* DevelopRelease */'
+            );
+            developReleaseConfig = developReleaseConfig.replace(
+              /name = Release;/,
+              'name = DevelopRelease;'
+            );
+            // Replace baseConfigurationReference first (before other replacements)
+            developReleaseConfig = developReleaseConfig.replace(
+              /baseConfigurationReference = [^;]+;/,
+              'baseConfigurationReference = E353C6C47B8B5630FFA5BDC5 /* Pods-PingMe.developrelease.xcconfig */;'
+            );
+            // Replace DEVELOPMENT_TEAM - must be exact match
+            developReleaseConfig = developReleaseConfig.replace(
+              /DEVELOPMENT_TEAM = BMN9N6C39P;/,
+              'DEVELOPMENT_TEAM = 698L9G9LDH;'
+            );
+            // Replace PRODUCT_BUNDLE_IDENTIFIER - must be exact match (match any value, not just xyz.pingme.app)
+            developReleaseConfig = developReleaseConfig.replace(
+              /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/,
+              'PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;'
+            );
+
+            // Add CODE_SIGN_STYLE if not present (insert after buildSettings = {)
+            if (!developReleaseConfig.includes('CODE_SIGN_STYLE')) {
+              developReleaseConfig = developReleaseConfig.replace(
+                /(buildSettings = \{[\s\n]*)/,
+                '$1\t\t\t\tCODE_SIGN_STYLE = Automatic;\n'
+              );
+            }
+
+            // Insert before "/* End XCBuildConfiguration section */"
+            const insertPoint = projectContent.indexOf('/* End XCBuildConfiguration section */');
+            if (insertPoint !== -1) {
+              projectContent =
+                projectContent.slice(0, insertPoint) +
+                developDebugConfig +
+                '\n' +
+                developReleaseConfig +
+                '\n' +
+                projectContent.slice(insertPoint);
+
+              // Add to target's XCConfigurationList (13B07F931A680F5B00A75B9A)
+              projectContent = projectContent.replace(
+                /(13B07F931A680F5B00A75B9A \/\* Build configuration list for PBXNativeTarget "PingMe" \*\/ = \{[\s\S]*?buildConfigurations = \([\s\S]*?13B07F951A680F5B00A75B9A \/\* Release \*\/,)/,
+                `$1\n\t\t\t${developDebugUUID} /* DevelopDebug */,\n\t\t\t${developReleaseUUID} /* DevelopRelease */,`
+              );
+
+              // Add to project's XCConfigurationList (83CBB9FA1A601CBA00E9B192)
+              // First, we need to create project-level configs (simpler version based on Debug/Release)
+              const projectDebugConfigMatch = projectContent.match(
+                /(\t\t83CBBA201A601CBA00E9B192 \/\* Debug \*\/ = \{[\s\S]*?name = Debug;[\s\S]*?\t\t\};)/
+              );
+              const projectReleaseConfigMatch = projectContent.match(
+                /(\t\t83CBBA211A601CBA00E9B192 \/\* Release \*\/ = \{[\s\S]*?name = Release;[\s\S]*?\t\t\};)/
+              );
+
+              if (projectDebugConfigMatch && projectReleaseConfigMatch) {
+                const projectDevelopDebugUUID = generateUUID();
+                const projectDevelopReleaseUUID = generateUUID();
+
+                let projectDevelopDebug = projectDebugConfigMatch[1];
+                projectDevelopDebug = projectDevelopDebug.replace(
+                  '83CBBA201A601CBA00E9B192',
+                  projectDevelopDebugUUID
+                );
+                projectDevelopDebug = projectDevelopDebug.replace(
+                  /\/\* Debug \*\//,
+                  '/* DevelopDebug */'
+                );
+                projectDevelopDebug = projectDevelopDebug.replace(
+                  /name = Debug;/,
+                  'name = DevelopDebug;'
+                );
+
+                let projectDevelopRelease = projectReleaseConfigMatch[1];
+                projectDevelopRelease = projectDevelopRelease.replace(
+                  '83CBBA211A601CBA00E9B192',
+                  projectDevelopReleaseUUID
+                );
+                projectDevelopRelease = projectDevelopRelease.replace(
+                  /\/\* Release \*\//,
+                  '/* DevelopRelease */'
+                );
+                projectDevelopRelease = projectDevelopRelease.replace(
+                  /name = Release;/,
+                  'name = DevelopRelease;'
+                );
+
+                // Insert project-level configs
+                projectContent = projectContent.replace(
+                  /(83CBBA211A601CBA00E9B192 \/\* Release \*\/ = \{[\s\S]*?name = Release;[\s\S]*?\t\t\};)/,
+                  `$1\n${projectDevelopDebug}\n${projectDevelopRelease}`
+                );
+
+                // Add to project's XCConfigurationList
+                projectContent = projectContent.replace(
+                  /(83CBB9FA1A601CBA00E9B192 \/\* Build configuration list for PBXProject "PingMe" \*\/ = \{[\s\S]*?buildConfigurations = \([\s\S]*?83CBBA211A601CBA00E9B192 \/\* Release \*\/,)/,
+                  `$1\n\t\t\t${projectDevelopDebugUUID} /* DevelopDebug */,\n\t\t\t${projectDevelopReleaseUUID} /* DevelopRelease */,`
+                );
+              }
+
+              console.log('  ✓ Created DevelopDebug and DevelopRelease configurations');
+            }
+          }
+        }
+
+        // Write the modified project file (configurations created, but bundle IDs/teams will be fixed by external script)
+        fs.writeFileSync(projectPbxprojPath, projectContent, 'utf8');
+        console.log('  ✅ iOS build configurations created');
+      } catch (error) {
+        console.error('❌ Error configuring iOS signing:', error.message);
+        console.error(error.stack);
+      }
+
+      return config;
+    },
+  ]);
+
   // Create custom Xcode schemes
   config = withDangerousMod(config, [
     'ios',
@@ -469,12 +679,45 @@ const withIOSConfig = (config) => {
           return config;
         }
 
-        // Create PingMe-Develop scheme (uses Debug/Release from base scheme)
+        // Create PingMe-Develop scheme (uses DevelopDebug/DevelopRelease configurations)
         const developSchemePath = path.join(schemesDir, 'PingMe-Develop.xcscheme');
-        if (!fs.existsSync(developSchemePath)) {
-          fs.writeFileSync(developSchemePath, baseSchemeContent);
-          console.log('  ✓ Created PingMe-Develop.xcscheme');
-        }
+        let developSchemeContent = baseSchemeContent;
+
+        // Replace TestAction buildConfiguration from Debug to DevelopDebug
+        developSchemeContent = developSchemeContent.replace(
+          /(<TestAction[\s\S]*?buildConfiguration = )"Debug"/,
+          '$1"DevelopDebug"'
+        );
+
+        // Replace LaunchAction buildConfiguration from Debug to DevelopRelease
+        developSchemeContent = developSchemeContent.replace(
+          /(<LaunchAction[\s\S]*?buildConfiguration = )"Debug"/,
+          '$1"DevelopRelease"'
+        );
+
+        // Replace ProfileAction buildConfiguration from Release to DevelopRelease
+        developSchemeContent = developSchemeContent.replace(
+          /(<ProfileAction[\s\S]*?buildConfiguration = )"Release"/,
+          '$1"DevelopRelease"'
+        );
+
+        // Replace AnalyzeAction buildConfiguration from Debug to DevelopDebug
+        developSchemeContent = developSchemeContent.replace(
+          /(<AnalyzeAction[\s\S]*?buildConfiguration = )"Debug"/,
+          '$1"DevelopDebug"'
+        );
+
+        // Replace ArchiveAction buildConfiguration from Release to DevelopRelease
+        developSchemeContent = developSchemeContent.replace(
+          /(<ArchiveAction[\s\S]*?buildConfiguration = )"Release"/,
+          '$1"DevelopRelease"'
+        );
+
+        // Always write/update the scheme to ensure correct configurations
+        fs.writeFileSync(developSchemePath, developSchemeContent);
+        console.log(
+          '  ✓ Created/Updated PingMe-Develop.xcscheme with DevelopDebug/DevelopRelease configurations'
+        );
 
         // Create PingMe-Production scheme (uses Release configuration)
         const productionSchemePath = path.join(schemesDir, 'PingMe-Production.xcscheme');
