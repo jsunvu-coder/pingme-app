@@ -3,6 +3,7 @@
 import { ContractService } from './ContractService';
 import { BalanceEntry } from 'business/Types';
 import { Utils } from 'business/Utils';
+import { TOKENS } from 'business/Constants';
 
 type BalanceListener = (balances: BalanceEntry[]) => void;
 type UpdateTimeListener = (time: number | null) => void;
@@ -71,6 +72,36 @@ export class BalanceService {
 
   get totalBalance(): string {
     return this._totalBalance;
+  }
+
+  /**
+   * Get only stablecoin balances (currently USDC)
+   */
+  getStablecoinBalances(): BalanceEntry[] {
+    const usdcAddress = TOKENS.USDC.toLowerCase();
+    return this.balances.filter((b) => {
+      const tokenAddress = (b?.token ?? '').toString().toLowerCase();
+      return tokenAddress === usdcAddress;
+    });
+  }
+
+  /**
+   * Get only non-stablecoin balances (all tokens except USDC)
+   */
+  getNonStablecoinBalances(): BalanceEntry[] {
+    const usdcAddress = TOKENS.USDC.toLowerCase();
+    return this.balances.filter((b) => {
+      const tokenAddress = (b?.token ?? '').toString().toLowerCase();
+      return tokenAddress !== usdcAddress;
+    });
+  }
+
+  /**
+   * Get total balance of stablecoins only
+   */
+  getStablecoinTotal(): string {
+    const stablecoinBalances = this.getStablecoinBalances();
+    return this.computeTotal(stablecoinBalances);
   }
 
   // ----------------- ACTIONS -----------------

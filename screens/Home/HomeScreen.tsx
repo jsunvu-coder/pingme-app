@@ -36,7 +36,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
-      setTotalBalance(balanceService.totalBalance);
+      setTotalBalance(balanceService.getStablecoinTotal());
       setLoading(false);
     };
 
@@ -58,7 +58,7 @@ export default function HomeScreen() {
     await balanceService.getBalance();
     await accountDataService.updateForwarderBalance(confirmTopUp);
     setBalances(balanceService.currentBalances);
-    setTotalBalance(balanceService.totalBalance);
+    setTotalBalance(balanceService.getStablecoinTotal());
     setLoading(false);
   }, [accountDataService, balanceService, confirmTopUp]);
 
