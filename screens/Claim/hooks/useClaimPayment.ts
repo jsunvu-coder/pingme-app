@@ -263,7 +263,7 @@ export const useClaimPayment = () => {
       console.error('❌ Verify failed:', err);
       showFlashMessage({
         title: 'Claim failed',
-        message: err?.response?.data?.message || err?.message || 'Unable to claim payment',
+        message: '',
         type: 'danger',
       });
       if (phase === 'verify') {
