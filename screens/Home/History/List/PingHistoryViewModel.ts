@@ -40,7 +40,10 @@ export class PingHistoryViewModel {
   }
 
   private ensureRecordSubscription(cacheKey: string, commitment: string) {
-    if (PingHistoryViewModel.recordListenerKey === cacheKey && PingHistoryViewModel.recordUnsubscribe) {
+    if (
+      PingHistoryViewModel.recordListenerKey === cacheKey &&
+      PingHistoryViewModel.recordUnsubscribe
+    ) {
       return;
     }
 
@@ -101,7 +104,10 @@ export class PingHistoryViewModel {
         PingHistoryViewModel.chunkCursor = nextCursor;
         PingHistoryViewModel.cachedTransactions = merged.slice(0, nextCursor);
         PingHistoryViewModel.notify(PingHistoryViewModel.cachedTransactions);
-        void PingHistoryViewModel.saveToLocalCache(PingHistoryViewModel.cachedTransactions, cacheKey);
+        void PingHistoryViewModel.saveToLocalCache(
+          PingHistoryViewModel.cachedTransactions,
+          cacheKey
+        );
       } catch (err) {
         console.error('[PingHistoryViewModel] Failed to apply RecordService update', err);
       }
@@ -133,6 +139,16 @@ export class PingHistoryViewModel {
     const commitment = this.contractService.getCrypto()?.commitment ?? '';
     const cacheKey = this.getCacheKey(commitment);
     const initialLimit = Math.max(options?.pageSize ?? 5, 5);
+
+    // When force=true, clear in-memory + local cache for this commitment
+    if (options?.force) {
+      try {
+        PingHistoryViewModel.resetCache(cacheKey);
+        await AsyncStorage.removeItem(cacheKey);
+      } catch (err) {
+        console.warn('[PingHistoryViewModel] Failed to clear cache on force refresh', err);
+      }
+    }
 
     if (PingHistoryViewModel.cacheKey !== cacheKey) {
       PingHistoryViewModel.resetCache(cacheKey);
@@ -294,9 +310,7 @@ export class PingHistoryViewModel {
 
     switch (filter) {
       case 'sent':
-        return events.filter(
-          (tx) => tx.direction === 'send' && !isWithdraw(tx) && !isReclaim(tx)
-        );
+        return events.filter((tx) => tx.direction === 'send' && !isWithdraw(tx) && !isReclaim(tx));
       case 'received':
         return events.filter(
           (tx) => tx.direction === 'receive' && !isDeposit(tx) && !isReclaim(tx)
@@ -467,7 +481,8 @@ export class PingHistoryViewModel {
     preferFirstPage?: boolean;
   }): Promise<TransactionViewModel[]> {
     try {
-      const { cacheKey, commitment, onPhaseUpdate, pageSize, targetPreload, preferFirstPage } = opts;
+      const { cacheKey, commitment, onPhaseUpdate, pageSize, targetPreload, preferFirstPage } =
+        opts;
       const requestedInitial = Math.max(pageSize ?? 5, 5);
       const preloadTarget = Math.max(targetPreload ?? 25, requestedInitial);
 
@@ -498,7 +513,10 @@ export class PingHistoryViewModel {
       PingHistoryViewModel.cachedTransactions = merged.slice(0, base);
       onPhaseUpdate?.(PingHistoryViewModel.cachedTransactions);
       PingHistoryViewModel.notify(PingHistoryViewModel.cachedTransactions);
-      await PingHistoryViewModel.saveToLocalCache(PingHistoryViewModel.cachedTransactions, cacheKey);
+      await PingHistoryViewModel.saveToLocalCache(
+        PingHistoryViewModel.cachedTransactions,
+        cacheKey
+      );
 
       nextCommitment = (first?.commitment ?? '').toLowerCase();
 

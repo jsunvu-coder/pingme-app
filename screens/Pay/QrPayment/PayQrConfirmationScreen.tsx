@@ -19,6 +19,8 @@ import { useDepositFlow, type DepositPayload } from 'screens/Home/Deposit/hooks/
 import { push, setRootScreen } from 'navigation/Navigation';
 import PayStaticQrView from './PayStaticQrView';
 import SafeBottomView from 'components/SafeBottomView';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type PayQrConfirmationScreenParams = {
   depositPayload?: DepositPayload;
@@ -51,6 +53,7 @@ export default function PayQrConfirmationScreen() {
     return SAMPLE_DEPOSIT_PAYLOAD;
   }, [route.params]);
 
+  const dispatch = useAppDispatch();
   const { amount, setAmount, commitment, withdrawAndDeposit, loading, txHash, scanned } =
     useDepositFlow(depositPayload);
 
@@ -63,25 +66,32 @@ export default function PayQrConfirmationScreen() {
   useEffect(() => {
     if (!txHash || txHash === acknowledgedHash) return;
 
-    const normalizedAmount = normalizeDecimal(amount);
-    const numericAmount = Number(normalizedAmount);
-    const safeAmount = Number.isFinite(numericAmount) ? Number(numericAmount.toFixed(2)) : 0;
+    const handleSuccess = async () => {
+      const normalizedAmount = normalizeDecimal(amount);
+      const numericAmount = Number(normalizedAmount);
+      const safeAmount = Number.isFinite(numericAmount) ? Number(numericAmount.toFixed(2)) : 0;
 
-    setAcknowledgedHash(txHash);
-    setRootScreen([
-      {
-        name: 'PaymentSuccessScreen',
-        params: {
-          recipient: commitment.trim() || 'unknown',
-          amount: safeAmount,
-          passphrase: '',
-          txHash,
-          channel: 'QR',
-          duration: 0,
+      // Refresh history in Redux to show the new deposit transaction
+      await fetchHistoryToRedux(dispatch);
+
+      setAcknowledgedHash(txHash);
+      setRootScreen([
+        {
+          name: 'PaymentSuccessScreen',
+          params: {
+            recipient: commitment.trim() || 'unknown',
+            amount: safeAmount,
+            passphrase: '',
+            txHash,
+            channel: 'QR',
+            duration: 0,
+          },
         },
-      },
-    ]);
-  }, [amount, commitment, txHash, acknowledgedHash]);
+      ]);
+    };
+
+    void handleSuccess();
+  }, [amount, commitment, txHash, acknowledgedHash, dispatch]);
 
   return (
     <ModalContainer>

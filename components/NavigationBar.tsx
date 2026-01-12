@@ -15,7 +15,7 @@ export default function NavigationBar({ title, onBack }: { title: string; onBack
     <>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} />
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row items-center justify-between py-4">
         <View className="w-16 items-center">
           <BackIcon onPress={handleBack} />
         </View>

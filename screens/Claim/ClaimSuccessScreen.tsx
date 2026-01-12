@@ -6,6 +6,8 @@ import SecondaryButton from 'components/ScondaryButton';
 import EnvelopIcon from 'assets/EnvelopIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SafeBottomView from 'components/SafeBottomView';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type ClaimSuccessParams = {
   amount?: number;
@@ -17,6 +19,7 @@ type ClaimSuccessParams = {
 
 export default function ClaimSuccessScreen() {
   const route = useRoute();
+  const dispatch = useAppDispatch();
   const hasNavigated = useRef(false);
 
   const {
@@ -27,6 +30,11 @@ export default function ClaimSuccessScreen() {
     autoShareDelayMs = 5000,
   } = (route.params as ClaimSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
+
+  // Refresh history in Redux when claim success screen mounts
+  useEffect(() => {
+    void fetchHistoryToRedux(dispatch);
+  }, [dispatch]);
 
   useEffect(() => {
     if (disableAutoShare) return;

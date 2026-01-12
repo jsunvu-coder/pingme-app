@@ -1,114 +1,146 @@
-import { ScrollView, View, Text, TouchableOpacity, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState, useCallback } from 'react';
-import { goBack, push } from 'navigation/Navigation';
-import { HistoryRow } from './HistoryRow';
-import FilterDropdown from './FilterDropDown';
-import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
-import { TransactionViewModel } from './TransactionViewModel';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, SectionList, RefreshControl, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NavigationBar from 'components/NavigationBar';
-import { ContractService } from 'business/services/ContractService';
+import { push } from 'navigation/Navigation';
+import FilterDropdown from './FilterDropDown';
+import { HistoryRow } from './HistoryRow';
+import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 const vm = new PingHistoryViewModel();
 
+/**
+ * Format date string with relative labels (TODAY, YESTERDAY)
+ * Input format: "dd/MM/yyyy" (e.g., "12/01/2026")
+ * Output format: "TODAY, DD MMM YYYY" or "YESTERDAY, DD MMM YYYY" or "DD MMM YYYY"
+ */
+function formatDateWithRelative(dateStr: string): string {
+  try {
+    // Parse "dd/MM/yyyy" format
+    const [day, month, year] = dateStr.split('/').map(Number);
+    if (!day || !month || !year) return dateStr.toUpperCase();
+
+    const date = new Date(year, month - 1, day);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Reset time to compare only dates
+    const normalizeDate = (d: Date) => {
+      const normalized = new Date(d);
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    };
+
+    const normalizedDate = normalizeDate(date);
+    const normalizedToday = normalizeDate(today);
+    const normalizedYesterday = normalizeDate(yesterday);
+
+    // Format date as "JAN 12, 2026" (month day, year - comma after day)
+    const monthNames = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    const monthName = monthNames[month - 1] || 'JAN';
+    const formattedDate = `${day} ${monthName}  ${year}`;
+
+    if (normalizedDate.getTime() === normalizedToday.getTime()) {
+      return `TODAY, ${formattedDate}`;
+    } else if (normalizedDate.getTime() === normalizedYesterday.getTime()) {
+      return `YESTERDAY, ${formattedDate}`;
+    } else {
+      return formattedDate;
+    }
+  } catch {
+    return dateStr.toUpperCase();
+  }
+}
+
 export default function PingHistoryScreen() {
-  const [transactions, setTransactions] = useState<TransactionViewModel[]>([]);
+  const dispatch = useAppDispatch();
+  const transactions = useAppSelector((state) => state.history.items);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadBatches, setLoadBatches] = useState(0);
+  const insets = useSafeAreaInsets();
+  const [navigationBarHeight, setNavigationBarHeight] = useState<number>(56); // Default height estimate
 
-  const loadData = async (showSpinner = true, force = false) => {
-    if (showSpinner) setLoading(true);
-    setLoadBatches(0);
+  const loadFromApi = useCallback(async () => {
+    setLoading(true);
     try {
-      const firstPage = await vm.getTransactions({
-        force,
-        pageSize: 5,
-        targetPreload: 25,
-        preferFirstPage: true,
-        onPhaseUpdate: (txs) => {
-          setTransactions(txs);
-          setLoading(false); // surface UI as soon as first API pass returns
-        },
-      });
-      setTransactions(firstPage);
-    } catch (err) {
-      console.error('❌ Failed to load ping history:', err);
+      await fetchHistoryToRedux(dispatch);
     } finally {
-      if (showSpinner) setLoading(false);
+      setLoading(false);
     }
-  };
-
-  const handleLoadMore = useCallback(async () => {
-    if (loadingMore || loadBatches >= 4 || !PingHistoryViewModel.hasMore()) return;
-    setLoadingMore(true);
-    try {
-      const next = await vm.loadMoreChunks(1, 5);
-      setLoadBatches((count) => Math.min(count + 1, 4));
-      setTransactions(next);
-    } catch (err) {
-      console.warn('⚠️ Failed to load more history', err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, loadBatches]);
-
-  const onScroll = useCallback(
-    (event: any) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-      if (!contentSize?.height) return;
-      const visibleBottom = contentOffset.y + layoutMeasurement.height;
-      const ratio = visibleBottom / contentSize.height;
-      if (ratio >= 0.5) {
-        void handleLoadMore();
-      }
-    },
-    [handleLoadMore]
-  );
-
-  useEffect(() => {
-    const commitment = ContractService.getInstance().getCrypto()?.commitment;
-
-    (async () => {
-      const cached = await PingHistoryViewModel.loadCachedTransactions(commitment ?? undefined);
-      if (cached.length) {
-        setTransactions(cached);
-        setLoading(false);
-      }
-      await loadData(!cached.length, true);
-    })();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = PingHistoryViewModel.subscribe((txs) => setTransactions(txs));
-    return unsubscribe;
-  }, []);
+  }, [dispatch]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData(true, true);
-    setRefreshing(false);
-  }, []);
+    try {
+      await fetchHistoryToRedux(dispatch);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
 
-  // 🔍 Use VM helpers to filter and group
-  const filteredTransactions = vm.filterTransactions(transactions, filterType);
-  const groupedTransactions = vm.groupByDate(filteredTransactions);
+  useEffect(() => {
+    void loadFromApi();
+  }, [loadFromApi]);
+
+  // Reuse existing helpers for filtering + grouping
+  const filteredTransactions = useMemo(
+    () => vm.filterTransactions(transactions, filterType),
+    [transactions, filterType]
+  );
+  const groupedTransactions = useMemo(
+    () => vm.groupByDate(filteredTransactions),
+    [filteredTransactions]
+  );
+
+  // Convert grouped transactions to SectionList format
+  const sections = useMemo(() => {
+    return Object.entries(groupedTransactions).map(([date, dayEvents]) => ({
+      title: typeof date === 'string' ? date.toUpperCase() : '',
+      data: Array.isArray(dayEvents) ? dayEvents : [],
+    }));
+  }, [groupedTransactions]);
+
+  // Calculate FilterDropdown top position: SafeArea top + NavigationBar height + spacing
+  const filterDropdownTop = insets.top + navigationBarHeight + 16; // 16px spacing
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">
-      <NavigationBar title="Ping History" />
+      <View
+        onLayout={(e) => {
+          setNavigationBarHeight(e.nativeEvent.layout.height);
+        }}>
+        <NavigationBar title="Ping History" />
+      </View>
 
-      <ScrollView
-        className="px-6"
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingBottom: 80 }}
-        onScroll={onScroll}
-        scrollEventThrottle={16}>
-        <View className="my-4">
+      <View className="">
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 16, // mx-4 equivalent
+            right: 16,
+            zIndex: 1000,
+            ...(Platform.OS === 'android' && {
+              elevation: 8,
+            }),
+          }}>
           <FilterDropdown
             value={filterType}
             onChange={setFilterType}
@@ -122,51 +154,47 @@ export default function PingHistoryScreen() {
             ]}
           />
         </View>
+      </View>
 
-        {loading ? (
-          <Text className="mt-20 text-center text-gray-500">Loading history...</Text>
-        ) : filteredTransactions.length === 0 ? (
-          <Text className="mt-20 text-center text-gray-400">
-            No {filterType !== 'all' ? filterType : ''} ping history found.
-          </Text>
-        ) : (
-          Object.entries(groupedTransactions).map(([date, dayEvents]) => {
-            const label = typeof date === 'string' ? date.toUpperCase() : '';
-            return (
-              <View key={label} className="mb-6">
-                <Text className="mb-3 font-medium text-gray-400">{label}</Text>
-
-                {Array.isArray(dayEvents) &&
-                  dayEvents.map((event, index) => {
-                    const key = `${label}-${index}-${event.timestamp}`;
-                    return (
-                      <HistoryRow
-                        key={key}
-                        event={event}
-                        onPress={() =>
-                          push('TransactionDetailsScreen', {
-                            transaction: event,
-                          })
-                        }
-                      />
-                    );
-                  })}
-              </View>
-            );
-          })
+      {/* SectionList with top margin to account for filter dropdown */}
+      <SectionList
+        style={{ marginTop: 80 }}
+        sections={sections}
+        keyExtractor={(item, index) => `${item.txHash}-${index}`}
+        renderItem={({ item }) => (
+          <View className="px-6">
+            <HistoryRow
+              event={item}
+              onPress={() =>
+                push('TransactionDetailsScreen', {
+                  transaction: item,
+                })
+              }
+            />
+          </View>
         )}
-      </ScrollView>
+        renderSectionHeader={({ section: { title } }) => {
+          const formattedTitle = formatDateWithRelative(title);
+          return (
+            <View className="px-6 py-1">
+              <Text className="font-medium text-gray-400">{formattedTitle}</Text>
+            </View>
+          );
+        }}
+        ListEmptyComponent={
+          loading ? null : (
+            <View className="mt-20">
+              <Text className="text-center text-gray-400">
+                No {filterType !== 'all' ? filterType : ''} ping history found.
+              </Text>
+            </View>
+          )
+        }
+        refreshControl={<RefreshControl refreshing={loading || refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 80 }}
+        showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
+      />
     </View>
   );
 }
-
-/* ---------- Header ---------- */
-const Header = () => (
-  <View className="flex-row items-center justify-between px-6 pt-4">
-    <TouchableOpacity onPress={goBack} activeOpacity={0.7}>
-      <Ionicons name="chevron-back" size={28} color="#FD4912" />
-    </TouchableOpacity>
-    <Text className="text-2xl font-semibold text-black">Ping History</Text>
-    <View className="w-8" />
-  </View>
-);

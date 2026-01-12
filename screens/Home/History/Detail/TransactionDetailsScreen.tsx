@@ -18,6 +18,8 @@ import { showFlashMessage } from 'utils/flashMessage';
 import GhostButton from 'components/GhostButton';
 import CopyIcon from 'assets/CopyIcon';
 import * as Clipboard from 'expo-clipboard';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -81,6 +83,7 @@ export default function TransactionDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [localMeta, setLocalMeta] = useState<LockboxMetadata | null>(null);
 
+  const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const lockboxCommitment = transaction?.lockboxCommitment;
@@ -199,6 +202,8 @@ export default function TransactionDetailsScreen() {
       });
       await balanceService.getBalance();
       await fetchLockboxDetail();
+      // Refresh history in Redux to show the new reclaim transaction
+      await fetchHistoryToRedux(dispatch);
     } catch (err: any) {
       console.error('❌ Failed to reclaim payment:', err);
       const message =

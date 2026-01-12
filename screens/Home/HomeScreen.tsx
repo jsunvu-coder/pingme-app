@@ -9,9 +9,11 @@ import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { PingHistoryViewModel } from './History/List/PingHistoryViewModel';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 export default function HomeScreen() {
+  const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const accountDataService = useMemo(() => AccountDataService.getInstance(), []);
 
@@ -50,8 +52,9 @@ export default function HomeScreen() {
   }, [accountDataService, balanceService, confirmTopUp]);
 
   useEffect(() => {
-    void PingHistoryViewModel.prefetchTransactions({ pageSize: 5, targetPreload: 20 });
-  }, []);
+    // Prefetch history into Redux store
+    void fetchHistoryToRedux(dispatch);
+  }, [dispatch]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
@@ -79,7 +82,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          <View className="mt-10 flex-1 rounded-t-3xl bg-[#FAFAFA] px-6 pt-6 pb-12">
+          <View className="mt-10 flex-1 rounded-t-3xl bg-[#FAFAFA] pt-6 pb-12">
             <QuickActionsView />
             <PingHistoryView />
           </View>

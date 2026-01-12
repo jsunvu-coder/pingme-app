@@ -22,6 +22,8 @@ import { PingHistoryStorage } from 'screens/Home/PingHistoryStorage';
 import { AccountDataService } from 'business/services/AccountDataService';
 import LockboxDurationView from '../PingMe/LockboxDurationView';
 import SafeBottomView from 'components/SafeBottomView';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -62,6 +64,7 @@ export default function SendConfirmationScreen() {
   const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
   const prevPassphraseRequired = useRef<boolean>(false);
 
+  const dispatch = useAppDispatch();
   const balanceService = BalanceService.getInstance();
 
   // Clear passphrase whenever the toggle is turned off
@@ -391,10 +394,12 @@ export default function SendConfirmationScreen() {
 
         setLoading: (loading: boolean) => setLoading(loading),
 
-        setTxHash: (hash?: string) => {
+        setTxHash: async (hash?: string) => {
           if (hash) {
             console.log('🎉 Payment completed successfully!');
             console.log('✅ Transaction hash:', hash);
+            // Refresh history in Redux to show the new send transaction
+            await fetchHistoryToRedux(dispatch);
             setRootScreen([
               {
                 name: 'PaymentSuccessScreen',
