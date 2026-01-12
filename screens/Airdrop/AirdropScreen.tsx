@@ -70,7 +70,7 @@ function TokenCard({
         fontWeight="bold"
         borderColor={hasBalance ? '#FD4912' : '#D1D5DB'}
         textColor={hasBalance ? '#0F0F0F' : '#909090'}
-        className="h-9 rounded-full border-2 px-4 py-2"
+        className="h-11 rounded-full border-2 px-4 py-2"
       />
     </View>
   );

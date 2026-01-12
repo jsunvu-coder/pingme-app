@@ -238,7 +238,7 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
           </View>
 
           {/* Warning Box */}
-          <View className="mb-10 flex-row items-start rounded-2xl bg-[#FB1028] p-4">
+          <View className="mx-4 mb-10 flex-row items-start rounded-2xl bg-[#FB1028] p-4">
             <View className="">
               <WarningIcon color="#ffffff" />
             </View>
@@ -250,7 +250,7 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
                 {t(
                   'WITHDRAW_WARNING_BODY',
                   undefined,
-                  'Withdrawing USDC to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.'
+                  'Make sure the receiving wallet supports this token and the Monad network. Transfers sent to the wrong network cannot be reversed.'
                 )}
               </Text>
             </View>
