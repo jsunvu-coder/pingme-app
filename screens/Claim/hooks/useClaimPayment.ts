@@ -31,7 +31,7 @@ export interface ClaimPaymentParams {
 export const useClaimPayment = () => {
   const route = useRoute<any>();
   const params = useMemo(() => route?.params ?? {}, [route?.params]);
-  const { username, lockboxSalt, code, paymentId, onClaimSuccess, signup ...restParams } =
+  const { username, lockboxSalt, code, paymentId, onClaimSuccess, signup, ...restParams } =
     params as ClaimPaymentParams;
 
   const [passphrase, setPassphrase] = useState('');
@@ -243,23 +243,22 @@ export const useClaimPayment = () => {
       }
 
       if (signup) {
-          push('AuthScreen', {
-            mode: 'signup',
-            headerFull: true,
-            lockboxProof: finalProof,
-            amountUsdStr,
-            from: 'signup',
-          });
-        } else {
-          push('AuthScreen', {
-            mode: 'login',
-            headerFull: true,
-            lockboxProof: finalProof,
-            amountUsdStr,
-            from: 'login',
-          });
-        }
-
+        push('AuthScreen', {
+          mode: 'signup',
+          headerFull: true,
+          lockboxProof: finalProof,
+          amountUsdStr,
+          from: 'signup',
+        });
+      } else {
+        push('AuthScreen', {
+          mode: 'login',
+          headerFull: true,
+          lockboxProof: finalProof,
+          amountUsdStr,
+          from: 'login',
+        });
+      }
     } catch (err: any) {
       console.error('❌ Verify failed:', err);
       showFlashMessage({
