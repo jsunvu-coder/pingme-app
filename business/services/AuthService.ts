@@ -185,6 +185,9 @@ export class AuthService {
       this.log('Starting password change...');
       const cr = this.contractService.getCrypto();
 
+      // Pause commitment guard while changing password to avoid auto-logout during transition.
+      this.contractService.pauseCommitmentGuard();
+
       // Compute new credentials
       const newInputData = CryptoUtils.strToHex2(cr.username, newPassword);
       const newSalt = CryptoUtils.globalHash(newInputData);
@@ -219,7 +222,7 @@ export class AuthService {
         newCommitmentHash
       );
 
-      const retPk = await this.contractService.rvGetRecoveryPk(rvCommitment);
+      const retPk = await this.contractService.rvGetRecoveryPk(rvCommitment, true);
       const recoveryPkHex = retPk?.recoveryPk;
 
       if (!recoveryPkHex || recoveryPkHex === ZERO_BYTES32) {
@@ -229,6 +232,7 @@ export class AuthService {
         cr.current_salt = newSalt;
         cr.proof = newProof;
         cr.commitment = newCommitment;
+        cr.expiry = Date.now() + EXPIRY_MS;
         this.contractService.setCrypto(cr);
         return;
       }
@@ -258,11 +262,15 @@ export class AuthService {
       cr.current_salt = newSalt;
       cr.proof = newProof;
       cr.commitment = newCommitment;
+      cr.expiry = Date.now() + EXPIRY_MS;
       this.contractService.setCrypto(cr);
 
       this.log('Password change completed successfully.');
     } catch (err) {
       this.handleError('Password change failed', err);
+    } finally {
+      // Resume commitment guard after password change completes or fails.
+      this.contractService.resumeCommitmentGuard();
     }
   }
 
@@ -299,7 +307,10 @@ export class AuthService {
         }
       } catch (claimErr) {
         // If claim already succeeded or cannot re-submit, still allow login to continue
-        console.warn('⚠️ [AuthService] Claim during signin failed; continuing login anyway.', claimErr);
+        console.warn(
+          '⚠️ [AuthService] Claim during signin failed; continuing login anyway.',
+          claimErr
+        );
       }
 
       return true;

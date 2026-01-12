@@ -18,6 +18,7 @@ export class ContractService {
   private crypto: any | null = null;
   private sync: { blockTime: bigint; localTime: number } | null = null;
   private sessionExpiredCallbacks: (() => void)[] = [];
+  private commitmentGuardPaused = false;
 
   private constructor() {}
 
@@ -58,6 +59,18 @@ export class ContractService {
   clearCrypto() {
     console.log('🧹 [ContractService] Cleared crypto state');
     this.crypto = null;
+  }
+
+  pauseCommitmentGuard() {
+    this.commitmentGuardPaused = true;
+  }
+
+  resumeCommitmentGuard() {
+    this.commitmentGuardPaused = false;
+  }
+
+  isCommitmentGuardPaused() {
+    return this.commitmentGuardPaused;
   }
 
   // ========================================================
@@ -144,7 +157,10 @@ export class ContractService {
    * - true  → commitment still valid (or no active session)
    * - false → commitment invalid, blocking flash message shown
    */
-  async ensureCommitmentValidWithLogoutFlash(): Promise<boolean> {
+  async ensureCommitmentValidWithLogoutFlash(skipLogoutFlash: boolean = false): Promise<boolean> {
+    if (skipLogoutFlash) {
+      return true;
+    }
     const cr = this.getCrypto();
     if (!cr?.commitment) {
       // No active crypto/session → treat as "nothing to validate".
@@ -393,10 +409,15 @@ export class ContractService {
     return this.sessionGuard(() => this.post('/rv_get_commit_state', { ct1, ct2 }));
   }
 
-  async rvGetRecoveryPk(commitment: string) {
+  async rvGetRecoveryPk(
+    commitment: string,
+    noEnsureCommitmentValidWithLogoutFlash: boolean = false
+  ) {
     // Ensure current commitment/session is still valid before calling recovery API.
-    const ok = await this.ensureCommitmentValidWithLogoutFlash();
-    if (!ok) {
+    const ok = await this.ensureCommitmentValidWithLogoutFlash(
+      noEnsureCommitmentValidWithLogoutFlash
+    );
+    if (!ok && !noEnsureCommitmentValidWithLogoutFlash) {
       return Promise.resolve(null as any);
     }
 
