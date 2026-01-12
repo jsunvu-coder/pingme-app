@@ -1,13 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import {
-  ScrollView,
-  View,
-  Platform,
-  Animated,
-  Easing,
-  Keyboard,
-  StatusBar,
-} from 'react-native';
+import { ScrollView, View, Platform, Animated, Easing, Keyboard, StatusBar } from 'react-native';
 import { useRoute, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { push } from 'navigation/Navigation';
@@ -54,49 +46,49 @@ export default function PingMeScreen() {
   // 🔹 Animate channel (Email ↔ Link)
   const animateChannel = useCallback(
     (toEmail: boolean) => {
-    if (toEmail) {
-      Animated.parallel([
-        Animated.timing(emailOpacity, {
-          toValue: 1,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailTranslateY, {
-          toValue: 0,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(amountTranslateY, {
-          toValue: 20,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(emailOpacity, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(emailTranslateY, {
-          toValue: -20,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(amountTranslateY, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+      if (toEmail) {
+        Animated.parallel([
+          Animated.timing(emailOpacity, {
+            toValue: 1,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(emailTranslateY, {
+            toValue: 0,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(amountTranslateY, {
+            toValue: 20,
+            duration: 250,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        Animated.parallel([
+          Animated.timing(emailOpacity, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(emailTranslateY, {
+            toValue: -20,
+            duration: 300,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(amountTranslateY, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
     },
     [amountTranslateY, emailOpacity, emailTranslateY]
   );
@@ -239,13 +231,7 @@ export default function PingMeScreen() {
     }
 
     if (mode === 'send') {
-      const totalMicro = balanceService.balances.reduce((acc, b) => {
-        try {
-          return acc + BigInt(b.amount ?? '0');
-        } catch {
-          return acc;
-        }
-      }, 0n);
+      const totalMicro = Utils.toMicro(balanceService.getStablecoinTotal());
       if (amountMicro > totalMicro) {
         showFlashMessage({
           title: 'Exceed balance',
@@ -271,8 +257,14 @@ export default function PingMeScreen() {
     }
 
     // --- 4️⃣ Proceed with navigation
-    const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: false, empty: '0.00' });
-    const displayUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: true, empty: '0.00' });
+    const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, {
+      grouping: false,
+      empty: '0.00',
+    });
+    const displayUsd = Utils.formatMicroToUsd(amountMicro, undefined, {
+      grouping: true,
+      empty: '0.00',
+    });
     const commonParams = {
       amount: amountUsd,
       displayAmount: `$${displayUsd}`,
@@ -335,7 +327,7 @@ export default function PingMeScreen() {
           {/* Animated Amount Section */}
           <Animated.View style={{ transform: [{ translateY: amountTranslateY }] }}>
             <PaymentAmountView
-              balance={`$${BalanceService.getInstance().totalBalance}`}
+              balance={`$${BalanceService.getInstance().getStablecoinTotal()}`}
               value={amount}
               onChange={setAmount}
               mode={mode}

@@ -23,7 +23,7 @@ export default function AccountInfoCard({ email }: Props) {
           const balances = await balanceService.balances;
           if (active && balances?.length > 0) {
             const formattedTotal =
-              balanceService.totalBalance ||
+              balanceService.getStablecoinTotal() ||
               Utils.formatMicroToUsd(balances[0].amount, undefined, {
                 grouping: true,
                 empty: '0.00',
