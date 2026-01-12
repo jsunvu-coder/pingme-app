@@ -243,22 +243,22 @@ export const useClaimPayment = () => {
       }
 
       if (signup) {
-          push('AuthScreen', {
-            mode: 'signup',
-            headerFull: true,
-            lockboxProof: finalProof,
-            amountUsdStr,
-            from: 'signup',
-          });
-        } else {
-          push('AuthScreen', {
-            mode: 'login',
-            headerFull: true,
-            lockboxProof: finalProof,
-            amountUsdStr,
-            from: 'login',
-          });
-        }
+        push('AuthScreen', {
+          mode: 'signup',
+          headerFull: true,
+          lockboxProof: finalProof,
+          amountUsdStr,
+          from: 'signup',
+        });
+      } else {
+        push('AuthScreen', {
+          mode: 'login',
+          headerFull: true,
+          lockboxProof: finalProof,
+          amountUsdStr,
+          from: 'login',
+        });
+      }
     } catch (err: any) {
       console.error('❌ Verify failed:', err);
       showFlashMessage({
