@@ -3,7 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import PlusIcon from 'assets/PlusIcon';
 import { BalanceEntry } from 'business/Types';
 import { push } from 'navigation/Navigation';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function BalanceView({
   balance,
@@ -15,7 +16,7 @@ export default function BalanceView({
 }) {
   const spinValue = useRef(new Animated.Value(0)).current;
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     // Start spin animation
     Animated.loop(
       Animated.timing(spinValue, {
@@ -34,7 +35,14 @@ export default function BalanceView({
         spinValue.stopAnimation(() => spinValue.setValue(0));
       }, 800);
     }
-  };
+  }, [onRefresh]);
+
+  // Auto-refresh when screen is focused (including first mount)
+  useFocusEffect(
+    useCallback(() => {
+      void handleRefresh();
+    }, [handleRefresh])
+  );
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],

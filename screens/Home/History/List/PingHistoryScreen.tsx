@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, SectionList, RefreshControl, Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NavigationBar from 'components/NavigationBar';
 import { push } from 'navigation/Navigation';
@@ -95,9 +96,12 @@ export default function PingHistoryScreen() {
     }
   }, [dispatch]);
 
-  useEffect(() => {
-    void loadFromApi();
-  }, [loadFromApi]);
+  // Auto-fetch history when screen is focused (including first mount)
+  useFocusEffect(
+    useCallback(() => {
+      void loadFromApi();
+    }, [loadFromApi])
+  );
 
   // Reuse existing helpers for filtering + grouping
   const filteredTransactions = useMemo(

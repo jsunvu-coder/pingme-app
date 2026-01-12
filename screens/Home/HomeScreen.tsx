@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StatusBar, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderView from 'components/HeaderView';
 import BalanceView from './BalanceView';
@@ -51,19 +51,15 @@ export default function HomeScreen() {
     };
   }, [accountDataService, balanceService, confirmTopUp]);
 
-  useEffect(() => {
-    // Prefetch history into Redux store
-    void fetchHistoryToRedux(dispatch);
-  }, [dispatch]);
-
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     await balanceService.getBalance();
     await accountDataService.updateForwarderBalance(confirmTopUp);
+    await fetchHistoryToRedux(dispatch);
     setBalances(balanceService.currentBalances);
     setTotalBalance(balanceService.getStablecoinTotal());
     setLoading(false);
-  }, [accountDataService, balanceService, confirmTopUp]);
+  }, [accountDataService, balanceService, confirmTopUp, dispatch]);
 
   return (
     <View className="flex-1 bg-[#FD4912]">
