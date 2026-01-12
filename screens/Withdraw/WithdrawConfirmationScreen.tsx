@@ -17,6 +17,8 @@ import { t } from 'i18n';
 import WithdrawlIcon from 'assets/WithdrawlIcon';
 import { SummaryTitle, SummaryValue } from 'screens/Send/SendConfirmation/PaymentSummaryCard';
 import SafeBottomView from 'components/SafeBottomView';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type WithdrawConfirmationParams = {
   amount: string;
@@ -31,6 +33,7 @@ export default function WithdrawConfirmationScreen() {
 
   const [loading, setLoading] = useState(false);
 
+  const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const authService = useMemo(() => AuthService.getInstance(), []);
@@ -151,6 +154,8 @@ export default function WithdrawConfirmationScreen() {
 
       await balanceService.getBalance();
       await recordService.updateRecordNow();
+      // Refresh history in Redux to show the new withdraw transaction
+      await fetchHistoryToRedux(dispatch);
 
       const fallbackTxHash =
         (result as any)?.txHash ??

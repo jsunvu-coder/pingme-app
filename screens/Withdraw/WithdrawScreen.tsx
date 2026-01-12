@@ -210,7 +210,9 @@ export default function WithdrawScreen() {
       <View className="flex-1 bg-white">
         <NavigationBar title={t('WITHDRAW_FUNDS', undefined, 'Withdraw Funds')} />
 
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
             ref={scrollRef}
             className="flex-1 px-6"
@@ -226,7 +228,7 @@ export default function WithdrawScreen() {
 
             <View className="mt-10 gap-y-8" onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
               <PaymentAmountView
-                balance={`$${balanceService.totalBalance}`}
+                balance={`$${balanceService.getStablecoinTotal()}`}
                 value={amount}
                 onChange={setAmount}
                 mode="send"

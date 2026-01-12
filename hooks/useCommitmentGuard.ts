@@ -10,6 +10,10 @@ async function checkCurrentCommitmentAndLogoutIfInvalid() {
     const contractService = ContractService.getInstance();
     const authService = AuthService.getInstance();
 
+    if (contractService.isCommitmentGuardPaused()) {
+      return;
+    }
+
     const cr = contractService.getCrypto();
     if (!cr?.commitment) {
       // No active crypto/session → nothing to validate.

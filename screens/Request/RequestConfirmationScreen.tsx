@@ -33,6 +33,8 @@ import { RequestService } from 'api/RequestService';
 import enUS from 'i18n/en-US.json';
 import { Utils } from 'business/Utils';
 import SafeBottomView from 'components/SafeBottomView';
+import { useAppDispatch } from 'store/hooks';
+import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type RequestConfirmationParams = {
   amount: number | string;
@@ -49,6 +51,7 @@ type RootStackParamList = {
 export default function RequestConfirmationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'RequestConfirmationScreen'>>();
   const params = route.params || {};
+  const dispatch = useAppDispatch();
 
   const balanceService = BalanceService.getInstance();
 
@@ -234,9 +237,11 @@ export default function RequestConfirmationScreen() {
       customMessage: note.trim(),
       confirm,
       setLoading,
-      setSent: (sent) => {
+      setSent: async (sent) => {
         if (sent) {
           console.log('✅ Request sent successfully!');
+          // Refresh history in Redux to show the new request transaction
+          await fetchHistoryToRedux(dispatch);
 
           const displayUsd = Utils.formatMicroToUsd(Utils.toMicro(amountString), undefined, {
             grouping: true,

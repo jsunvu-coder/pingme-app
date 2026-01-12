@@ -12,10 +12,25 @@ import { loadEnvFromStorage } from 'business/Config';
 import NetInfo from '@react-native-community/netinfo';
 import { NetworkBanner } from 'components/NetworkBanner';
 import { useCommitmentGuard } from 'hooks/useCommitmentGuard';
+import { Provider } from 'react-redux';
+import { getStore } from './store';
+import { useState as useStateOriginal } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import LogoWithText from 'assets/LogoWithText';
 
 export default function App() {
-  const [offline, setOffline] = useState(false);
+  const [storeReady, setStoreReady] = useStateOriginal(false);
+  const [store, setStore] = useStateOriginal<any>(null);
+  const [offline, setOffline] = useStateOriginal(false);
   const hasWarnedRef = useRef(false);
+
+  // Initialize store on mount
+  useEffect(() => {
+    getStore().then((initializedStore) => {
+      setStore(initializedStore);
+      setStoreReady(true);
+    });
+  }, []);
 
   // Global commitment/session guard
   useCommitmentGuard();
@@ -61,13 +76,25 @@ export default function App() {
     }
   }, []);
 
+  // Show loading screen while store is initializing
+  if (!storeReady || !store) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#FD4912]">
+        <LogoWithText />
+        <ActivityIndicator color="#fff" className="mt-6" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef} linking={linking}>
-        <RootNavigator />
-        <NetworkBanner visible={offline} onRetry={retryConnectivity} />
-        <FlashMessage position="top" />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <NavigationContainer ref={navigationRef} linking={linking}>
+          <RootNavigator />
+          <NetworkBanner visible={offline} onRetry={retryConnectivity} />
+          <FlashMessage position="top" />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </Provider>
   );
 }
