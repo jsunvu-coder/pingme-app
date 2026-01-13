@@ -10,6 +10,8 @@ import { ENV_STORAGE_KEY, getEnv, loadEnvFromStorage, setEnv } from 'business/Co
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginViewModel } from 'screens/Onboarding/Auth/LoginViewModel';
 import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
+import { useAppDispatch } from 'store/hooks';
+import { clearHistory } from 'store/historySlice';
 
 const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
@@ -22,6 +24,7 @@ type ItemProps = {
 };
 
 export default function AccountActionList() {
+  const dispatch = useAppDispatch();
   const [biometricType, setBiometricType] = useState<
     'Face ID' | 'Touch ID' | 'Biometric Authentication' | null
   >(null);
@@ -144,6 +147,24 @@ export default function AccountActionList() {
     }
   };
 
+  const handleClearHistory = () => {
+    Alert.alert(
+      'Clear History',
+      'Are you sure you want to clear all transaction history? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            dispatch(clearHistory());
+            Alert.alert('Success', 'History cleared successfully.');
+          },
+        },
+      ]
+    );
+  };
+
   const handleEnvSwitch = (nextEnv: 'staging' | 'production') => {
     if (nextEnv === env) return;
 
@@ -204,6 +225,11 @@ export default function AccountActionList() {
       action: () => push('ChangePasswordScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },
+    // {
+    //   label: 'Clear History',
+    //   action: handleClearHistory,
+    //   rightView: <Ionicons name="trash-outline" size={20} color="#FD4912" />,
+    // },
     // {
     //   label: 'Rate us on App Store',
     //   action: () => {},

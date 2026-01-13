@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, SectionList, RefreshControl, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NavigationBar from 'components/NavigationBar';
 import { push } from 'navigation/Navigation';
+import { useCallback, useMemo, useState } from 'react';
+import { Platform, RefreshControl, SectionList, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  fetchHistoryToRedux,
+  fetchRecentHistoryToRedux,
+  loadInitialHistoryToRedux,
+  loadMoreHistoryToRedux,
+} from 'store/historyThunks';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
 import FilterDropdown from './FilterDropDown';
 import { HistoryRow } from './HistoryRow';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
-import { useAppDispatch, useAppSelector } from 'store/hooks';
-import { fetchHistoryToRedux } from 'store/historyThunks';
 
 const vm = new PingHistoryViewModel();
 
@@ -55,7 +60,7 @@ function formatDateWithRelative(dateStr: string): string {
       'DEC',
     ];
     const monthName = monthNames[month - 1] || 'JAN';
-    const formattedDate = `${day} ${monthName}  ${year}`;
+    const formattedDate = `${day} ${monthName} ${year}`;
 
     if (normalizedDate.getTime() === normalizedToday.getTime()) {
       return `TODAY, ${formattedDate}`;
@@ -72,21 +77,46 @@ function formatDateWithRelative(dateStr: string): string {
 export default function PingHistoryScreen() {
   const dispatch = useAppDispatch();
   const transactions = useAppSelector((state) => state.history.items);
-  const [loading, setLoading] = useState(true);
+  const hasMore = useAppSelector((state) => state.history.hasMore);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
   const insets = useSafeAreaInsets();
   const [navigationBarHeight, setNavigationBarHeight] = useState<number>(56); // Default height estimate
 
-  const loadFromApi = useCallback(async () => {
-    setLoading(true);
+  // Fetch recent items when screen is focused
+  const fetchRecent = useCallback(async () => {
     try {
-      await fetchHistoryToRedux(dispatch);
-    } finally {
-      setLoading(false);
+      await fetchRecentHistoryToRedux(dispatch);
+    } catch (err) {
+      console.error('[PingHistoryScreen] Failed to fetch recent history', err);
     }
   }, [dispatch]);
 
+  // Load initial data only if store is empty
+  const loadInitial = useCallback(async () => {
+    if (transactions.length === 0) {
+      try {
+        await loadInitialHistoryToRedux(dispatch);
+      } catch (err) {
+        console.error('[PingHistoryScreen] Failed to load initial history', err);
+      }
+    }
+  }, [dispatch, transactions.length]);
+
+  // Load more data
+  const handleLoadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      await loadMoreHistoryToRedux(dispatch);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [dispatch, hasMore]);
+
+  // Pull to refresh - reload all
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -96,11 +126,14 @@ export default function PingHistoryScreen() {
     }
   }, [dispatch]);
 
-  // Auto-fetch history when screen is focused (including first mount)
+  // When screen is focused: show existing data from Redux, fetch recent, and load initial if empty
   useFocusEffect(
     useCallback(() => {
-      void loadFromApi();
-    }, [loadFromApi])
+      // Load initial if store is empty
+      void loadInitial();
+      // Fetch recent items to update
+      void fetchRecent();
+    }, [loadInitial, fetchRecent])
   );
 
   // Reuse existing helpers for filtering + grouping
@@ -120,6 +153,16 @@ export default function PingHistoryScreen() {
       data: Array.isArray(dayEvents) ? dayEvents : [],
     }));
   }, [groupedTransactions]);
+
+  // Memoize ListFooterComponent to prevent flickering
+  const listFooterComponent = useMemo(() => {
+    if (!loadingMore || !hasMore) return null;
+    return (
+      <View className="py-4">
+        <Text className="text-center text-gray-400">Loading more...</Text>
+      </View>
+    );
+  }, [loadingMore, hasMore]);
 
   // Calculate FilterDropdown top position: SafeArea top + NavigationBar height + spacing
   const filterDropdownTop = insets.top + navigationBarHeight + 16; // 16px spacing
@@ -186,15 +229,18 @@ export default function PingHistoryScreen() {
           );
         }}
         ListEmptyComponent={
-          loading ? null : (
+          transactions.length === 0 ? (
             <View className="mt-20">
               <Text className="text-center text-gray-400">
                 No {filterType !== 'all' ? filterType : ''} ping history found.
               </Text>
             </View>
-          )
+          ) : null
         }
-        refreshControl={<RefreshControl refreshing={loading || refreshing} onRefresh={onRefresh} />}
+        ListFooterComponent={listFooterComponent}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.8}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}

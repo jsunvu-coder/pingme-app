@@ -10,7 +10,8 @@ import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { useAppDispatch } from 'store/hooks';
-import { fetchHistoryToRedux } from 'store/historyThunks';
+import { fetchRecentHistoryToRedux } from 'store/historyThunks';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -53,13 +54,20 @@ export default function HomeScreen() {
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
+    await fetchRecentHistoryToRedux(dispatch); // Only fetch 5 most recent items
     await balanceService.getBalance();
     await accountDataService.updateForwarderBalance(confirmTopUp);
-    await fetchHistoryToRedux(dispatch);
     setBalances(balanceService.currentBalances);
     setTotalBalance(balanceService.getStablecoinTotal());
     setLoading(false);
   }, [accountDataService, balanceService, confirmTopUp, dispatch]);
+
+  // Auto-refresh when screen is focused (including first mount)
+  useFocusEffect(
+    useCallback(() => {
+      void handleRefresh();
+    }, [handleRefresh])
+  );
 
   return (
     <View className="flex-1 bg-[#FD4912]">
