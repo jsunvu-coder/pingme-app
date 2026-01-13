@@ -80,7 +80,7 @@ export default function HomeScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           <View className="flex-1 justify-end">
             <BalanceView
-              balance={`$${loading ? '0.00' : totalBalance}`}
+              balance={`$${totalBalance || '0.00'}`}
               tokens={balances}
               onRefresh={handleRefresh}
             />

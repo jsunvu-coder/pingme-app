@@ -4,16 +4,16 @@ import ArrowRightIcon from 'assets/ArrowRightIcon';
 import PingHistoryItemView from './PingHistoryItemView';
 import { push } from 'navigation/Navigation';
 import { TransactionViewModel } from './History/List/TransactionViewModel';
-import { useAppSelector } from 'store/hooks';
+import { useCurrentAccountHistory } from 'store/hooks';
 
 const ITEM_WIDTH = 280;
 const ITEM_MARGIN = 16;
 const ITEM_TOTAL_WIDTH = ITEM_WIDTH + ITEM_MARGIN;
 
 export default function PingHistoryView() {
-  // Get latest 5 transactions from Redux store
-  const allTransactions = useAppSelector((state) => state.history.items);
-  const history = useMemo(() => allTransactions.slice(0, 5), [allTransactions]);
+  // Get latest 5 transactions from Redux store for current account
+  const accountHistory = useCurrentAccountHistory();
+  const history = useMemo(() => accountHistory.items.slice(0, 5), [accountHistory.items]);
 
   const handleOpenHistory = () => {
     push('PingHistoryScreen');

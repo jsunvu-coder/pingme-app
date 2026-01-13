@@ -35,12 +35,27 @@ export const storage = {
 /**
  * Load entire Redux store state from AsyncStorage
  * This should be called BEFORE creating the store to use as preloadedState
+ * Includes migration logic to handle old state structures
  */
 export async function loadStoreState(): Promise<Record<string, any> | undefined> {
   try {
     const raw = await storage.getItem(STORE_KEY);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw) as Record<string, any>;
+
+    // Migrate old state structure to new structure
+    if (parsed.history) {
+      // If history exists but doesn't have byAccount, migrate it
+      if (!parsed.history.byAccount || typeof parsed.history.byAccount !== 'object') {
+        // Old structure: history has items directly
+        // New structure: history.byAccount[email] = { items, ... }
+        // For old state, we'll just reset to empty byAccount
+        parsed.history = {
+          byAccount: {},
+        };
+      }
+    }
+
     return parsed;
   } catch (err) {
     console.warn('[AsyncStorage] Failed to load store state', err);

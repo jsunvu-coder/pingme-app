@@ -157,7 +157,11 @@ export default function AccountActionList() {
           text: 'Clear',
           style: 'destructive',
           onPress: () => {
-            dispatch(clearHistory());
+            // Clear history for current account
+            const accountEmail = AccountDataService.getInstance().email;
+            if (accountEmail) {
+              dispatch(clearHistory({ accountEmail }));
+            }
             Alert.alert('Success', 'History cleared successfully.');
           },
         },

@@ -57,8 +57,11 @@ export class CryptoUtils {
    * where input_data = bytes("email:password")
    */
   static recoveryVaultCommitmentFromInputData(inputDataHex: string, globalSaltHex: string): string {
-    const proof = CryptoUtils.globalHash2Raw(inputDataHex, globalSaltHex);
-    return CryptoUtils.globalHashWithSalt(proof, globalSaltHex);
+    const proof = CryptoUtils.globalHash2(inputDataHex, globalSaltHex);
+    if (!proof) throw new Error('Failed to generate proof.');
+    const commitment = CryptoUtils.globalHash(proof);
+    if (!commitment) throw new Error('Failed to generate commitment.');
+    return commitment;
   }
 
   static recoveryVaultCommitmentFromCredentials(

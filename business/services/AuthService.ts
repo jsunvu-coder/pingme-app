@@ -202,10 +202,15 @@ export class AuthService {
         throw new Error('Missing GLOBAL_SALT');
       }
 
-      const rvProof = CryptoUtils.globalHash2Raw(cr.input_data, globalSaltHex);
-      const rvCommitment = CryptoUtils.globalHashWithSalt(rvProof, globalSaltHex);
-      const rvNewProof = CryptoUtils.globalHash2Raw(newInputData, globalSaltHex);
-      const rvNewCommitment = CryptoUtils.globalHashWithSalt(rvNewProof, globalSaltHex);
+      const rvProof = CryptoUtils.globalHash2(cr.input_data, globalSaltHex);
+      if (!rvProof) throw new Error('Failed to generate recovery proof.');
+      const rvCommitment = CryptoUtils.globalHash(rvProof);
+      if (!rvProof || !rvCommitment)
+        throw new Error('Failed to generate recovery proof or commitment.');
+      const rvNewCommitment = CryptoUtils.recoveryVaultCommitmentFromInputData(
+        newInputData,
+        globalSaltHex
+      );
 
       const hasSalt = await this.contractService.hasSalt(newSalt);
       if (hasSalt.has_salt) throw new Error(CREDENTIALS_ALREADY_EXISTS);
@@ -223,6 +228,7 @@ export class AuthService {
       );
 
       const retPk = await this.contractService.rvGetRecoveryPk(rvCommitment, true);
+      console.log('retPk', retPk);
       const recoveryPkHex = retPk?.recoveryPk;
 
       if (!recoveryPkHex || recoveryPkHex === ZERO_BYTES32) {

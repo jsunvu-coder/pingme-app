@@ -87,9 +87,18 @@ export const parseDepositLink = (raw: string): ParsedDepositLink => {
 export const useDepositFlow = (payload?: DepositPayload | null) => {
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
 
-  const [balances, setBalances] = useState<BalanceEntry[]>(() => balanceService.currentBalances);
+  const initialStableBalances = useMemo(
+    () => balanceService.getStablecoinBalances(),
+    [balanceService]
+  );
+  const getStablecoinTotal = useCallback(
+    () => balanceService.getStablecoinTotal(),
+    [balanceService]
+  );
+  const [balances, setBalances] = useState<BalanceEntry[]>(initialStableBalances);
+  const [stablecoinTotal, setStablecoinTotal] = useState<string>(() => getStablecoinTotal());
   const [selectedBalance, setSelectedBalance] = useState<BalanceEntry | null>(() =>
-    selectDefaultBalance(balanceService.currentBalances, payload?.token)
+    selectDefaultBalance(initialStableBalances, payload?.token)
   );
   const [amount, setAmount] = useState<string>(() => formatAmountOrEmpty(payload?.amount));
   const [commitment, setCommitment] = useState<string>(payload?.commitment ?? '');
@@ -122,16 +131,18 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
   );
 
   useEffect(() => {
-    const listener = (nextBalances: BalanceEntry[]) => {
-      setBalances(nextBalances);
+    const listener = () => {
+      const stableBalances = balanceService.getStablecoinBalances();
+      setBalances(stableBalances);
+      setStablecoinTotal(getStablecoinTotal());
       setSelectedBalance((prev) => {
-        if (!nextBalances.length) return null;
+        if (!stableBalances.length) return null;
         if (prev) {
-          const updated = nextBalances.find((b) => b.token === prev.token);
+          const updated = stableBalances.find((b) => b.token === prev.token);
           if (updated) return updated;
         }
         const preferredToken = payload?.token ?? prev?.token;
-        return selectDefaultBalance(nextBalances, preferredToken);
+        return selectDefaultBalance(stableBalances, preferredToken);
       });
     };
 
@@ -141,12 +152,15 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       balanceService
         .getBalance()
         .catch((err) => console.error('❌ Failed to load balances for deposit flow:', err));
+    } else {
+      // Sync stablecoin total immediately if balances already loaded
+      setStablecoinTotal(getStablecoinTotal());
     }
 
     return () => {
       balanceService.offBalanceChange(listener);
     };
-  }, [balanceService, payload?.token]);
+  }, [balanceService, payload?.token, getStablecoinTotal]);
 
   useEffect(() => {
     if (!payload) return;
@@ -211,8 +225,13 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     const entry = selectedBalance;
     const trimmedCommitment = commitment.trim();
     const trimmedAmount = amount.trim();
+    // Always compute using latest stablecoin total from the service
+    const latestStablecoinTotal = getStablecoinTotal();
+    setStablecoinTotal(latestStablecoinTotal);
+    const normalizedStablecoinTotal = latestStablecoinTotal.replace(/,/g, '');
+    const stablecoinTotalMicro = Utils.toMicro(normalizedStablecoinTotal || '0');
 
-    if (!entry) {
+    if (!entry || stablecoinTotalMicro <= 0n) {
       await confirm('_ALERT_SELECT_BALANCE', false);
       return;
     }
@@ -248,6 +267,12 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       return;
     }
 
+    // Do not allow spending above available stablecoin total
+    if (Utils.toMicro(normalized) > stablecoinTotalMicro) {
+      await confirm('_ALERT_ABOVE_AVAILABLE', false, '_TITLE_ABOVE_AVAILABLE');
+      return;
+    }
+
     const proceed = await confirm('_CONFIRM_PAYMENT');
     if (!proceed) return;
 
@@ -259,7 +284,8 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
         token: (entry as any)?.tokenAddress ?? entry.token,
         commitment: trimmedCommitment,
         amountDecimal: trimmedAmount,
-        availableBalance: entry.amount,
+        // Send total stablecoin balance (micro) for backend-side validation
+        availableBalance: stablecoinTotalMicro.toString(),
       });
 
       setTxHash(txHash);
@@ -305,6 +331,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     // Data
     balances,
     selectedBalance,
+    stablecoinTotal,
     amount,
     commitment,
     txHash,

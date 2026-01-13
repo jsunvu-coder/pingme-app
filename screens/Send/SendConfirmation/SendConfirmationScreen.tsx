@@ -63,6 +63,7 @@ export default function SendConfirmationScreen() {
   const [balancesLoading, setBalancesLoading] = useState(false);
   const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
   const prevPassphraseRequired = useRef<boolean>(false);
+  const hasNavigated = useRef(false);
 
   const dispatch = useAppDispatch();
   const balanceService = BalanceService.getInstance();
@@ -395,39 +396,50 @@ export default function SendConfirmationScreen() {
         setLoading: (loading: boolean) => setLoading(loading),
 
         setTxHash: async (hash?: string) => {
-          if (hash) {
+          if (hash && !hasNavigated.current) {
             console.log('🎉 Payment completed successfully!');
             console.log('✅ Transaction hash:', hash);
-            // Refresh history in Redux to show the new send transaction
-            await fetchHistoryToRedux(dispatch);
-            setRootScreen([
-              {
-                name: 'PaymentSuccessScreen',
-                params: {
-                  recipient,
-                  amount: Number(amount),
-                  passphrase,
-                  txHash: hash,
-                  channel: params.channel || 'Link',
-                  duration: durationDays,
-                },
-              },
-            ]);
 
-            const userEmail = AccountDataService.getInstance().email ?? '';
-            PingHistoryStorage.save(userEmail, {
-              status: 'pending',
-              email: recipient,
-              amount: displayAmount,
-              time: new Date().toLocaleString(),
-            });
+            const isEmailChannel = params?.channel === 'Email';
+
+            // Only navigate to PaymentSuccessScreen for Email channel
+            // For Link channel, wait for setPayLink to navigate to PaymentLinkCreatedScreen
+            if (isEmailChannel) {
+              hasNavigated.current = true;
+              // Refresh history in Redux to show the new send transaction
+              await fetchHistoryToRedux(dispatch);
+              setRootScreen([
+                {
+                  name: 'PaymentSuccessScreen',
+                  params: {
+                    recipient,
+                    amount: Number(amount),
+                    passphrase,
+                    txHash: hash,
+                    channel: 'Email',
+                    duration: durationDays,
+                  },
+                },
+              ]);
+
+              const userEmail = AccountDataService.getInstance().email ?? '';
+              PingHistoryStorage.save(userEmail, {
+                status: 'pending',
+                email: recipient,
+                amount: displayAmount,
+                time: new Date().toLocaleString(),
+              });
+            }
           }
         },
 
         setPayLink: (payLink: string) => {
-          if (payLink) {
+          if (payLink && !hasNavigated.current) {
             console.log('🎉 Payment completed successfully!');
             console.log('✅ PayLink:', payLink);
+            hasNavigated.current = true;
+            // Refresh history in Redux to show the new send transaction
+            fetchHistoryToRedux(dispatch);
             setRootScreen([
               {
                 name: 'PaymentLinkCreatedScreen',

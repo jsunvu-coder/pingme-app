@@ -1,4 +1,5 @@
 import { ContractService } from 'business/services/ContractService';
+import { AccountDataService } from 'business/services/AccountDataService';
 import { RecordEntry } from 'business/Types';
 import { PAGINATION } from 'business/Config';
 import { parseTransaction } from 'screens/Home/History/List/TransactionParser';
@@ -8,6 +9,28 @@ import type { AppDispatch, RootState } from './index';
 import { getStore } from './index';
 
 /**
+ * Filter raw record entries (same logic as web `filterTrxRecords`):
+ * - Keep if action === 0 (Claim) AND has a non-empty toCommitment
+ * - Or if action >= 2
+ * - Otherwise drop
+ */
+function filterTrxRecords(rec: RecordEntry[]): RecordEntry[] {
+  const trx: RecordEntry[] = [];
+
+  for (let i = 0; i < rec.length; ++i) {
+    const r = rec[i] as any;
+    const action = Number(r.action ?? -1);
+    const toCommitment = (r.toCommitment ?? r.to_commitment ?? '') as string;
+
+    if ((action === 0 && !!toCommitment) || action >= 2) {
+      trx.push(rec[i]);
+    }
+  }
+
+  return trx;
+}
+
+/**
  * Fetch transactions from API and update Redux store
  * This is a thunk-like function that can be used throughout the app
  */
@@ -15,9 +38,10 @@ export async function fetchHistoryToRedux(dispatch: AppDispatch): Promise<Transa
   const contractService = ContractService.getInstance();
   const crypto = contractService.getCrypto();
   const commitment = crypto?.commitment?.toLowerCase();
+  const accountEmail = AccountDataService.getInstance().email;
 
-  if (!commitment) {
-    console.warn('[fetchHistoryToRedux] No commitment found, skipping fetch');
+  if (!commitment || !accountEmail) {
+    console.warn('[fetchHistoryToRedux] No commitment or email found, skipping fetch');
     return [];
   }
 
@@ -44,8 +68,11 @@ export async function fetchHistoryToRedux(dispatch: AppDispatch): Promise<Transa
     return [];
   }
 
+  // Apply same filtering logic as web before parsing
+  const filteredRecords = filterTrxRecords(allEvents);
+
   const parsed: TransactionViewModel[] = [];
-  for (const ev of allEvents) {
+  for (const ev of filteredRecords) {
     const tx = parseTransaction(ev, commitment);
     if (tx) parsed.push(tx);
   }
@@ -54,7 +81,7 @@ export async function fetchHistoryToRedux(dispatch: AppDispatch): Promise<Transa
   parsed.sort((a, b) => b.timestamp - a.timestamp);
 
   // Update Redux store (full reload, no nextCommitment)
-  dispatch(setTransactions({ items: parsed, nextCommitment: null }));
+  dispatch(setTransactions({ accountEmail, items: parsed, nextCommitment: null }));
 
   return parsed;
 }
@@ -70,9 +97,10 @@ export async function fetchRecentHistoryToRedux(
   const contractService = ContractService.getInstance();
   const crypto = contractService.getCrypto();
   const commitment = crypto?.commitment?.toLowerCase();
+  const accountEmail = AccountDataService.getInstance().email;
 
-  if (!commitment) {
-    console.warn('[fetchRecentHistoryToRedux] No commitment found, skipping fetch');
+  if (!commitment || !accountEmail) {
+    console.warn('[fetchRecentHistoryToRedux] No commitment or email found, skipping fetch');
     return [];
   }
 
@@ -82,9 +110,12 @@ export async function fetchRecentHistoryToRedux(
     const events = (res?.events ?? []) as RecordEntry[];
     if (!events.length) return [];
 
+    // Apply same filtering logic as web before parsing
+    const filteredRecords = filterTrxRecords(events);
+
     // Parse events
     const recent: TransactionViewModel[] = [];
-    for (const ev of events) {
+    for (const ev of filteredRecords) {
       const tx = parseTransaction(ev, commitment);
       if (tx) recent.push(tx);
     }
@@ -93,12 +124,19 @@ export async function fetchRecentHistoryToRedux(
     recent.sort((a, b) => b.timestamp - a.timestamp);
 
     // Add new transactions to Redux store (merges with existing, avoids duplicates)
-    dispatch(addTransactions({ items: recent, nextCommitment: res?.commitment }));
+    dispatch(
+      addTransactions({
+        accountEmail,
+        items: recent,
+        nextCommitment: res?.commitment,
+      })
+    );
 
     // Return current store state (after merge)
     const store = await getStore();
     const state = store.getState() as RootState;
-    return state.history.items.slice(0, 5);
+    const accountHistory = state.history.byAccount[accountEmail.toLowerCase()];
+    return accountHistory?.items.slice(0, 5) ?? [];
   } catch (err) {
     console.error('[fetchRecentHistoryToRedux] Failed to fetch events from API', err);
     return [];
@@ -113,9 +151,10 @@ export async function loadInitialHistoryToRedux(dispatch: AppDispatch): Promise<
   const contractService = ContractService.getInstance();
   const crypto = contractService.getCrypto();
   const commitment = crypto?.commitment?.toLowerCase();
+  const accountEmail = AccountDataService.getInstance().email;
 
-  if (!commitment) {
-    console.warn('[loadInitialHistoryToRedux] No commitment found, skipping fetch');
+  if (!commitment || !accountEmail) {
+    console.warn('[loadInitialHistoryToRedux] No commitment or email found, skipping fetch');
     return false;
   }
 
@@ -124,13 +163,16 @@ export async function loadInitialHistoryToRedux(dispatch: AppDispatch): Promise<
     const res: any = await contractService.getEvents(commitment, PAGINATION);
     const events = (res?.events ?? []) as RecordEntry[];
     if (!events.length) {
-      dispatch(setTransactions({ items: [], nextCommitment: null }));
+      dispatch(setTransactions({ accountEmail, items: [], nextCommitment: null }));
       return false;
     }
 
+    // Apply same filtering logic as web before parsing
+    const filteredRecords = filterTrxRecords(events);
+
     // Parse events
     const parsed: TransactionViewModel[] = [];
-    for (const ev of events) {
+    for (const ev of filteredRecords) {
       const tx = parseTransaction(ev, commitment);
       if (tx) parsed.push(tx);
     }
@@ -139,7 +181,13 @@ export async function loadInitialHistoryToRedux(dispatch: AppDispatch): Promise<
     parsed.sort((a, b) => b.timestamp - a.timestamp);
 
     // Update Redux store with first page
-    dispatch(setTransactions({ items: parsed, nextCommitment: res?.commitment }));
+    dispatch(
+      setTransactions({
+        accountEmail,
+        items: parsed,
+        nextCommitment: res?.commitment,
+      })
+    );
 
     return true;
   } catch (err) {
@@ -155,18 +203,26 @@ export async function loadInitialHistoryToRedux(dispatch: AppDispatch): Promise<
  * If no new items found (count unchanged), continues calling up to 5 times before stopping
  */
 export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boolean> {
+  const contractService = ContractService.getInstance();
+  const crypto = contractService.getCrypto();
+  const commitment = crypto?.commitment?.toLowerCase();
+  const accountEmail = AccountDataService.getInstance().email;
+
+  if (!commitment || !accountEmail) {
+    console.warn('[loadMoreHistoryToRedux] No commitment or email found, skipping fetch');
+    return false;
+  }
+
   const store = await getStore();
   let state = store.getState() as RootState;
-  let nextCommitment = state.history.nextCommitment;
+  const accountHistory = state.history.byAccount[accountEmail.toLowerCase()];
+  let nextCommitment = accountHistory?.nextCommitment ?? null;
 
   if (!nextCommitment || /^0x0+$/.test(nextCommitment)) {
     // No more items to load
     return false;
   }
 
-  const contractService = ContractService.getInstance();
-  const crypto = contractService.getCrypto();
-  const commitment = crypto?.commitment?.toLowerCase();
   let emptyCount = 0; // Count consecutive calls with no new items
   const MAX_EMPTY_RETRIES = 10;
 
@@ -174,7 +230,8 @@ export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boo
     while (nextCommitment && !/^0x0+$/.test(nextCommitment)) {
       // Get current item count before adding
       state = store.getState() as RootState;
-      const itemsCountBefore = state.history.items.length;
+      const currentAccountHistory = state.history.byAccount[accountEmail.toLowerCase()];
+      const itemsCountBefore = currentAccountHistory?.items.length ?? 0;
 
       // Fetch the next page using nextCommitment from previous getEvents response
       const res: any = await contractService.getEvents(nextCommitment, PAGINATION);
@@ -185,7 +242,7 @@ export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boo
 
       if (!events.length) {
         // No events in response - update nextCommitment and continue
-        dispatch(addTransactions({ items: [], nextCommitment }));
+        dispatch(addTransactions({ accountEmail, items: [], nextCommitment }));
         emptyCount++;
         if (emptyCount >= MAX_EMPTY_RETRIES) {
           // Stop after 5 consecutive calls with no new items
@@ -194,9 +251,12 @@ export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boo
         continue;
       }
 
+      // Apply same filtering logic as web before parsing
+      const filteredRecords = filterTrxRecords(events);
+
       // Parse events
       const parsed: TransactionViewModel[] = [];
-      for (const ev of events) {
+      for (const ev of filteredRecords) {
         const tx = parseTransaction(ev, commitment);
         if (tx) parsed.push(tx);
       }
@@ -205,11 +265,12 @@ export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boo
       parsed.sort((a, b) => b.timestamp - a.timestamp);
 
       // Add new transactions to Redux store (merges with existing, avoids duplicates)
-      dispatch(addTransactions({ items: parsed, nextCommitment }));
+      dispatch(addTransactions({ accountEmail, items: parsed, nextCommitment }));
 
       // Check if items count increased (new items were added)
       state = store.getState() as RootState;
-      const itemsCountAfter = state.history.items.length;
+      const updatedAccountHistory = state.history.byAccount[accountEmail.toLowerCase()];
+      const itemsCountAfter = updatedAccountHistory?.items.length ?? 0;
 
       if (itemsCountAfter > itemsCountBefore) {
         // New items were added - reset empty count and return success
@@ -227,7 +288,7 @@ export async function loadMoreHistoryToRedux(dispatch: AppDispatch): Promise<boo
     }
 
     // No more commitment to fetch
-    dispatch(addTransactions({ items: [], nextCommitment: null }));
+    dispatch(addTransactions({ accountEmail, items: [], nextCommitment: null }));
     return false;
   } catch (err) {
     console.error('[loadMoreHistoryToRedux] Failed to fetch events from API', err);

@@ -10,7 +10,7 @@ import {
   loadInitialHistoryToRedux,
   loadMoreHistoryToRedux,
 } from 'store/historyThunks';
-import { useAppDispatch, useAppSelector } from 'store/hooks';
+import { useAppDispatch, useCurrentAccountHistory } from 'store/hooks';
 import FilterDropdown from './FilterDropDown';
 import { HistoryRow } from './HistoryRow';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
@@ -76,8 +76,9 @@ function formatDateWithRelative(dateStr: string): string {
 
 export default function PingHistoryScreen() {
   const dispatch = useAppDispatch();
-  const transactions = useAppSelector((state) => state.history.items);
-  const hasMore = useAppSelector((state) => state.history.hasMore);
+  const accountHistory = useCurrentAccountHistory();
+  const transactions = accountHistory.items;
+  const hasMore = accountHistory.hasMore;
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
@@ -163,9 +164,6 @@ export default function PingHistoryScreen() {
       </View>
     );
   }, [loadingMore, hasMore]);
-
-  // Calculate FilterDropdown top position: SafeArea top + NavigationBar height + spacing
-  const filterDropdownTop = insets.top + navigationBarHeight + 16; // 16px spacing
 
   return (
     <View className="flex-1 bg-[#FAFAFA]">

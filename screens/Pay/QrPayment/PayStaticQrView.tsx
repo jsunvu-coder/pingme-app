@@ -27,7 +27,7 @@ export default function PayStaticQrView({ recipient, amount, setAmount, scanned 
         </View>
 
         <PaymentAmountView
-          balance={`$${BalanceService.getInstance().totalBalance}`}
+          balance={`$${BalanceService.getInstance().getStablecoinTotal()}`}
           value={amount}
           onChange={setAmount}
           autoFocus={shouldAutoFocus}

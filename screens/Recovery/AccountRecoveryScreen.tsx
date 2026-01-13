@@ -18,7 +18,6 @@ import { GLOBALS, GLOBAL_SALT, ZERO_BYTES32 } from 'business/Constants';
 import { AuthService } from 'business/services/AuthService';
 import NavigationBar from 'components/NavigationBar';
 import * as SecureStore from 'expo-secure-store';
-import { useFocusEffect } from '@react-navigation/native';
 
 export default function AccountRecoveryScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
@@ -43,6 +42,9 @@ export default function AccountRecoveryScreen() {
         return false;
       }
 
+      // On Android 13+, we can request write-only permissions which don't require audio
+      // However, expo-media-library doesn't support write-only, so we'll only request
+      // permissions when actually saving, not on screen load
       const requested = await MediaLibrary.requestPermissionsAsync();
       setPhotoPermissionGranted(requested.granted);
       return requested.granted;
@@ -69,13 +71,8 @@ export default function AccountRecoveryScreen() {
     );
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      void ensurePhotoPermission().then((granted) => {
-        if (!granted) promptOpenSettingsForPhotos();
-      });
-    }, [ensurePhotoPermission, promptOpenSettingsForPhotos])
-  );
+  // Removed useFocusEffect - only request permissions when user actually tries to save
+  // This prevents Android from asking for audio permissions unnecessarily
 
   useEffect(() => {
     let isMounted = true;
@@ -130,12 +127,7 @@ export default function AccountRecoveryScreen() {
 
   const handleSetup = async () => {
     try {
-      const granted = await ensurePhotoPermission();
-      if (!granted) {
-        promptOpenSettingsForPhotos();
-        return;
-      }
-
+      // Don't request permissions here - only request when user actually saves the image
       setLoading(true);
 
       const contract = ContractService.getInstance();

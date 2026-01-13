@@ -18,6 +18,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
   const {
     balances,
     selectedBalance,
+    stablecoinTotal,
     amount,
     setAmount,
     handleAmountBlur,
@@ -36,9 +37,9 @@ export default function DepositForm({ payload }: DepositFormProps) {
   } = useDepositFlow(payload);
 
   const availableBalance = useMemo(() => {
-    if (!selectedBalance) return '--';
-    return `$${formatMicroToUsd(selectedBalance.amount)}`;
-  }, [selectedBalance, formatMicroToUsd]);
+    if (!stablecoinTotal) return '$0.00';
+    return `$${stablecoinTotal}`;
+  }, [stablecoinTotal]);
 
   return (
     <View className="mt-10 rounded-2xl border border-[#F0F0F0] bg-white p-6 shadow-sm">
@@ -48,7 +49,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
       </Text>
 
       <View className="mt-6">
-        <Text className="text-xs font-semibold uppercase text-[#909090]">Select Balance</Text>
+        <Text className="text-xs font-semibold text-[#909090] uppercase">Select Balance</Text>
         {balances.length === 0 ? (
           <Text className="mt-3 text-sm text-[#A0A0A0]">No balances available.</Text>
         ) : (
@@ -73,7 +74,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
       </View>
 
       <View className="mt-6">
-        <Text className="text-xs font-semibold uppercase text-[#909090]">Amount (USD)</Text>
+        <Text className="text-xs font-semibold text-[#909090] uppercase">Amount (USD)</Text>
         <TextInput
           value={amount}
           onChangeText={setAmount}
@@ -86,7 +87,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
       </View>
 
       <View className="mt-6">
-        <Text className="text-xs font-semibold uppercase text-[#909090]">Commitment</Text>
+        <Text className="text-xs font-semibold text-[#909090] uppercase">Commitment</Text>
         <TextInput
           value={commitment}
           onChangeText={setCommitment}
@@ -95,13 +96,11 @@ export default function DepositForm({ payload }: DepositFormProps) {
           placeholder="0x..."
           className="mt-2 rounded-2xl border border-[#E5E5E5] bg-white px-4 py-3 text-base text-[#0F0F0F]"
         />
-        {scanned ? (
-          <Text className="mt-1 text-xs text-emerald-600">QR data applied.</Text>
-        ) : null}
+        {scanned ? <Text className="mt-1 text-xs text-emerald-600">QR data applied.</Text> : null}
       </View>
 
       <View className="mt-6">
-        <Text className="text-xs font-semibold uppercase text-[#909090]">Paste Deposit Link</Text>
+        <Text className="text-xs font-semibold text-[#909090] uppercase">Paste Deposit Link</Text>
         <TextInput
           value={qrValue}
           onChangeText={setQrValue}
@@ -127,7 +126,11 @@ export default function DepositForm({ payload }: DepositFormProps) {
           loading={loading}
           loadingText="Submitting"
         />
-        <OutlineButton title="Reset Form" onPress={resetSection} className="mt-4 border-[#E5E5E5]" />
+        <OutlineButton
+          title="Reset Form"
+          onPress={resetSection}
+          className="mt-4 border-[#E5E5E5]"
+        />
       </View>
 
       {txHash ? (
@@ -135,7 +138,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
           activeOpacity={0.7}
           onPress={copyTxHash}
           className="mt-8 rounded-2xl border border-[#E5E5E5] bg-[#F9FAFB] px-4 py-4">
-          <Text className="text-xs font-semibold uppercase text-[#909090]">Transaction Hash</Text>
+          <Text className="text-xs font-semibold text-[#909090] uppercase">Transaction Hash</Text>
           <Text className="mt-2 text-sm font-semibold text-[#0F0F0F]">{shortenHash(txHash)}</Text>
           <Text className="mt-1 text-xs text-[#FD4912]">{copied ? 'Copied' : 'Tap to copy'}</Text>
         </TouchableOpacity>

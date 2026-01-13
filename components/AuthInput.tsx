@@ -112,6 +112,12 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
           isAndroidSecure ? { start: displayValue.length, end: displayValue.length } : undefined
         }
         className="h-13 px-1 text-xl text-[#0F0F0F]"
+        // Disable autofill to prevent Google Password Manager from prompting
+        // Android: importantForAutofill="no" prevents autofill service from interacting with this field
+        // iOS: Omitting textContentType prevents iOS from suggesting/saving passwords
+        {...(Platform.OS === 'android' && secureTextEntry
+          ? { importantForAutofill: 'no' as any }
+          : {})}
         {...rest}
         onFocus={onFocus}
         onBlur={onBlur}

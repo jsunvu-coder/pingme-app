@@ -73,12 +73,9 @@ export default function WithdrawScreen() {
       const bestByAmount = (list: any[]) =>
         list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
 
+      // Only allow USDC balances for withdrawal
       const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
-      const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
-      const selected =
-        (usdcBalances.length ? bestByAmount(usdcBalances) : undefined) ??
-        (positiveBalances.length ? bestByAmount(positiveBalances) : undefined) ??
-        bestByAmount(balances);
+      const selected = usdcBalances.length ? bestByAmount(usdcBalances) : undefined;
 
       setEntry(selected);
     };
@@ -143,10 +140,33 @@ export default function WithdrawScreen() {
     setLoading(true);
     try {
       // --- Validation ---
+      // Check if there's any USDC balance available
+      const stablecoinTotal = balanceService.getStablecoinTotal();
+      const hasUsdcBalance = parseFloat(stablecoinTotal) > 0;
+
+      if (!hasUsdcBalance) {
+        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
+        return;
+      }
+
       if (!entry?.amount) {
         await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
         return;
       }
+
+      // Validate that entry is actually USDC
+      const usdcAddress = TOKENS.USDC.toLowerCase();
+      const entryTokenAddress = (entry?.tokenAddress ?? entry?.token ?? '')
+        .toString()
+        .toLowerCase();
+      const entryTokenName = (entry?.tokenName ?? entry?.token ?? '').toString().toUpperCase();
+      const isEntryUsdc = entryTokenAddress === usdcAddress || entryTokenName === TOKEN_NAMES.USDC;
+
+      if (!isEntryUsdc) {
+        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
+        return;
+      }
+
       if (!amount) {
         await confirm('_ALERT_ENTER_AMOUNT', {
           cancel: false,
