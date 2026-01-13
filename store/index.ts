@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import type { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import historyReducer from './historySlice';
+import balanceReducer from './balanceSlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -15,9 +16,13 @@ export async function createStore() {
   const store = configureStore({
     reducer: {
       history: historyReducer,
+      balance: balanceReducer,
     },
     preloadedState: persistedState
-      ? ({ history: persistedState.history } as Partial<{ history: any }>)
+      ? ({
+          history: persistedState.history,
+          balance: persistedState.balance,
+        } as Partial<{ history: any; balance: any }>)
       : undefined,
   });
 
@@ -68,10 +73,12 @@ void storePromise;
 // Define the store type structure
 const reducer = {
   history: historyReducer,
+  balance: balanceReducer,
 };
 
 // Export types - define directly from reducer structure
 export type RootState = {
   history: ReturnType<typeof historyReducer>;
+  balance: ReturnType<typeof balanceReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;

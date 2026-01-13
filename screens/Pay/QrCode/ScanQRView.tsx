@@ -7,6 +7,7 @@ import { NoPermissionView } from './NoPermissionView';
 import QRScanner from './QrScanner';
 import { handleUrl } from './URLHandler';
 import UploadPhotoButton from './UploadPhotoButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ScanQRView() {
   const [hasPermission, setHasPermission] = useState(false);
@@ -51,6 +52,8 @@ export default function ScanQRView() {
     }
   };
 
+  const { bottom } = useSafeAreaInsets();
+
   const renderPermissionPrompt = () => (
     <View className="flex-1 items-center justify-center px-6 py-8">
       <View className="flex-1" />
@@ -86,13 +89,11 @@ export default function ScanQRView() {
   // === Case 3: Permission granted
   return (
     <View className="flex-1 bg-white">
-      <View className="flex-[0.9]">
+      <View className="flex-1">
         <QRScanner onScanSuccess={handleQRCode} />
       </View>
 
-      <View className="flex-[0.1] items-center justify-center pb-10">
-        <UploadPhotoButton onScanSuccess={handleQRCode} />
-      </View>
+      <UploadPhotoButton onScanSuccess={handleQRCode} />
     </View>
   );
 }

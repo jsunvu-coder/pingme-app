@@ -5,6 +5,9 @@ import { BalanceEntry } from 'business/Types';
 import { Utils } from 'business/Utils';
 import { TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
+import { AccountDataService } from './AccountDataService';
+import { getStore, type AppDispatch } from 'store/index';
+import { setStablecoinBalance } from 'store/balanceSlice';
 
 type BalanceListener = (balances: BalanceEntry[]) => void;
 type UpdateTimeListener = (time: number | null) => void;
@@ -176,6 +179,9 @@ export class BalanceService {
       this._totalBalance = this.computeTotal(this.balances);
       this.needsRetryOnReconnect = false;
 
+      // Update Redux store with stablecoin balance
+      this.updateReduxBalance();
+
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
     } catch (err) {
@@ -231,5 +237,27 @@ export class BalanceService {
       }
     }, 0n);
     return Utils.formatMicroToUsd(sumMicro, undefined, { grouping: true, empty: '0.00' });
+  }
+
+  /**
+   * Update Redux store with current stablecoin balance for the current account
+   */
+  private async updateReduxBalance(): Promise<void> {
+    try {
+      const accountEmail = AccountDataService.getInstance().email;
+      if (!accountEmail) {
+        console.warn('[BalanceService] No account email available, skipping Redux update');
+        return;
+      }
+
+      const stablecoinBalance = this.getStablecoinTotal();
+      const store = await getStore();
+      // Dispatch action to update Redux store
+      const dispatch = store.dispatch as AppDispatch;
+      dispatch(setStablecoinBalance({ accountEmail, stablecoinBalance }));
+    } catch (error) {
+      console.warn('[BalanceService] Failed to update Redux balance:', error);
+      // Don't throw - this is a non-critical update
+    }
   }
 }

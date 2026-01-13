@@ -6,6 +6,7 @@ import QrTabSwitch from './QrTabSwitch';
 import NavigationBar from 'components/NavigationBar';
 import ScanQRView from './ScanQRView';
 import MyQRCodeView from './MyQrCodeScreen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type QRMode = 'scan' | 'myqr';
 
@@ -14,8 +15,9 @@ export default function QRCodeScreen() {
   const { mode = 'scan' } = (route.params as { mode?: QRMode }) || {};
   const [activeTab, setActiveTab] = useState<QRMode>(mode);
 
+  const { bottom } = useSafeAreaInsets();
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: 'white', paddingBottom: bottom }}>
       <NavigationBar title="QR Code" />
 
       <View className="px-6">

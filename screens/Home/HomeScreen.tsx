@@ -9,7 +9,7 @@ import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { useAppDispatch } from 'store/hooks';
+import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -17,10 +17,10 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const accountDataService = useMemo(() => AccountDataService.getInstance(), []);
+  const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
 
   const [balances, setBalances] = useState<BalanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalBalance, setTotalBalance] = useState('0.00');
 
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
@@ -39,7 +39,6 @@ export default function HomeScreen() {
   useEffect(() => {
     const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
-      setTotalBalance(balanceService.getStablecoinTotal());
       setLoading(false);
     };
 
@@ -58,7 +57,6 @@ export default function HomeScreen() {
     await balanceService.getBalance();
     await accountDataService.updateForwarderBalance(confirmTopUp);
     setBalances(balanceService.currentBalances);
-    setTotalBalance(balanceService.getStablecoinTotal());
     setLoading(false);
   }, [accountDataService, balanceService, confirmTopUp, dispatch]);
 

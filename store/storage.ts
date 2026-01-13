@@ -56,6 +56,15 @@ export async function loadStoreState(): Promise<Record<string, any> | undefined>
       }
     }
 
+    // Ensure balance slice has correct structure
+    if (parsed.balance) {
+      if (!parsed.balance.byAccount || typeof parsed.balance.byAccount !== 'object') {
+        parsed.balance = {
+          byAccount: {},
+        };
+      }
+    }
+
     return parsed;
   } catch (err) {
     console.warn('[AsyncStorage] Failed to load store state', err);

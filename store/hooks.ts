@@ -2,6 +2,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './index';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { AccountHistory } from './historySlice';
+import { AccountBalance } from './balanceSlice';
 import { useMemo } from 'react';
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
@@ -43,4 +44,40 @@ export function useCurrentAccountHistory(): AccountHistory {
   });
 
   return accountHistory;
+}
+
+const DEFAULT_BALANCE: AccountBalance = {
+  stablecoinBalance: '0.00',
+  lastUpdated: null,
+};
+
+/**
+ * Hook to get current account stablecoin balance
+ * Gets the email from AccountDataService and returns the corresponding balance
+ */
+export function useCurrentAccountStablecoinBalance(): AccountBalance {
+  const accountBalance = useAppSelector((state) => {
+    // Check if state.balance exists
+    if (!state?.balance) {
+      return DEFAULT_BALANCE;
+    }
+
+    // Check if byAccount exists and is an object
+    if (!state.balance.byAccount || typeof state.balance.byAccount !== 'object') {
+      return DEFAULT_BALANCE;
+    }
+
+    const accountEmail = AccountDataService.getInstance().email;
+    if (!accountEmail) {
+      return DEFAULT_BALANCE;
+    }
+
+    const accountKey = accountEmail.toLowerCase();
+    const balance = state.balance.byAccount[accountKey];
+
+    // If balance exists for this account, return it; otherwise return default
+    return balance ?? DEFAULT_BALANCE;
+  });
+
+  return accountBalance;
 }
