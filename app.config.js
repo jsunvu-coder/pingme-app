@@ -42,7 +42,7 @@ module.exports = {
         {
           cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera to use feature "Scan QR".',
           microphonePermission: 'Allow $(PRODUCT_NAME) to access your microphone',
-          recordAudioAndroid: true,
+          recordAudioAndroid: false,
         },
       ],
       'expo-secure-store',
@@ -78,7 +78,7 @@ module.exports = {
         foregroundImage: './assets/icon.png',
         backgroundColor: '#ffffff',
       },
-      permissions: ['android.permission.CAMERA', 'android.permission.RECORD_AUDIO'],
+      permissions: ['android.permission.CAMERA'],
       package: 'xyz.pingme.app',
       intentFilters: [
         {
