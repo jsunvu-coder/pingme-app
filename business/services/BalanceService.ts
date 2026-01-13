@@ -4,6 +4,7 @@ import { ContractService } from './ContractService';
 import { BalanceEntry } from 'business/Types';
 import { Utils } from 'business/Utils';
 import { TOKENS } from 'business/Constants';
+import { CryptoUtils } from 'business/CryptoUtils';
 
 type BalanceListener = (balances: BalanceEntry[]) => void;
 type UpdateTimeListener = (time: number | null) => void;
@@ -112,12 +113,62 @@ export class BalanceService {
     const prevBalances = [...this.balances];
     const prevUpdateTime = this.balanceUpdateTime;
 
+    // Tạm thời dừng commitment guard khi update balance
+    this.contractService.pauseCommitmentGuard();
+
     try {
       const cr = this.contractService.getCrypto();
+      if (!cr) {
+        this.balanceUpdateTime = null;
+        this.notifyUpdateTimeChange();
+        return;
+      }
+
+      // Cập nhật commitment từ input_data nếu có
+      let commitment = cr.commitment;
+      if (cr.input_data) {
+        try {
+          console.log('[BalanceService] Updating commitment from input_data...');
+
+          // Tạo salt từ input_data
+          const salt = CryptoUtils.globalHash(cr.input_data);
+          if (!salt) {
+            console.warn('[BalanceService] Failed to generate salt from input_data');
+          } else {
+            // Lấy current_salt từ server
+            const ret1 = await this.contractService.getCurrentSalt(salt);
+            const current_salt = ret1.current_salt;
+            if (current_salt) {
+              // Tạo proof từ input_data và current_salt
+              const proof = CryptoUtils.globalHash2(cr.input_data, current_salt);
+              if (proof) {
+                // Tạo commitment từ proof
+                commitment = CryptoUtils.globalHash(proof);
+                if (commitment) {
+                  // Cập nhật crypto object với commitment mới
+                  const updated = {
+                    ...cr,
+                    salt,
+                    current_salt,
+                    proof,
+                    commitment,
+                  };
+                  this.contractService.setCrypto(updated);
+                  console.log('[BalanceService] Successfully updated commitment:', commitment);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[BalanceService] Failed to update commitment from input_data', error);
+          // Tiếp tục với commitment hiện có nếu có lỗi
+        }
+      }
+
       this.balanceUpdateTime = null;
       this.notifyUpdateTimeChange();
 
-      const ret = await this.contractService.getBalance(cr?.commitment);
+      const ret = await this.contractService.getBalance(commitment);
 
       this.balances = Utils.filterBalance(ret.amounts);
       this.balanceUpdateTime = ret.update_time;
@@ -137,6 +188,8 @@ export class BalanceService {
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
     } finally {
+      // Resume commitment guard sau khi update balance xong
+      this.contractService.resumeCommitmentGuard();
       this._mutex = false;
     }
   }

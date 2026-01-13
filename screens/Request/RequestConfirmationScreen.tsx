@@ -136,7 +136,14 @@ export default function RequestConfirmationScreen() {
     });
   };
 
+  useEffect(() => {
+    return () => {
+      setLoading(false);
+    };
+  }, []);
+
   const handleSendingRequest = async () => {
+    setLoading(true);
     const rawAmount: number | string = amount as number | string;
     const isAmountMissing =
       rawAmount === undefined ||
@@ -202,8 +209,6 @@ export default function RequestConfirmationScreen() {
       // If NetInfo fails, allow the request attempt to proceed.
     }
 
-    setLoading(true);
-
     try {
       console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
       const amountDecimal = Utils.formatMicroToUsd(amountMicro, undefined, {
@@ -225,7 +230,6 @@ export default function RequestConfirmationScreen() {
         message: 'Failed to send payment request. Please try again.',
       });
     } finally {
-      setLoading(false);
     }
   };
 
@@ -303,7 +307,7 @@ export default function RequestConfirmationScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
           <View className="absolute top-6 right-6 z-10">
-            <CloseButton />
+            <CloseButton isLoading={loading} />
           </View>
 
           <KeyboardAvoidingView
@@ -314,7 +318,8 @@ export default function RequestConfirmationScreen() {
               ref={scrollRef}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 140 }}>
+              contentContainerStyle={{ paddingBottom: 140 }}
+              scrollEnabled={!loading}>
               <View className="px-6 pt-10 pb-8">
                 <View className="mt-2 mb-6 items-center">
                   <WalletRequestIcon />
@@ -366,6 +371,7 @@ export default function RequestConfirmationScreen() {
             <PrimaryButton
               title={channel === 'Email' ? 'Send Payment Request' : 'Confirm Request'}
               loading={loading}
+              disabled={loading}
               onPress={handleSendingRequest}
             />
             <SafeBottomView />

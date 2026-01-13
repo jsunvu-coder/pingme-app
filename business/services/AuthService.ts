@@ -228,7 +228,6 @@ export class AuthService {
       );
 
       const retPk = await this.contractService.rvGetRecoveryPk(rvCommitment, true);
-      console.log('retPk', retPk);
       const recoveryPkHex = retPk?.recoveryPk;
 
       if (!recoveryPkHex || recoveryPkHex === ZERO_BYTES32) {

@@ -109,7 +109,6 @@ export class RequestService {
 
       // ---------- Confirm ----------
       if (!(await confirm('_CONFIRM_REQUEST'))) return;
-      setLoading(true);
 
       // ---------- Prepare Crypto ----------
       const cr = this.contractService.getCrypto();
@@ -148,7 +147,6 @@ export class RequestService {
       this.handleError('Payment request failed', error);
       await confirm('_ALERT_REQUEST_FAILED', false);
     } finally {
-      setLoading(false);
     }
   }
 
@@ -158,7 +156,6 @@ export class RequestService {
     amount,
     customMessage,
     confirm,
-    setLoading,
     setPayLink,
   }: {
     entry?: any;
@@ -195,7 +192,6 @@ export class RequestService {
 
       // ---------- Confirm ----------
       if (!(await confirm('_CONFIRM_REQUEST'))) return;
-      setLoading(true);
 
       // ---------- Prepare Crypto ----------
       const cr = this.contractService.getCrypto();
@@ -216,7 +212,6 @@ export class RequestService {
       this.handleError('Payment request failed', error);
       await confirm('_ALERT_REQUEST_FAILED', false);
     } finally {
-      setLoading(false);
     }
   }
 }

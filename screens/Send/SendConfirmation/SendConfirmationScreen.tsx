@@ -257,6 +257,12 @@ export default function SendConfirmationScreen() {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      setLoading(false);
+    };
+  }, []);
+
   const pay = async () => {
     const isEmailChannel = params?.channel === 'Email';
     if (isEmailChannel && !Utils.isValidEmail(recipient.trim())) {
@@ -463,7 +469,6 @@ export default function SendConfirmationScreen() {
         type: 'danger',
       });
     } finally {
-      setLoading(false);
     }
   };
 
@@ -471,21 +476,22 @@ export default function SendConfirmationScreen() {
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
         <View className="absolute top-0 right-0 left-0 z-10 bg-[#fafafa] pt-4 pr-4">
-          <CloseButton />
+          <CloseButton isLoading={loading} />
         </View>
 
         <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
           <ScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={!loading}>
             <View className="px-6 pt-20 pb-8">
               <View className="mt-2 mb-6 items-center">
                 <WalletSendIcon />
               </View>
 
               <Text className="mb-8 text-center text-3xl font-bold text-black">
-                You’re about to send
+                You're about to send
               </Text>
 
               <PaymentSummaryCard

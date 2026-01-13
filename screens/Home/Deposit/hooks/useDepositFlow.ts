@@ -303,9 +303,14 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
         });
       }
     } finally {
-      setLoading(false);
     }
   }, [amount, commitment, confirm, selectedBalance]);
+
+  useEffect(() => {
+    return () => {
+      setLoading(false);
+    };
+  }, []);
 
   const copyTxHash = useCallback(async () => {
     if (!txHash) return;

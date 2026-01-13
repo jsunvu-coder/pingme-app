@@ -79,14 +79,15 @@ export default function PayQrConfirmationScreen() {
     <ModalContainer>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
         <View className="absolute top-6 right-6 z-10">
-          <CloseButton />
+          <CloseButton isLoading={loading} />
         </View>
 
         <View className="px-6 pt-10 pb-8">
           <ScrollView
             className="mt-8"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}>
+            contentContainerStyle={{ paddingBottom: 24 }}
+            scrollEnabled={!loading}>
             <View className="mt-12 mb-6 items-center">
               <WalletSendIcon />
             </View>
@@ -111,6 +112,7 @@ export default function PayQrConfirmationScreen() {
               void handlePayNow();
             }}
             loading={loading}
+            disabled={loading}
             loadingText="Processing"
           />
           <SafeBottomView />
