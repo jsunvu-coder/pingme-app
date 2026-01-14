@@ -227,7 +227,7 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
               multiline={false}
               numberOfLines={1}
               scrollEnabled={true}
-              className="mb-4 px-1 text-base text-[#0F0F0F]"
+              className="mb-4 px-1 pt-2 pb-0 text-base text-[#0F0F0F]"
             />
             <View
               style={{

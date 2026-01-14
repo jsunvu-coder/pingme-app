@@ -1,7 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import NavigationBar from 'components/NavigationBar';
 import { push } from 'navigation/Navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, RefreshControl, SectionList, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -85,6 +85,16 @@ export default function PingHistoryScreen() {
   const insets = useSafeAreaInsets();
   const [navigationBarHeight, setNavigationBarHeight] = useState<number>(56); // Default height estimate
 
+  // Guard to ensure no state updates / follow-up logic after screen is unmounted.
+  const isActiveRef = useRef(true);
+
+  useEffect(() => {
+    isActiveRef.current = true;
+    return () => {
+      isActiveRef.current = false;
+    };
+  }, []);
+
   // Fetch recent items when screen is focused
   const fetchRecent = useCallback(async () => {
     try {
@@ -113,9 +123,11 @@ export default function PingHistoryScreen() {
     try {
       await loadMoreHistoryToRedux(dispatch);
     } finally {
-      setLoadingMore(false);
+      if (isActiveRef.current) {
+        setLoadingMore(false);
+      }
     }
-  }, [dispatch, hasMore]);
+  }, [dispatch, hasMore, loadingMore]);
 
   // Pull to refresh - reload all
   const onRefresh = useCallback(async () => {
@@ -123,7 +135,9 @@ export default function PingHistoryScreen() {
     try {
       await fetchHistoryToRedux(dispatch);
     } finally {
-      setRefreshing(false);
+      if (isActiveRef.current) {
+        setRefreshing(false);
+      }
     }
   }, [dispatch]);
 

@@ -134,46 +134,56 @@ export default function WithdrawConfirmationScreen() {
       const commitmentHash = CryptoUtils.globalHash(nextCommitment);
       if (!commitmentHash) throw new Error('Failed to generate commitment hash');
 
-      const result = await authService.commitProtect(
-        () =>
-          contractService.withdraw(
+      // Pause commitment guard before starting withdraw transaction
+      contractService.pauseCommitmentGuard();
+
+      try {
+        const result = await authService.commitProtect(
+          () =>
+            contractService.withdraw(
+              token,
+              microAmount.toString(),
+              cr.proof,
+              nextCommitment,
+              walletAddress
+            ),
+          cr.commitment,
+          commitmentHash
+        );
+
+        cr.current_salt = nextCurrentSalt;
+        cr.proof = nextProof;
+        cr.commitment = nextCommitment;
+        contractService.setCrypto(cr);
+
+        // Note: balanceService.getBalance() will pause/resume its own commitment guard,
+        // but we keep it paused here to ensure guard stays paused during the entire flow
+        await balanceService.getBalance();
+        await recordService.updateRecordNow();
+        // Refresh history in Redux to show the new withdraw transaction
+        await fetchHistoryToRedux(dispatch);
+
+        const fallbackTxHash =
+          (result as any)?.txHash ??
+          (result as any)?.tx_hash ??
+          (result as any)?.transactionHash ??
+          '';
+        const txHash =
+          (await getLatestWithdrawTxHash({
             token,
-            microAmount.toString(),
-            cr.proof,
-            nextCommitment,
-            walletAddress
-          ),
-        cr.commitment,
-        commitmentHash
-      );
+            microAmount,
+            walletAddress,
+          })) || fallbackTxHash;
 
-      cr.current_salt = nextCurrentSalt;
-      cr.proof = nextProof;
-      cr.commitment = nextCommitment;
-      contractService.setCrypto(cr);
-
-      await balanceService.getBalance();
-      await recordService.updateRecordNow();
-      // Refresh history in Redux to show the new withdraw transaction
-      await fetchHistoryToRedux(dispatch);
-
-      const fallbackTxHash =
-        (result as any)?.txHash ??
-        (result as any)?.tx_hash ??
-        (result as any)?.transactionHash ??
-        '';
-      const txHash =
-        (await getLatestWithdrawTxHash({
-          token,
-          microAmount,
+        push('WithdrawSuccessScreen', {
+          amount: numericAmount || 0,
           walletAddress,
-        })) || fallbackTxHash;
-
-      push('WithdrawSuccessScreen', {
-        amount: numericAmount || 0,
-        walletAddress,
-        txHash,
-      });
+          txHash,
+        });
+      } finally {
+        // Resume commitment guard after withdraw transaction completes
+        contractService.resumeCommitmentGuard();
+      }
     } catch (err) {
       console.error('Withdraw confirm failed:', err);
       Alert.alert(t('ERROR', undefined, 'Error'), t('_ALERT_WITHDRAW_FAILED'));

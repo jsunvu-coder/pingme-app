@@ -116,7 +116,7 @@ export class BalanceService {
     const prevBalances = [...this.balances];
     const prevUpdateTime = this.balanceUpdateTime;
 
-    // Tạm thời dừng commitment guard khi update balance
+    // Pause commitment guard when updating balance
     this.contractService.pauseCommitmentGuard();
 
     try {
@@ -127,28 +127,28 @@ export class BalanceService {
         return;
       }
 
-      // Cập nhật commitment từ input_data nếu có
+      // Update commitment from input_data if available
       let commitment = cr.commitment;
       if (cr.input_data) {
         try {
           console.log('[BalanceService] Updating commitment from input_data...');
 
-          // Tạo salt từ input_data
+          // create salt from input_data
           const salt = CryptoUtils.globalHash(cr.input_data);
           if (!salt) {
             console.warn('[BalanceService] Failed to generate salt from input_data');
           } else {
-            // Lấy current_salt từ server
+            // Fetch current_salt from server
             const ret1 = await this.contractService.getCurrentSalt(salt);
             const current_salt = ret1.current_salt;
             if (current_salt) {
-              // Tạo proof từ input_data và current_salt
+              // Derive proof from input_data and current_salt
               const proof = CryptoUtils.globalHash2(cr.input_data, current_salt);
               if (proof) {
-                // Tạo commitment từ proof
+                // Derive commitment from proof
                 commitment = CryptoUtils.globalHash(proof);
                 if (commitment) {
-                  // Cập nhật crypto object với commitment mới
+                  // Prepare updated crypto object with new commitment
                   const updated = {
                     ...cr,
                     salt,
@@ -156,8 +156,17 @@ export class BalanceService {
                     proof,
                     commitment,
                   };
-                  this.contractService.setCrypto(updated);
-                  console.log('[BalanceService] Successfully updated commitment:', commitment);
+                  // If the session was cleared (e.g., user logged out) while this
+                  // async flow was in-flight, do not resurrect crypto state.
+                  const currentCrypto = this.contractService.getCrypto();
+                  if (!currentCrypto) {
+                    console.warn(
+                      '[BalanceService] Skipping setCrypto because session is no longer active'
+                    );
+                  } else {
+                    this.contractService.setCrypto(updated);
+                    console.log('[BalanceService] Successfully updated commitment:', commitment);
+                  }
                 }
               }
             }

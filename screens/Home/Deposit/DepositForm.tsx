@@ -124,6 +124,7 @@ export default function DepositForm({ payload }: DepositFormProps) {
           title="Withdraw & Deposit"
           onPress={withdrawAndDeposit}
           loading={loading}
+          disabled={loading}
           loadingText="Submitting"
         />
         <OutlineButton

@@ -11,15 +11,10 @@ import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
  *  - https://app.pingme.xyz/claim?lockboxSalt=0x...
  *  - https://app.pingme.xyz/send?token=...&amount=...&requester=...
  *  - https://app.pingme.xyz/deposit?commitment=...
+ *  - https://app.staging.pingme.xyz/... (for staging builds and production builds with both domains)
  */
 export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
-  const showError = ({
-    title,
-    message,
-  }: {
-    title: string;
-    message: string;
-  }) => {
+  const showError = ({ title, message }: { title: string; message: string }) => {
     showFlashMessage({
       title,
       message,
@@ -39,7 +34,12 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
     console.log('🔍 [handleUrl] Incoming URL (decoded):', decodedData);
 
     // ✅ Normalize and validate base URL
-    if (!decodedData.startsWith(APP_URL)) {
+    // Accept both production and staging URLs (production builds have both domains configured)
+    const validBaseUrls = ['https://app.pingme.xyz', 'https://app.staging.pingme.xyz'];
+
+    const isValidUrl = validBaseUrls.some((baseUrl) => decodedData.startsWith(baseUrl));
+
+    if (!isValidUrl) {
       console.warn('❌ Unsupported URL base:', decodedData);
       showError({
         title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
@@ -54,7 +54,8 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
     // ---------- Handle /claim ----------
     if (path === '/claim') {
       const lockboxSalt = url.searchParams.get('lockboxSalt');
-      const username = url.searchParams.get('username') ?? url.searchParams.get('email') ?? undefined;
+      const username =
+        url.searchParams.get('username') ?? url.searchParams.get('email') ?? undefined;
       if (!lockboxSalt) {
         console.warn('⚠️ Missing lockboxSalt in claim URL');
         showError({
@@ -94,7 +95,9 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
         const normalized = (raw ?? '').replace(/,/g, '').replace(/\$/g, '').trim();
         if (!normalized) return undefined;
         if (normalized.includes('.')) return normalized; // already USD decimal
-        return Utils.formatMicroToUsd(normalized, undefined, { grouping: false, empty: '' }) || undefined;
+        return (
+          Utils.formatMicroToUsd(normalized, undefined, { grouping: false, empty: '' }) || undefined
+        );
       };
 
       // Try parsing from path if query params missing

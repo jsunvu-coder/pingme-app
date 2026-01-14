@@ -67,40 +67,50 @@ export async function submitDepositTransaction({
   const nextCommitmentHash = CryptoUtils.globalHash(nextCommitment);
   if (!nextCommitmentHash) throw new Error('Failed to derive commitment hash.');
 
+  // Pause commitment guard before starting deposit transaction
+  contractService.pauseCommitmentGuard();
+
   let txHash: string | null = null;
 
-  await authService.commitProtect(
-    async () => {
-      const result = await contractService.withdrawAndDeposit(
-        tokenAddress,
-        amountMicro.toString(),
-        cr.proof,
-        nextCommitment,
-        trimmedCommitment
-      );
+  try {
+    await authService.commitProtect(
+      async () => {
+        const result = await contractService.withdrawAndDeposit(
+          tokenAddress,
+          amountMicro.toString(),
+          cr.proof,
+          nextCommitment,
+          trimmedCommitment
+        );
 
-      txHash = result?.txHash ?? null;
+        txHash = result?.txHash ?? null;
 
-      const updated = {
-        ...cr,
-        current_salt: nextCurrentSalt,
-        proof: nextProof,
-        commitment: nextCommitment,
-      };
-      contractService.setCrypto(updated);
+        const updated = {
+          ...cr,
+          current_salt: nextCurrentSalt,
+          proof: nextProof,
+          commitment: nextCommitment,
+        };
+        contractService.setCrypto(updated);
 
-      return result;
-    },
-    cr.commitment,
-    nextCommitmentHash
-  );
+        return result;
+      },
+      cr.commitment,
+      nextCommitmentHash
+    );
 
-  if (!txHash) {
-    throw new Error('Failed to obtain transaction hash.');
+    if (!txHash) {
+      throw new Error('Failed to obtain transaction hash.');
+    }
+
+    // Note: balanceService.getBalance() will pause/resume its own commitment guard,
+    // but we keep it paused here to ensure guard stays paused during the entire flow
+    await balanceService.getBalance();
+    recordService.updateRecord();
+
+    return { txHash };
+  } finally {
+    // Resume commitment guard after deposit transaction completes
+    contractService.resumeCommitmentGuard();
   }
-
-  await balanceService.getBalance();
-  recordService.updateRecord();
-
-  return { txHash };
 }

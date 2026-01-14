@@ -30,7 +30,6 @@ module.exports = {
       tsconfigPaths: true,
     },
     plugins: [
-      './app.plugin.js',
       [
         'expo-image-picker',
         {
@@ -47,6 +46,8 @@ module.exports = {
       ],
       'expo-secure-store',
       'expo-web-browser',
+      // Keep our custom plugin LAST so it can override/cleanup changes made by other plugins
+      './app.plugin.js',
     ],
     orientation: 'portrait',
     icon: './assets/icon.png',

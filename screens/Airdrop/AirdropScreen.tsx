@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ScrollView, StatusBar, View, Text, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  ScrollView,
+  StatusBar,
+  View,
+  Text,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import HeaderView from 'components/HeaderView';
 import OutlineButton from 'components/OutlineButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -83,7 +92,7 @@ export default function AirdropScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
 
   const [balances, setBalances] = useState<BalanceEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTokenInfo, setSelectedTokenInfo] = useState<TokenInfo | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -101,11 +110,10 @@ export default function AirdropScreen() {
   useEffect(() => {
     const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
-      setLoading(false);
+      setInitialLoading(false);
     };
 
     balanceService.onBalanceChange(onUpdate);
-    void balanceService.getBalance();
 
     return () => {
       balanceService.offBalanceChange(onUpdate);
@@ -116,6 +124,7 @@ export default function AirdropScreen() {
   const tokenInfos = useMemo(() => {
     const usdcAddress = TOKENS.USDC.toLowerCase();
     const pWmonAddress = TOKENS.pWMON.toLowerCase();
+    const wmonAddress = TOKENS.WMON.toLowerCase();
 
     return balances
       .map((entry) => {
@@ -128,6 +137,9 @@ export default function AirdropScreen() {
           isStablecoin = true;
         } else if (tokenAddress === pWmonAddress) {
           name = TOKEN_NAMES.pWMON;
+          isStablecoin = false;
+        } else if (tokenAddress === wmonAddress) {
+          name = TOKEN_NAMES.WMON;
           isStablecoin = false;
         } else {
           // Unknown token, skip or use address
@@ -147,10 +159,19 @@ export default function AirdropScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await balanceService.getBalance();
-    setBalances(balanceService.currentBalances);
-    setRefreshing(false);
+    try {
+      await balanceService.getBalance();
+    } finally {
+      setRefreshing(false);
+    }
   }, [balanceService]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Always refresh balances when the screen becomes focused
+      void handleRefresh();
+    }, [handleRefresh])
+  );
 
   const handleWithdrawClick = useCallback((tokenInfo: TokenInfo) => {
     setSelectedTokenInfo(tokenInfo);
@@ -256,50 +277,60 @@ export default function AirdropScreen() {
           throw new Error('Amount below minimum');
         }
 
-        const result = await authService.commitProtect(
-          () =>
-            contractService.withdraw(
-              selectedTokenInfo.entry.token,
-              microAmount.toString(),
-              cr.proof,
-              nextCommitment,
-              walletAddress
-            ),
-          cr.commitment,
-          commitmentHash
-        );
+        // Pause commitment guard before starting withdraw transaction
+        contractService.pauseCommitmentGuard();
 
-        cr.current_salt = nextCurrentSalt;
-        cr.proof = nextProof;
-        cr.commitment = nextCommitment;
-        contractService.setCrypto(cr);
+        try {
+          const result = await authService.commitProtect(
+            () =>
+              contractService.withdraw(
+                selectedTokenInfo.entry.token,
+                microAmount.toString(),
+                cr.proof,
+                nextCommitment,
+                walletAddress
+              ),
+            cr.commitment,
+            commitmentHash
+          );
 
-        await balanceService.getBalance();
-        await recordService.updateRecord();
+          cr.current_salt = nextCurrentSalt;
+          cr.proof = nextProof;
+          cr.commitment = nextCommitment;
+          contractService.setCrypto(cr);
 
-        const fallbackTxHash =
-          (result as any)?.txHash ??
-          (result as any)?.tx_hash ??
-          (result as any)?.transactionHash ??
-          '';
-        const txHash =
-          (await getLatestWithdrawTxHash({
-            token: selectedTokenInfo.entry.token,
-            microAmount,
+          // Note: balanceService.getBalance() will pause/resume its own commitment guard,
+          // but we keep it paused here to ensure guard stays paused during the entire flow
+          await balanceService.getBalance();
+          await recordService.updateRecord();
+
+          const fallbackTxHash =
+            (result as any)?.txHash ??
+            (result as any)?.tx_hash ??
+            (result as any)?.transactionHash ??
+            '';
+          const txHash =
+            (await getLatestWithdrawTxHash({
+              token: selectedTokenInfo.entry.token,
+              microAmount,
+              walletAddress,
+            })) || fallbackTxHash;
+
+          // Close bottom sheet and show success modal
+          setSheetVisible(false);
+          setSelectedTokenInfo(null);
+
+          setSuccessData({
+            amount: selectedTokenInfo.entry.amount,
+            tokenName: selectedTokenInfo.name,
             walletAddress,
-          })) || fallbackTxHash;
-
-        // Close bottom sheet and show success modal
-        setSheetVisible(false);
-        setSelectedTokenInfo(null);
-
-        setSuccessData({
-          amount: selectedTokenInfo.entry.amount,
-          tokenName: selectedTokenInfo.name,
-          walletAddress,
-          txHash,
-        });
-        setSuccessModalVisible(true);
+            txHash,
+          });
+          setSuccessModalVisible(true);
+        } finally {
+          // Resume commitment guard after withdraw transaction completes
+          contractService.resumeCommitmentGuard();
+        }
       } catch (error) {
         console.error('Withdraw failed:', error);
         showFlashMessage({
@@ -331,35 +362,41 @@ export default function AirdropScreen() {
 
       <HeaderView title={t('AIRDROP_REWARDS', undefined, 'Rewards')} variant="light" />
 
-      <ScrollView
-        className="m-6"
-        showsVerticalScrollIndicator={false}
-        contentContainerClassName="flex-1"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-        <Text className="mb-4 text-sm font-semibold text-[#444] uppercase">
-          {t('AIRDROP_AVAILABLE_TOKENS', undefined, 'Available Tokens')}
-        </Text>
+      {initialLoading && nonStablecoins.length === 0 ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          className="m-6"
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="flex-1"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+          <Text className="mb-4 text-sm font-semibold text-[#444] uppercase">
+            {t('AIRDROP_AVAILABLE_TOKENS', undefined, 'Available Tokens')}
+          </Text>
 
-        {/* Only Non-Stablecoins */}
-        {nonStablecoins.length > 0 && (
-          <View>
-            {nonStablecoins.map((tokenInfo) => (
-              <View key={tokenInfo.entry.token} className="mb-4">
-                <TokenCard tokenInfo={tokenInfo} onWithdraw={handleWithdrawClick} />
-              </View>
-            ))}
-          </View>
-        )}
+          {/* Only Non-Stablecoins */}
+          {nonStablecoins.length > 0 && (
+            <View>
+              {nonStablecoins.map((tokenInfo) => (
+                <View key={tokenInfo.entry.token} className="mb-4">
+                  <TokenCard tokenInfo={tokenInfo} onWithdraw={handleWithdrawClick} />
+                </View>
+              ))}
+            </View>
+          )}
 
-        {/* Empty State */}
-        {!loading && nonStablecoins.length === 0 && (
-          <View className="mt-8 items-center py-12">
-            <Text className="text-base text-gray-400">
-              {t('AIRDROP_NO_TOKENS_AVAILABLE', undefined, 'No tokens available')}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          {/* Empty State */}
+          {!initialLoading && nonStablecoins.length === 0 && (
+            <View className="mt-8 items-center py-12">
+              <Text className="text-base text-gray-400">
+                {t('AIRDROP_NO_TOKENS_AVAILABLE', undefined, 'No tokens available')}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       {/* Withdraw Bottom Sheet */}
       {selectedTokenInfo && (

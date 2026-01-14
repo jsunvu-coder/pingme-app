@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -58,36 +58,50 @@ export default function PayQrConfirmationScreen() {
     useDepositFlow(depositPayload);
 
   const [acknowledgedHash, setAcknowledgedHash] = useState<string | null>(null);
+  const isNavigatingRef = useRef(false);
 
   const handlePayNow = useCallback(async () => {
     await withdrawAndDeposit();
   }, [withdrawAndDeposit]);
 
   useEffect(() => {
-    if (!txHash || txHash === acknowledgedHash) return;
+    // Guard: only proceed if we have a txHash, haven't acknowledged it yet, and aren't already navigating
+    if (!txHash || txHash === acknowledgedHash || isNavigatingRef.current) return;
 
     const handleSuccess = async () => {
-      const normalizedAmount = normalizeDecimal(amount);
-      const numericAmount = Number(normalizedAmount);
-      const safeAmount = Number.isFinite(numericAmount) ? Number(numericAmount.toFixed(2)) : 0;
-
-      // Refresh history in Redux to show the new deposit transaction
-      await fetchHistoryToRedux(dispatch);
-
+      // Mark navigation as in progress immediately to prevent race conditions
+      isNavigatingRef.current = true;
+      // Set acknowledgedHash immediately to prevent re-running if dependencies change
       setAcknowledgedHash(txHash);
-      setRootScreen([
-        {
-          name: 'PaymentSuccessScreen',
-          params: {
-            recipient: commitment.trim() || 'unknown',
-            amount: safeAmount,
-            passphrase: '',
-            txHash,
-            channel: 'QR',
-            duration: 0,
+
+      try {
+        const normalizedAmount = normalizeDecimal(amount);
+        const numericAmount = Number(normalizedAmount);
+        const safeAmount = Number.isFinite(numericAmount) ? Number(numericAmount.toFixed(2)) : 0;
+
+        // Refresh history in Redux to show the new deposit transaction
+        await fetchHistoryToRedux(dispatch);
+
+        // Navigate to success screen
+        setRootScreen([
+          {
+            name: 'PaymentSuccessScreen',
+            params: {
+              recipient: commitment.trim() || 'unknown',
+              amount: safeAmount,
+              passphrase: '',
+              txHash,
+              channel: 'QR',
+              duration: 0,
+            },
           },
-        },
-      ]);
+        ]);
+      } catch (error) {
+        console.error('[PayQrConfirmationScreen] Error in handleSuccess:', error);
+        // Reset flags on error so user can retry
+        isNavigatingRef.current = false;
+        setAcknowledgedHash(null);
+      }
     };
 
     void handleSuccess();

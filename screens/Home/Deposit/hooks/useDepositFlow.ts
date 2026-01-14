@@ -180,11 +180,8 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
 
       if (mounted) {
         setCommitment(payload.commitment);
-        setAmount(formatAmountOrEmpty(payload.amount));
-        setSelectedBalance((prev) => {
-          if (!balances.length) return prev;
-          return selectDefaultBalance(balances, payload.token) ?? prev;
-        });
+        // Only initialize amount from payload if user hasn't already entered a value
+        setAmount((prev) => (prev ? prev : formatAmountOrEmpty(payload.amount)));
       }
     };
 
@@ -192,7 +189,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     return () => {
       mounted = false;
     };
-  }, [payload, balances, confirm]);
+  }, [payload, confirm]);
 
   const handleAmountBlur = useCallback(() => {
     setAmount((prev) => normalizeAmountInput(prev));
@@ -222,6 +219,11 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
   );
 
   const withdrawAndDeposit = useCallback(async () => {
+    // Prevent spamming / double-submit while a request is already in-flight
+    if (loading) {
+      return;
+    }
+
     const entry = selectedBalance;
     const trimmedCommitment = commitment.trim();
     const trimmedAmount = amount.trim();
@@ -304,7 +306,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       }
     } finally {
     }
-  }, [amount, commitment, confirm, selectedBalance]);
+  }, [amount, commitment, confirm, selectedBalance, loading]);
 
   useEffect(() => {
     return () => {

@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
 
   const [balances, setBalances] = useState<BalanceEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
@@ -43,15 +43,14 @@ export default function HomeScreen() {
     };
 
     balanceService.onBalanceChange(onUpdate);
-    void balanceService.getBalance();
-    void accountDataService.updateForwarderBalance(confirmTopUp);
 
     return () => {
       balanceService.offBalanceChange(onUpdate);
     };
-  }, [accountDataService, balanceService, confirmTopUp]);
+  }, [balanceService]);
 
   const handleRefresh = useCallback(async () => {
+    if (loading) return;
     setLoading(true);
     await fetchRecentHistoryToRedux(dispatch); // Only fetch 5 most recent items
     await balanceService.getBalance();

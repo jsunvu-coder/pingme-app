@@ -216,11 +216,11 @@ const BottomSheetModal = forwardRef<BottomSheetModalRef, BottomSheetModalProps>(
             ref={bottomSheetRef}
             index={enableDynamicSizing ? 0 : -1}
             snapPoints={memoizedSnapPoints}
-            enablePanDownToClose={enablePanDownToClose}
+            enablePanDownToClose={enableDynamicSizing ? false : enablePanDownToClose}
             handleComponent={() => null}
             backdropComponent={renderBackdrop}
             onClose={onClose}
-            keyboardBehavior={Platform.OS === 'android' ? 'extend' : 'extend'}
+            keyboardBehavior={'interactive'}
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             enableDynamicSizing={enableDynamicSizing}
