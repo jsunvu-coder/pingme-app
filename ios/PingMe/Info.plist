@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>pingme</string>
-          <string>com.hailstonelab.pingme.demo</string>
+          <string>xyz.pingme.app</string>
         </array>
       </dict>
       <dict>
@@ -45,7 +45,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>46</string>
+    <string>50</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSApplicationQueriesSchemes</key>

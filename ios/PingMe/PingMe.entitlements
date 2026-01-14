@@ -4,6 +4,7 @@
   <dict>
     <key>com.apple.developer.associated-domains</key>
     <array>
+      <string>applinks:app.pingme.xyz</string>
       <string>applinks:app.staging.pingme.xyz</string>
     </array>
   </dict>

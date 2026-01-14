@@ -167,8 +167,7 @@ def get_next_build_number_ios(xcodeproj_path, firebase_app_id)
     UI.success("✅ Incrementing local build number: #{current_build_number} → #{next_build_number}")
   end
   
-  # return next_build_number
-  return 46
+  return next_build_number
 end
 
 # Helper function to get version from app.config.js
@@ -325,39 +324,39 @@ platform :ios do
     UI.important("   Testers: #{testers || 'none'}")
     UI.important("   Groups: #{groups || 'none'}")
     
-    begin
-      # Build parameters hash, only include non-nil values
-      params = {
-        app: firebase_app_id,
-        ipa_path: ipa_path,
-        release_notes: release_notes
-      }
-      params[:testers] = testers if testers
-      params[:groups] = groups if groups
-      params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+    # begin
+    #   # Build parameters hash, only include non-nil values
+    #   params = {
+    #     app: firebase_app_id,
+    #     ipa_path: ipa_path,
+    #     release_notes: release_notes
+    #   }
+    #   params[:testers] = testers if testers
+    #   params[:groups] = groups if groups
+    #   params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
       
-      firebase_app_distribution(params)
-      UI.success("✅ Successfully uploaded to Firebase App Distribution!")
-    rescue => ex
-      UI.important("⚠️  Failed to upload to Firebase App Distribution: #{ex.message}")
-      UI.important("   IPA is still available at: #{ipa_path}")
+    #   firebase_app_distribution(params)
+    #   UI.success("✅ Successfully uploaded to Firebase App Distribution!")
+    # rescue => ex
+    #   UI.important("⚠️  Failed to upload to Firebase App Distribution: #{ex.message}")
+    #   UI.important("   IPA is still available at: #{ipa_path}")
       
-      if ex.message.include?("status_code: 400") || ex.message.include?("Invalid request")
-        UI.important("")
-        UI.important("💡 Troubleshooting 400 Bad Request error:")
-        UI.important("   1. Check Firebase App ID format:")
-        UI.important("      - Short name: 'app-id-name'")
-        UI.important("      - Full format: '1:PROJECT_ID:ios:APP_ID'")
-        UI.important("   2. Verify App ID in Firebase Console:")
-        UI.important("      Project Settings > Your apps > iOS app")
-        UI.important("   3. Ensure you have permission to upload to this app")
-        UI.important("   4. Check if testers/groups exist in Firebase Console")
-      elsif ex.message.include?("Could not find action") || ex.message.include?("firebase_app_distribution")
-        UI.important("   Make sure plugin is installed: bundle add fastlane-plugin-firebase_app_distribution")
-        UI.important("   Then run: bundle exec fastlane staging")
-      end
-      raise ex
-    end
+    #   if ex.message.include?("status_code: 400") || ex.message.include?("Invalid request")
+    #     UI.important("")
+    #     UI.important("💡 Troubleshooting 400 Bad Request error:")
+    #     UI.important("   1. Check Firebase App ID format:")
+    #     UI.important("      - Short name: 'app-id-name'")
+    #     UI.important("      - Full format: '1:PROJECT_ID:ios:APP_ID'")
+    #     UI.important("   2. Verify App ID in Firebase Console:")
+    #     UI.important("      Project Settings > Your apps > iOS app")
+    #     UI.important("   3. Ensure you have permission to upload to this app")
+    #     UI.important("   4. Check if testers/groups exist in Firebase Console")
+    #   elsif ex.message.include?("Could not find action") || ex.message.include?("firebase_app_distribution")
+    #     UI.important("   Make sure plugin is installed: bundle add fastlane-plugin-firebase_app_distribution")
+    #     UI.important("   Then run: bundle exec fastlane staging")
+    #   end
+    #   raise ex
+    # end
   end
 
   desc "Build iOS IPA for production (App Store)"
