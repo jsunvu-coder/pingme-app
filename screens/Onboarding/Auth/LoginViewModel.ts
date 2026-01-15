@@ -368,20 +368,25 @@ export class LoginViewModel {
       const enabled = await LoginViewModel.isBiometricEnabled();
       if (!enabled) return { success: false };
 
-      const { email, password } = await LoginViewModel.getStoredCredentials();
-      if (!email || !password) {
-        return { success: false };
-      }
-
       const capability = await LoginViewModel.ensureCapability();
       if (!capability.available) return { success: false };
 
+      // Check credentials AFTER authentication to avoid blocking prompt on first use
+      // This allows biometric prompt to show even if credentials haven't been saved yet
       const type = capability.type;
       const result = await LocalAuthentication.authenticateAsync(
         LoginViewModel.getAuthOptions(`Authenticate with ${type ?? 'biometric'}`)
       );
 
       if (!result.success) {
+        return { success: false };
+      }
+
+      // Only return credentials if they exist
+      const { email, password } = await LoginViewModel.getStoredCredentials();
+      if (!email || !password) {
+        // Biometric authenticated but no credentials saved yet
+        // This happens on first use - user needs to login manually first
         return { success: false };
       }
 

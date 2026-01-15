@@ -18,7 +18,10 @@ const ACTION_MAP: Record<number, TransactionAction> = {
 
 const HIDDEN_ACTIONS = new Set<number>([1]); // e.g., password change / maintenance events
 
-export function parseTransaction(raw: any, currentCommitment?: string): TransactionViewModel | null {
+export function parseTransaction(
+  raw: any,
+  currentCommitment?: string
+): TransactionViewModel | null {
   const action = Number(raw.action ?? -1);
   let type: TransactionAction = ACTION_MAP[action] ?? 'Unknown';
 
@@ -87,7 +90,13 @@ export function parseTransaction(raw: any, currentCommitment?: string): Transact
   }
 
   const isPositive = direction !== 'send';
-  const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, { grouping: true, empty: '0.00' });
+  const tokenDecimals = Utils.getTokenDecimals(raw.token);
+  const amountUsd = Utils.formatMicroToUsd(
+    amountMicro,
+    undefined,
+    { grouping: true, empty: '0.00' },
+    tokenDecimals
+  );
   const formattedAmount = `${isPositive ? '+' : '-'} $${amountUsd}`;
   const amount = (() => {
     const numeric = Number(amountUsd.replace(/,/g, ''));

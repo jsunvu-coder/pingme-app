@@ -186,7 +186,7 @@ export default function TransactionDetailsScreen() {
 
   const showReclaim = !!lockboxCommitment && lockboxStatus === 'EXPIRED';
 
-  const amountDisplay = formatCurrency(Math.abs(transaction?.amount ?? 0));
+  const amountDisplay = formatCurrency(Math.abs(transaction?.amount ?? 0), transaction?.token);
 
   const handleReclaim = useCallback(async () => {
     if (!lockboxCommitment) return;
@@ -357,10 +357,11 @@ function DetailRow({
   );
 }
 
-const formatCurrency = (value?: number) => {
+const formatCurrency = (value?: number, token?: string) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  const micro = Utils.toMicro(String(amount));
-  return `$${Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' })}`;
+  const tokenDecimals = Utils.getTokenDecimals(token);
+  const micro = Utils.toMicro(String(amount), tokenDecimals);
+  return `$${Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' }, tokenDecimals)}`;
 };
 
 const formatTimestamp = (seconds?: number) => {

@@ -44,15 +44,22 @@ function TokenCard({
   onWithdraw: (tokenInfo: TokenInfo) => void;
 }) {
   const amount = useMemo(() => {
-    return Utils.formatMicroToUsd(tokenInfo.entry.amount, undefined, {
-      grouping: true,
-      empty: '0',
-    });
-  }, [tokenInfo.entry.amount]);
+    const tokenDecimals = Utils.getTokenDecimals(tokenInfo.entry.token);
+    return Utils.formatMicroToUsd(
+      tokenInfo.entry.amount,
+      undefined,
+      {
+        grouping: true,
+        empty: '0',
+      },
+      tokenDecimals
+    );
+  }, [tokenInfo.entry.amount, tokenInfo.entry.token]);
 
   const hasBalance = useMemo(() => {
     try {
-      return BigInt(tokenInfo.entry.amount) > 0n;
+      const tokenDecimals = Utils.getTokenDecimals(tokenInfo.entry.token);
+      return BigInt(tokenInfo.entry.amount) >= 10n ** BigInt(tokenDecimals - 2);
     } catch {
       return false;
     }

@@ -112,7 +112,8 @@ export default function WithdrawConfirmationScreen() {
 
       const trimmedAmount = amount.trim();
       const minAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const microAmount = Utils.toMicro(trimmedAmount);
+      const tokenDecimals = Utils.getTokenDecimals(token);
+      const microAmount = Utils.toMicro(trimmedAmount, tokenDecimals);
       const available = BigInt(availableAmount);
 
       if (microAmount < minAmount) {

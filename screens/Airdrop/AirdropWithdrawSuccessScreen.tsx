@@ -25,11 +25,17 @@ const AirdropWithdrawSuccessModal = forwardRef<
   AirdropWithdrawSuccessModalProps
 >(({ visible, amount = '0', tokenName = '', walletAddress = '', txHash = '', onClose }, ref) => {
   const formattedAmount = useMemo(() => {
-    return Utils.formatMicroToUsd(amount, undefined, {
-      grouping: true,
-      empty: '0',
-    });
-  }, [amount]);
+    const tokenDecimals = Utils.getTokenDecimals(tokenName);
+    return Utils.formatMicroToUsd(
+      amount,
+      undefined,
+      {
+        grouping: true,
+        empty: '0',
+      },
+      tokenDecimals
+    );
+  }, [amount, tokenName]);
 
   const truncatedWallet = useMemo(() => {
     if (!walletAddress || walletAddress.length <= 10) return walletAddress;

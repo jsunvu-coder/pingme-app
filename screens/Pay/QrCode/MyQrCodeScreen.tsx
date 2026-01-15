@@ -40,7 +40,8 @@ export default function MyQRCodeView({ amount = '', token }: Props) {
       // ✅ Handle amount validation (if provided)
       if (amount) {
         const k_min_amount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-        const k_amount = Utils.toMicro(amount);
+        const tokenDecimals = Utils.getTokenDecimals(token);
+        const k_amount = Utils.toMicro(amount, tokenDecimals);
 
         if (k_amount < k_min_amount) {
           await confirm('_ALERT_BELOW_MINIMUM');

@@ -107,13 +107,21 @@ export const useClaimPayment = () => {
   }, [derivedStatus]);
 
   // Format USD amount from lockbox
+  // Note: Lockbox typically uses stablecoin (6 decimals), but we use default 6 as fallback
   const formatUsdFromLockbox = () => {
     try {
       if (!lockbox?.amount) return undefined;
-      const formatted = Utils.formatMicroToUsd(lockbox.amount, undefined, {
-        grouping: true,
-        empty: '',
-      });
+      // Default to 6 decimals for lockbox (typically stablecoin)
+      const tokenDecimals = 6;
+      const formatted = Utils.formatMicroToUsd(
+        lockbox.amount,
+        undefined,
+        {
+          grouping: true,
+          empty: '',
+        },
+        tokenDecimals
+      );
       return formatted || undefined;
     } catch {
       return undefined;
@@ -123,10 +131,17 @@ export const useClaimPayment = () => {
   const amountUsdStrFromLockbox = (lb?: LockboxData | null) => {
     try {
       if (!lb?.amount) return undefined;
-      const formatted = Utils.formatMicroToUsd(lb.amount, undefined, {
-        grouping: true,
-        empty: '',
-      });
+      // Default to 6 decimals for lockbox (typically stablecoin)
+      const tokenDecimals = 6;
+      const formatted = Utils.formatMicroToUsd(
+        lb.amount,
+        undefined,
+        {
+          grouping: true,
+          empty: '',
+        },
+        tokenDecimals
+      );
       return formatted || undefined;
     } catch {
       return undefined;

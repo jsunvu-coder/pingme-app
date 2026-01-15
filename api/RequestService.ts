@@ -132,7 +132,9 @@ export class RequestService {
         if (await confirm('_ALERT_ENTER_AMOUNT', false)) return;
       }
       const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const kAmount = Utils.toMicro(safeAmount);
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      const kAmount = Utils.toMicro(safeAmount, tokenDecimals);
       if (kAmount < kMinAmount) {
         if (await confirm('_ALERT_BELOW_MINIMUM', false)) return;
       }
@@ -220,7 +222,9 @@ export class RequestService {
         if (await confirm('_ALERT_ENTER_AMOUNT', false)) return;
       }
       const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const kAmount = Utils.toMicro(safeAmount);
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      const kAmount = Utils.toMicro(safeAmount, tokenDecimals);
       if (kAmount < kMinAmount) {
         if (await confirm('_ALERT_BELOW_MINIMUM', false)) return;
       }

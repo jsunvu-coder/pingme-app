@@ -77,8 +77,12 @@ export default function SendConfirmationScreen() {
 
   const passphraseRequired = (() => {
     try {
-      const amountMicro = Utils.toMicro(amount);
-      return amountMicro > BigInt(SKIP_PASSPHRASE) * Utils.MICRO_FACTOR;
+      if (!entry) return false;
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      const amountMicro = Utils.toMicro(amount, tokenDecimals);
+      const factor = 10n ** BigInt(tokenDecimals);
+      return amountMicro > BigInt(SKIP_PASSPHRASE) * factor;
     } catch {
       return false;
     }
@@ -273,7 +277,18 @@ export default function SendConfirmationScreen() {
       return;
     }
 
-    const amountMicro = Utils.toMicro(amount);
+    const usableEntry = entry ?? (await ensureEntry());
+    if (!usableEntry) {
+      showFlashMessage({
+        title: 'Loading balances',
+        message: 'Balances are still loading. Please wait a moment and try again.',
+        type: 'info',
+      });
+      return;
+    }
+    const tokenAddress = usableEntry?.tokenAddress ?? usableEntry?.token;
+    const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+    const amountMicro = Utils.toMicro(amount, tokenDecimals);
     if (amountMicro <= 0n) {
       showFlashMessage({
         title: 'Invalid amount',
@@ -291,16 +306,6 @@ export default function SendConfirmationScreen() {
           ? 'A passphrase is required for amounts over $10.'
           : 'Please enter a passphrase or disable the passphrase option.',
         type: 'warning',
-      });
-      return;
-    }
-
-    const usableEntry = entry ?? (await ensureEntry());
-    if (!usableEntry) {
-      showFlashMessage({
-        title: 'Loading balances',
-        message: 'Balances are still loading. Please wait a moment and try again.',
-        type: 'info',
       });
       return;
     }

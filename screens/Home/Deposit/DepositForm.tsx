@@ -3,6 +3,7 @@ import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import PrimaryButton from 'components/PrimaryButton';
 import OutlineButton from 'components/OutlineButton';
 import { useDepositFlow, type DepositPayload } from './hooks/useDepositFlow';
+import { Utils } from 'business/Utils';
 
 interface DepositFormProps {
   payload?: DepositPayload | null;
@@ -65,7 +66,13 @@ export default function DepositForm({ payload }: DepositFormProps) {
                 }`}>
                 <Text className="text-sm font-semibold text-[#0F0F0F]">{entry.token}</Text>
                 <Text className="mt-1 text-xs text-[#606060]">
-                  Available: ${formatMicroToUsd(entry.amount)}
+                  Available: $
+                  {Utils.formatMicroToUsd(
+                    entry.amount,
+                    undefined,
+                    { grouping: true, empty: '0.00' },
+                    Utils.getTokenDecimals(entry.token)
+                  )}
                 </Text>
               </TouchableOpacity>
             );

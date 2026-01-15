@@ -78,7 +78,6 @@ export class PayService {
     try {
       this.contractService.pauseCommitmentGuard();
       console.log('🚀 [PayService] Starting pay() process...');
-      const tokenAddress = entry?.tokenAddress ?? entry?.token;
       // ---------- Validation ----------
       if (!entry?.amount) {
         if (await confirm('_ALERT_SELECT_BALANCE', false)) return;
@@ -97,7 +96,9 @@ export class PayService {
       }
 
       const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const kAmount = Utils.toMicro(amount);
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      const kAmount = Utils.toMicro(amount, tokenDecimals);
       const kEntry = BigInt(entry.amount);
 
       if (kAmount < kMinAmount) {

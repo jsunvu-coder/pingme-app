@@ -38,11 +38,17 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
     const inputContainerRef = useRef<View>(null);
 
     const formattedAmount = useMemo(() => {
-      return Utils.formatMicroToUsd(tokenInfo.entry.amount, undefined, {
-        grouping: true,
-        empty: '0',
-      });
-    }, [tokenInfo.entry.amount]);
+      const tokenDecimals = Utils.getTokenDecimals(tokenInfo.entry.token);
+      return Utils.formatMicroToUsd(
+        tokenInfo.entry.amount,
+        undefined,
+        {
+          grouping: true,
+          empty: '0',
+        },
+        tokenDecimals
+      );
+    }, [tokenInfo.entry.amount, tokenInfo.entry.token]);
 
     const handleConfirm = useCallback(async () => {
       Keyboard.dismiss();

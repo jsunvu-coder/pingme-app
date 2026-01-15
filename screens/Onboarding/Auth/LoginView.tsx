@@ -48,6 +48,12 @@ export default function LoginView({
       // Auto trigger biometric if enabled
       if (!(init.useBiometric && init.biometricType)) return;
 
+      // Add small delay to ensure screen is fully rendered before showing biometric prompt
+      // This fixes the issue where biometric prompt doesn't show on first use
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (cancelled) return;
+
       const result = await vm.autoTriggerBiometric();
       if (!result.success || !result.email || !result.password || cancelled) return;
 

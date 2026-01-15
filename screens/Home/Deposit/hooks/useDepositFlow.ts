@@ -231,7 +231,12 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     const latestStablecoinTotal = getStablecoinTotal();
     setStablecoinTotal(latestStablecoinTotal);
     const normalizedStablecoinTotal = latestStablecoinTotal.replace(/,/g, '');
-    const stablecoinTotalMicro = Utils.toMicro(normalizedStablecoinTotal || '0');
+    // Stablecoin always uses 6 decimals
+    const stablecoinDecimals = 6;
+    const stablecoinTotalMicro = Utils.toMicro(
+      normalizedStablecoinTotal || '0',
+      stablecoinDecimals
+    );
 
     // Check if user has any stablecoin balance
     if (stablecoinTotalMicro <= 0n || balances.length === 0) {
@@ -277,7 +282,9 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     }
 
     // Do not allow spending above available stablecoin total
-    if (Utils.toMicro(normalized) > stablecoinTotalMicro) {
+    const tokenAddress = selectedBalance?.token;
+    const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+    if (Utils.toMicro(normalized, tokenDecimals) > stablecoinTotalMicro) {
       await confirm('_ALERT_ABOVE_AVAILABLE', false, '_TITLE_ABOVE_AVAILABLE');
       return;
     }
@@ -366,7 +373,15 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     toggleQr,
 
     // Helpers
-    formatMicroToUsd: (value?: string | bigint | null) =>
-      Utils.formatMicroToUsd(value, undefined, { grouping: true, empty: '0.00' }),
+    formatMicroToUsd: (value?: string | bigint | null) => {
+      const tokenAddress = selectedBalance?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      return Utils.formatMicroToUsd(
+        value,
+        undefined,
+        { grouping: true, empty: '0.00' },
+        tokenDecimals
+      );
+    },
   };
 };

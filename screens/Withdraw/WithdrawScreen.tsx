@@ -178,7 +178,9 @@ export default function WithdrawScreen() {
       }
 
       const k_min_amount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const k_amount = Utils.toMicro(trimmedAmount);
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+      const k_amount = Utils.toMicro(trimmedAmount, tokenDecimals);
       const k_entry = BigInt(entry.amount);
 
       if (k_amount < k_min_amount) {

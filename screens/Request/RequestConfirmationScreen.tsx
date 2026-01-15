@@ -161,8 +161,18 @@ export default function RequestConfirmationScreen() {
         return;
       }
 
+      if (!entry?.token) {
+        await showLocalizedAlert({
+          title: 'You must select a balance',
+          message: 'Please select a balance to proceed.',
+        });
+        return;
+      }
+      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
       const amountMicro = Utils.toMicro(
-        typeof rawAmount === 'number' ? String(rawAmount) : rawAmount
+        typeof rawAmount === 'number' ? String(rawAmount) : rawAmount,
+        tokenDecimals
       );
       if (amountMicro <= 0n) {
         await showLocalizedAlert({
@@ -172,8 +182,9 @@ export default function RequestConfirmationScreen() {
         return;
       }
 
-      const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
-      const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+      const factor = 10n ** BigInt(tokenDecimals);
+      const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * factor;
+      const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * factor;
       if (amountMicro < minMicro) {
         await showLocalizedAlert({
           title: 'Amount too low',
@@ -214,10 +225,17 @@ export default function RequestConfirmationScreen() {
 
       try {
         console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
-        const amountDecimal = Utils.formatMicroToUsd(amountMicro, undefined, {
-          grouping: false,
-          empty: '0.00',
-        });
+        const tokenAddress = entry?.tokenAddress ?? entry?.token;
+        const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+        const amountDecimal = Utils.formatMicroToUsd(
+          amountMicro,
+          undefined,
+          {
+            grouping: false,
+            empty: '0.00',
+          },
+          tokenDecimals
+        );
 
         if (channel === 'Email') {
           await sendByEmail(amountDecimal);
@@ -253,10 +271,17 @@ export default function RequestConfirmationScreen() {
           // Refresh history in Redux to show the new request transaction
           await fetchHistoryToRedux(dispatch);
 
-          const displayUsd = Utils.formatMicroToUsd(Utils.toMicro(amountString), undefined, {
-            grouping: true,
-            empty: '0.00',
-          });
+          const tokenAddress = entry?.tokenAddress ?? entry?.token;
+          const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+          const displayUsd = Utils.formatMicroToUsd(
+            Utils.toMicro(amountString, tokenDecimals),
+            undefined,
+            {
+              grouping: true,
+              empty: '0.00',
+            },
+            tokenDecimals
+          );
           setRootScreen([
             {
               name: 'RequestSuccessScreen',

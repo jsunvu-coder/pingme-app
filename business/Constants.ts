@@ -54,8 +54,18 @@ export const TOKEN_NAMES = {
   pUSDC: 'pUSDC',
 };
 
+export const TOKEN_DECIMALS = {
+  USDC: 6,
+  pUSDC: 6,
+  pWMON: 18,
+  WMON: 18,
+};
+
 export const STABLE_TOKENS = ['USDC', 'pUSDC'];
 
+export const STABLE_TOKEN_ADDRESSES = STABLE_TOKENS.map(
+  (token) => TOKENS[token as keyof typeof TOKENS]
+);
 export const EMAIL_KEY = 'lastEmail';
 export const PASSWORD_KEY = 'lastPassword';
 export const USE_BIOMETRIC_KEY = 'useBiometric';

@@ -7,6 +7,7 @@ import { TransactionViewModel } from 'screens/Home/History/List/TransactionViewM
 import { setTransactions, addTransactions } from './historySlice';
 import type { AppDispatch, RootState } from './index';
 import { getStore } from './index';
+import { STABLE_TOKEN_ADDRESSES } from 'business/Constants';
 
 /**
  * Filter raw record entries (same logic as web `filterTrxRecords`):
@@ -23,7 +24,9 @@ function filterTrxRecords(rec: RecordEntry[]): RecordEntry[] {
     const toCommitment = (r.toCommitment ?? r.to_commitment ?? '') as string;
 
     if ((action === 0 && !!toCommitment) || action >= 2) {
-      trx.push(rec[i]);
+      if (STABLE_TOKEN_ADDRESSES.includes(r.token)) {
+        trx.push(rec[i]);
+      }
     }
   }
 

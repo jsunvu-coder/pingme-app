@@ -197,7 +197,9 @@ export default function PingMeScreen() {
       return;
     }
 
-    const amountMicro = Utils.toMicro(trimmedAmount);
+    // Stablecoin always uses 6 decimals
+    const stablecoinDecimals = 6;
+    const amountMicro = Utils.toMicro(trimmedAmount, stablecoinDecimals);
     if (amountMicro <= 0n) {
       showFlashMessage({
         title: 'Invalid amount',
@@ -207,8 +209,9 @@ export default function PingMeScreen() {
       return;
     }
 
-    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
-    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+    const stablecoinFactor = 10n ** BigInt(stablecoinDecimals);
+    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * stablecoinFactor;
+    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * stablecoinFactor;
     if (amountMicro < minMicro) {
       showFlashMessage({
         title: 'Amount too low',
@@ -233,7 +236,7 @@ export default function PingMeScreen() {
     // --- Validate stablecoin balance (only for send mode)
     if (mode === 'send') {
       const stablecoinTotal = balanceService.getStablecoinTotal();
-      const totalMicro = Utils.toMicro(stablecoinTotal);
+      const totalMicro = Utils.toMicro(stablecoinTotal, stablecoinDecimals);
 
       if (totalMicro <= 0n || amountMicro > totalMicro) {
         showFlashMessage({
@@ -260,14 +263,24 @@ export default function PingMeScreen() {
     }
 
     // --- 4️⃣ Proceed with navigation
-    const amountUsd = Utils.formatMicroToUsd(amountMicro, undefined, {
-      grouping: false,
-      empty: '0.00',
-    });
-    const displayUsd = Utils.formatMicroToUsd(amountMicro, undefined, {
-      grouping: true,
-      empty: '0.00',
-    });
+    const amountUsd = Utils.formatMicroToUsd(
+      amountMicro,
+      undefined,
+      {
+        grouping: false,
+        empty: '0.00',
+      },
+      stablecoinDecimals
+    );
+    const displayUsd = Utils.formatMicroToUsd(
+      amountMicro,
+      undefined,
+      {
+        grouping: true,
+        empty: '0.00',
+      },
+      stablecoinDecimals
+    );
     const commonParams = {
       amount: amountUsd,
       displayAmount: `$${displayUsd}`,

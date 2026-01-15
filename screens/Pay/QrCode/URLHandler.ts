@@ -95,8 +95,14 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
         const normalized = (raw ?? '').replace(/,/g, '').replace(/\$/g, '').trim();
         if (!normalized) return undefined;
         if (normalized.includes('.')) return normalized; // already USD decimal
+        const tokenDecimals = Utils.getTokenDecimals(token ?? undefined);
         return (
-          Utils.formatMicroToUsd(normalized, undefined, { grouping: false, empty: '' }) || undefined
+          Utils.formatMicroToUsd(
+            normalized,
+            undefined,
+            { grouping: false, empty: '' },
+            tokenDecimals
+          ) || undefined
         );
       };
 

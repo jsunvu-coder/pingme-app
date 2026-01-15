@@ -62,11 +62,15 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         autoFocus={autoFocus}
         editable={editable}
         secureTextEntry={secureTextEntry}
-        autoCorrect={false}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize ?? 'none'}
         {...rest}
+        autoCapitalize={'none'}
+        autoCorrect={false}
+        spellCheck={false}
+        autoComplete="off"
+        textContentType="oneTimeCode"
+        importantForAutofill="no"
         onFocus={onFocus}
         onBlur={onBlur}
         className="h-13 px-1 text-xl text-[#0F0F0F]"

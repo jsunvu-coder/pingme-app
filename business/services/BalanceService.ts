@@ -243,15 +243,40 @@ export class BalanceService {
   }
 
   private computeTotal(balances: BalanceEntry[]): string {
-    const sumMicro = balances.reduce((acc, b) => {
+    // Note: This method is primarily used for stablecoin totals (6 decimals)
+    // When mixing tokens with different decimals, we sum amounts with the same decimals
+    // For display purposes, we use the most common decimals (stablecoin = 6)
+
+    // Group by decimals and sum separately
+    const sumsByDecimals = new Map<number, bigint>();
+
+    balances.forEach((b) => {
       try {
-        if (!b?.amount) return acc;
-        return acc + BigInt(b.amount);
+        if (!b?.amount) return;
+        const tokenDecimals = Utils.getTokenDecimals(b.token);
+        const amount = BigInt(b.amount);
+        const current = sumsByDecimals.get(tokenDecimals) || 0n;
+        sumsByDecimals.set(tokenDecimals, current + amount);
       } catch {
-        return acc;
+        // Skip invalid entries
       }
-    }, 0n);
-    return Utils.formatMicroToUsd(sumMicro, undefined, { grouping: true, empty: '0.00' });
+    });
+
+    // If all balances have the same decimals, use that
+    // Otherwise, default to stablecoin decimals (6) for display
+    const decimalsArray = Array.from(sumsByDecimals.keys());
+    const displayDecimals = decimalsArray.length === 1 ? decimalsArray[0] : 6;
+
+    // Sum amounts with the same decimals (they're already in correct units)
+    // For display, we'll use the primary decimals (stablecoin = 6)
+    const totalMicro = Array.from(sumsByDecimals.values()).reduce((acc, val) => acc + val, 0n);
+
+    return Utils.formatMicroToUsd(
+      totalMicro,
+      undefined,
+      { grouping: true, empty: '0.00' },
+      displayDecimals
+    );
   }
 
   /**

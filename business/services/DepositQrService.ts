@@ -28,7 +28,8 @@ export async function submitDepositTransaction({
     throw new Error('_ALERT_ENTER_AMOUNT');
   }
 
-  const amountMicro = Utils.toMicro(normalizedAmount);
+  const tokenDecimals = Utils.getTokenDecimals(token);
+  const amountMicro = Utils.toMicro(normalizedAmount, tokenDecimals);
   const globals = Utils.getSessionObject(GLOBALS) ?? {};
   const minAmount = BigInt(globals?.[MIN_AMOUNT] ?? 0);
   const available = BigInt(availableBalance ?? '0');
