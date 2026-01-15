@@ -19,7 +19,7 @@ import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 import { BalanceService } from 'business/services/BalanceService';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
-import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS } from 'business/Constants';
+import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS, STABLE_TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
@@ -63,19 +63,22 @@ export default function WithdrawScreen() {
         }
       };
 
-      const usdcAddress = TOKENS.USDC.toLowerCase();
-      const isUsdc = (b: any) => {
+      const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+        TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+      ).filter(Boolean);
+
+      const isStablecoin = (b: any) => {
         const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
         const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
-        return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+        return stableAddresses.includes(tokenAddress) || STABLE_TOKENS.includes(tokenName);
       };
 
       const bestByAmount = (list: any[]) =>
         list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
 
-      // Only allow USDC balances for withdrawal
-      const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
-      const selected = usdcBalances.length ? bestByAmount(usdcBalances) : undefined;
+      // Only allow stablecoin balances for withdrawal
+      const stablecoinBalances = balances.filter(isStablecoin).filter((b) => getAmount(b) > 0n);
+      const selected = stablecoinBalances.length ? bestByAmount(stablecoinBalances) : undefined;
 
       setEntry(selected);
     };
@@ -140,30 +143,13 @@ export default function WithdrawScreen() {
     setLoading(true);
     try {
       // --- Validation ---
-      // Check if there's any USDC balance available
-      const stablecoinTotal = balanceService.getStablecoinTotal();
-      const hasUsdcBalance = parseFloat(stablecoinTotal) > 0;
-
-      if (!hasUsdcBalance) {
-        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
-        return;
-      }
-
+      // entry is already validated as stablecoin in useEffect, just check if it exists
       if (!entry?.amount) {
-        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
-        return;
-      }
-
-      // Validate that entry is actually USDC
-      const usdcAddress = TOKENS.USDC.toLowerCase();
-      const entryTokenAddress = (entry?.tokenAddress ?? entry?.token ?? '')
-        .toString()
-        .toLowerCase();
-      const entryTokenName = (entry?.tokenName ?? entry?.token ?? '').toString().toUpperCase();
-      const isEntryUsdc = entryTokenAddress === usdcAddress || entryTokenName === TOKEN_NAMES.USDC;
-
-      if (!isEntryUsdc) {
-        await confirm('_ALERT_SELECT_BALANCE', { cancel: false, variant: 'error' });
+        await confirm('_ALERT_ABOVE_AVAILABLE', {
+          cancel: false,
+          variant: 'error',
+          titleKey: '_TITLE_ABOVE_AVAILABLE',
+        });
         return;
       }
 
@@ -202,7 +188,9 @@ export default function WithdrawScreen() {
           titleKey: '_TITLE_BELOW_MINIMUM',
         });
         return;
-      } else if (k_amount > k_entry) {
+      }
+
+      if (k_amount > k_entry) {
         await confirm('_ALERT_ABOVE_AVAILABLE', {
           cancel: false,
           variant: 'error',

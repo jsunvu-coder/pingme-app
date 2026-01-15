@@ -2,7 +2,7 @@
 import { Alert } from 'react-native';
 import { CryptoUtils } from '../business/CryptoUtils';
 import { Utils } from '../business/Utils';
-import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES } from '../business/Constants';
+import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS, STABLE_TOKENS } from '../business/Constants';
 import { AuthService } from 'business/services/AuthService';
 import { ContractService } from 'business/services/ContractService';
 import { BalanceService } from 'business/services/BalanceService';
@@ -76,6 +76,7 @@ export class PayService {
     setPayLink: (link: string) => void;
   }) {
     try {
+      this.contractService.pauseCommitmentGuard();
       console.log('🚀 [PayService] Starting pay() process...');
       const tokenAddress = entry?.tokenAddress ?? entry?.token;
       // ---------- Validation ----------
@@ -214,8 +215,40 @@ export class PayService {
       this.handleError('Payment process failed', error);
       await confirm('_ALERT_PAYMENT_FAILED', false);
     } finally {
+      this.contractService.resumeCommitmentGuard();
       setLoading(false);
     }
+  }
+
+  // ---------- Helper: Get token name from entry ----------
+  private getTokenName(entry: any): string {
+    // If tokenName is already provided in entry, use it
+    if (entry?.tokenName) {
+      return entry.tokenName;
+    }
+
+    // Otherwise, derive it from the token address
+    const tokenAddress = (entry?.token ?? entry?.tokenAddress ?? '').toString().toLowerCase();
+    if (!tokenAddress) {
+      return TOKEN_NAMES.USDC; // Default fallback
+    }
+
+    // Check if it matches any stable token
+    for (const tokenName of STABLE_TOKENS) {
+      const addr = TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase();
+      if (addr === tokenAddress) {
+        return TOKEN_NAMES[tokenName as keyof typeof TOKEN_NAMES] || tokenName;
+      }
+    }
+
+    // Check other tokens
+    for (const [key, addr] of Object.entries(TOKENS)) {
+      if (addr.toLowerCase() === tokenAddress) {
+        return TOKEN_NAMES[key as keyof typeof TOKEN_NAMES] || key;
+      }
+    }
+
+    return TOKEN_NAMES.USDC; // Default fallback
   }
 
   // ---------- Core Payment Execution ----------
@@ -235,6 +268,7 @@ export class PayService {
     const duration = days * 86400; // seconds per day
     const contractService = ContractService.getInstance();
     const cr = contractService.getCrypto();
+    const tokenName = this.getTokenName(entry);
 
     const apiName = isEmail ? 'withdrawAndSendEmail' : 'withdrawAndSend';
     const payload = {
@@ -245,7 +279,7 @@ export class PayService {
       nextCommitment,
       duration,
       lockboxCommitment,
-      ...(isEmail ? { username, lockboxSalt, tokenType: 'USDC' } : {}),
+      ...(isEmail ? { username, lockboxSalt, tokenType: tokenName } : {}),
     };
 
     this.logRequest(apiName, payload);
@@ -262,7 +296,7 @@ export class PayService {
           lockboxCommitment,
           username,
           lockboxSalt,
-          TOKEN_NAMES.USDC,
+          tokenName,
           sender
         );
       } else {

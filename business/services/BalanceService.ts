@@ -3,7 +3,7 @@
 import { ContractService } from './ContractService';
 import { BalanceEntry } from 'business/Types';
 import { Utils } from 'business/Utils';
-import { TOKENS } from 'business/Constants';
+import { TOKENS, STABLE_TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { AccountDataService } from './AccountDataService';
 import { getStore, type AppDispatch } from 'store/index';
@@ -79,24 +79,30 @@ export class BalanceService {
   }
 
   /**
-   * Get only stablecoin balances (currently USDC)
+   * Get only stablecoin balances (USDC, pUSDC)
    */
   getStablecoinBalances(): BalanceEntry[] {
-    const usdcAddress = TOKENS.USDC.toLowerCase();
+    const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+      TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+    ).filter(Boolean);
+
     return this.balances.filter((b) => {
       const tokenAddress = (b?.token ?? '').toString().toLowerCase();
-      return tokenAddress === usdcAddress;
+      return stableAddresses.includes(tokenAddress);
     });
   }
 
   /**
-   * Get only non-stablecoin balances (all tokens except USDC)
+   * Get only non-stablecoin balances (all tokens except stablecoins)
    */
   getNonStablecoinBalances(): BalanceEntry[] {
-    const usdcAddress = TOKENS.USDC.toLowerCase();
+    const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+      TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+    ).filter(Boolean);
+
     return this.balances.filter((b) => {
       const tokenAddress = (b?.token ?? '').toString().toLowerCase();
-      return tokenAddress !== usdcAddress;
+      return !stableAddresses.includes(tokenAddress);
     });
   }
 

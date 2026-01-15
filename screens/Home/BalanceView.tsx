@@ -8,14 +8,17 @@ import { useCallback, useRef } from 'react';
 export default function BalanceView({
   balance,
   onRefresh,
+  loading = false,
 }: {
   balance: string;
   tokens?: BalanceEntry[];
   onRefresh?: () => Promise<void> | void;
+  loading?: boolean;
 }) {
   const spinValue = useRef(new Animated.Value(0)).current;
 
   const handleRefresh = useCallback(async () => {
+    if (loading) return;
     // Start spin animation
     Animated.loop(
       Animated.timing(spinValue, {
@@ -34,7 +37,7 @@ export default function BalanceView({
         spinValue.stopAnimation(() => spinValue.setValue(0));
       }, 800);
     }
-  }, [onRefresh]);
+  }, [onRefresh, loading]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],

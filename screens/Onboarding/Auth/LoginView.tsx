@@ -10,6 +10,7 @@ import { push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import { LoginViewModel, BiometricType } from './LoginViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
+import * as SecureStore from 'expo-secure-store';
 
 export default function LoginView({
   lockboxProof,
@@ -44,10 +45,10 @@ export default function LoginView({
       setUseBiometric(init.useBiometric);
       setInitialized(true);
 
-      // ✅ Only auto trigger Face ID — DO NOT auto login
+      // Auto trigger biometric if enabled
       if (!(init.useBiometric && init.biometricType)) return;
 
-      const result = await vm.autoTriggerBiometric(); // new safe method
+      const result = await vm.autoTriggerBiometric();
       if (!result.success || !result.email || !result.password || cancelled) return;
 
       // Fill credentials but don't login automatically
@@ -62,20 +63,35 @@ export default function LoginView({
 
   const handleToggleBiometric = useCallback(
     async (value: boolean) => {
-      setUseBiometric(value);
+      try {
+        setUseBiometric(value);
 
-      if (!value) {
-        await vm.clearStoredCredentials();
-        return;
-      }
+        if (!value) {
+          await vm.clearStoredCredentials();
+          return;
+        }
 
-      const capability = await LoginViewModel.ensureCapability();
-      if (!capability.available) {
-        const message = capability.needsEnrollment
-          ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
-          : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
-        showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
+        // Validate capability before enabling
+        const capability = await LoginViewModel.ensureCapability();
+        if (!capability.available) {
+          const message = capability.needsEnrollment
+            ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
+            : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
+          showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
+          setUseBiometric(false);
+          return;
+        }
+
+        // Save preference immediately when turning ON
+        await LoginViewModel.setUseBiometricPreference(true);
+      } catch (error) {
+        console.error('Error toggling biometric:', error);
         setUseBiometric(false);
+        showFlashMessage({
+          title: t('NOTICE'),
+          message: 'Failed to save biometric preference',
+          type: 'danger',
+        });
       }
     },
     [vm]

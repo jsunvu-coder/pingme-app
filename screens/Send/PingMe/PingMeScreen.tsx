@@ -230,9 +230,12 @@ export default function PingMeScreen() {
       return;
     }
 
+    // --- Validate stablecoin balance (only for send mode)
     if (mode === 'send') {
-      const totalMicro = Utils.toMicro(balanceService.getStablecoinTotal());
-      if (amountMicro > totalMicro) {
+      const stablecoinTotal = balanceService.getStablecoinTotal();
+      const totalMicro = Utils.toMicro(stablecoinTotal);
+
+      if (totalMicro <= 0n || amountMicro > totalMicro) {
         showFlashMessage({
           title: 'Exceed balance',
           message: 'The amount exceed the available balance.',

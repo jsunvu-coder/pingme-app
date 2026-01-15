@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { Utils } from '../business/Utils';
 import { ContractService } from '../business/services/ContractService';
-import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES } from '../business/Constants';
+import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS, STABLE_TOKENS } from '../business/Constants';
 import { APP_URL } from 'business/Config';
 
 export class RequestService {
@@ -48,6 +48,37 @@ export class RequestService {
     });
   }
 
+  // ---------- Helper: Get token name from entry ----------
+  private getTokenName(entry: any): string {
+    // If tokenName is already provided in entry, use it
+    if (entry?.tokenName) {
+      return entry.tokenName;
+    }
+
+    // Otherwise, derive it from the token address
+    const tokenAddress = (entry?.token ?? entry?.tokenAddress ?? '').toString().toLowerCase();
+    if (!tokenAddress) {
+      return TOKEN_NAMES.USDC; // Default fallback
+    }
+
+    // Check if it matches any stable token
+    for (const tokenName of STABLE_TOKENS) {
+      const addr = TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase();
+      if (addr === tokenAddress) {
+        return TOKEN_NAMES[tokenName as keyof typeof TOKEN_NAMES] || tokenName;
+      }
+    }
+
+    // Check other tokens
+    for (const [key, addr] of Object.entries(TOKENS)) {
+      if (addr.toLowerCase() === tokenAddress) {
+        return TOKEN_NAMES[key as keyof typeof TOKEN_NAMES] || key;
+      }
+    }
+
+    return TOKEN_NAMES.USDC; // Default fallback
+  }
+
   private async isOnline(): Promise<boolean> {
     try {
       const state = await NetInfo.fetch();
@@ -66,6 +97,7 @@ export class RequestService {
     customMessage,
     confirm,
     setLoading,
+    setDisabledInput,
     setSent,
   }: {
     entry?: any;
@@ -74,9 +106,11 @@ export class RequestService {
     customMessage?: string;
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
     setLoading: (loading: boolean) => void;
+    setDisabledInput: (disabled: boolean) => void;
     setSent: (sent: boolean) => void;
   }) {
     try {
+      setDisabledInput(true);
       console.log('🚀 [RequestService] Starting requestPayment()...');
 
       if (!(await this.isOnline())) {
@@ -89,10 +123,12 @@ export class RequestService {
       const safeAmount = amount?.trim() ?? '';
 
       if (!Utils.isValidEmail(safeRequestee)) {
+        setDisabledInput(false);
         if (await confirm('_ALERT_INVALID_EMAIL', false)) return;
       }
 
       if (!safeAmount) {
+        setDisabledInput(false);
         if (await confirm('_ALERT_ENTER_AMOUNT', false)) return;
       }
       const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
@@ -102,28 +138,31 @@ export class RequestService {
       }
 
       if (!entry?.token) {
+        setDisabledInput(false);
         if (await confirm('_ALERT_SELECT_BALANCE', false)) return;
       } else {
         console.log('🚀 [RequestService] No entry available');
       }
 
       // ---------- Confirm ----------
-      if (!(await confirm('_CONFIRM_REQUEST'))) return;
+      if (!(await confirm('_CONFIRM_REQUEST'))) {
+        setDisabledInput(false);
+        return;
+      }
 
       // ---------- Prepare Crypto ----------
       const cr = this.contractService.getCrypto();
       if (!cr?.username) throw new Error('Missing crypto username');
 
+      const tokenName = this.getTokenName(entry);
       const payload = {
         amount: kAmount.toString(),
         sender: cr.username,
         receiver: safeRequestee,
         token: entry.tokenAddress ?? entry.token,
-        tokenSymbol: TOKEN_NAMES.USDC,
+        tokenSymbol: tokenName,
         customMessage: customMessage ?? '',
       };
-
-      this.logRequest('requestPay', payload);
 
       // ---------- Execute Contract ----------
       const ret = await this.contractService.requestPay(

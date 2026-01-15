@@ -44,15 +44,6 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
       });
     }, [tokenInfo.entry.amount]);
 
-    const handlePasteWallet = useCallback(async () => {
-      try {
-        const txt = await Clipboard.getStringAsync();
-        if (txt) setWalletAddress(txt.trim());
-      } catch (err) {
-        console.error('Failed to paste wallet address:', err);
-      }
-    }, []);
-
     const handleConfirm = useCallback(async () => {
       Keyboard.dismiss();
 

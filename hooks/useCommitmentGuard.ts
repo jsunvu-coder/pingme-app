@@ -24,6 +24,9 @@ async function checkCurrentCommitmentAndLogoutIfInvalid() {
     const hasBalance = !!result?.has_balance;
 
     if (!hasBalance) {
+      if (contractService.isCommitmentGuardPaused()) {
+        return;
+      }
       console.warn('[useCommitmentGuard] Commitment no longer has balance. Logging out user.', {
         commitment: cr.commitment,
       });

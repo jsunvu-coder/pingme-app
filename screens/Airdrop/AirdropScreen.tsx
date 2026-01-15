@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BalanceService } from 'business/services/BalanceService';
 import { BalanceEntry } from 'business/Types';
 import { Utils } from 'business/Utils';
-import { TOKENS, TOKEN_NAMES, GLOBALS, MIN_AMOUNT } from 'business/Constants';
+import { TOKENS, TOKEN_NAMES, GLOBALS, MIN_AMOUNT, STABLE_TOKENS } from 'business/Constants';
 import BottomSheet from '@gorhom/bottom-sheet';
 import AirdropWithdrawSheet from './AirdropWithdrawSheet';
 import AirdropWithdrawSuccessModal from './AirdropWithdrawSuccessScreen';
@@ -27,6 +27,8 @@ import { CryptoUtils } from 'business/CryptoUtils';
 import { showFlashMessage } from 'utils/flashMessage';
 import MonadIcon from 'assets/MonadIcon';
 import { t } from 'i18n';
+import { fetchHistoryToRedux } from 'store/historyThunks';
+import { useAppDispatch } from 'store/hooks';
 
 interface TokenInfo {
   entry: BalanceEntry;
@@ -90,6 +92,7 @@ export default function AirdropScreen() {
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const authService = useMemo(() => AuthService.getInstance(), []);
   const recordService = useMemo(() => RecordService.getInstance(), []);
+  const dispatch = useAppDispatch();
 
   const [balances, setBalances] = useState<BalanceEntry[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -122,7 +125,10 @@ export default function AirdropScreen() {
 
   // Map balances to token info and separate by type
   const tokenInfos = useMemo(() => {
-    const usdcAddress = TOKENS.USDC.toLowerCase();
+    const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+      TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+    ).filter(Boolean);
+
     const pWmonAddress = TOKENS.pWMON.toLowerCase();
     const wmonAddress = TOKENS.WMON.toLowerCase();
 
@@ -132,8 +138,12 @@ export default function AirdropScreen() {
         let name = '';
         let isStablecoin = false;
 
-        if (tokenAddress === usdcAddress) {
-          name = TOKEN_NAMES.USDC;
+        if (stableAddresses.includes(tokenAddress)) {
+          // Find the token name from STABLE_TOKENS
+          const stableTokenName = STABLE_TOKENS.find(
+            (tokenName) => TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase() === tokenAddress
+          );
+          name = stableTokenName ? TOKEN_NAMES[stableTokenName as keyof typeof TOKEN_NAMES] : '';
           isStablecoin = true;
         } else if (tokenAddress === pWmonAddress) {
           name = TOKEN_NAMES.pWMON;
@@ -303,6 +313,7 @@ export default function AirdropScreen() {
           // but we keep it paused here to ensure guard stays paused during the entire flow
           await balanceService.getBalance();
           await recordService.updateRecord();
+          await fetchHistoryToRedux(dispatch);
 
           const fallbackTxHash =
             (result as any)?.txHash ??

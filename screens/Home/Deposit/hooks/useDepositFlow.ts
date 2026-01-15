@@ -233,8 +233,15 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
     const normalizedStablecoinTotal = latestStablecoinTotal.replace(/,/g, '');
     const stablecoinTotalMicro = Utils.toMicro(normalizedStablecoinTotal || '0');
 
-    if (!entry || stablecoinTotalMicro <= 0n) {
-      await confirm('_ALERT_SELECT_BALANCE', false);
+    // Check if user has any stablecoin balance
+    if (stablecoinTotalMicro <= 0n || balances.length === 0) {
+      await confirm('_ALERT_ABOVE_AVAILABLE', false, '_TITLE_ABOVE_AVAILABLE');
+      return;
+    }
+
+    // Check if user has selected a balance
+    if (!entry) {
+      await confirm('_ALERT_ABOVE_AVAILABLE', false, '_TITLE_ABOVE_AVAILABLE');
       return;
     }
 
@@ -306,7 +313,7 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       }
     } finally {
     }
-  }, [amount, commitment, confirm, selectedBalance, loading]);
+  }, [amount, commitment, confirm, selectedBalance, loading, balances, getStablecoinTotal]);
 
   useEffect(() => {
     return () => {

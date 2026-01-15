@@ -139,6 +139,7 @@ export default function PayQrConfirmationScreen() {
                   recipient={commitment}
                   setAmount={setAmount}
                   scanned={scanned}
+                  isLoading={loading}
                 />
               </ScrollView>
             </View>

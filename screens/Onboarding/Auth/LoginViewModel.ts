@@ -21,9 +21,7 @@ export class LoginViewModel {
   async initialize(): Promise<{ biometricType: BiometricType; useBiometric: boolean }> {
     this.useBiometric = await LoginViewModel.isBiometricEnabled();
     this.biometricType = await LoginViewModel.detectBiometricType();
-    if (Platform.OS === 'android') {
-      this.biometricType = 'Biometric Authentication';
-    }
+
     return {
       biometricType: this.biometricType,
       useBiometric: this.useBiometric,
@@ -63,14 +61,11 @@ export class LoginViewModel {
       if (!capability.available) return { success: false };
 
       const type = capability.type;
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: `Authenticate with ${type ?? 'biometric'}`,
-        fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: false,
-      });
+      const result = await LocalAuthentication.authenticateAsync(
+        LoginViewModel.getAuthOptions(`Authenticate with ${type ?? 'biometric'}`)
+      );
 
       if (!result.success) {
-        console.log('❌ Biometric authentication cancelled or failed');
         return { success: false };
       }
 
@@ -84,10 +79,9 @@ export class LoginViewModel {
         return { success: false };
       }
 
-      console.log('✅ Biometric authenticated. Returning saved credentials.');
       return { success: true, email, password };
     } catch (err) {
-      console.error('❌ autoBiometricAuthenticate error:', err);
+      console.error('Biometric authentication error:', err);
       return { success: false };
     }
   }
@@ -140,6 +134,7 @@ export class LoginViewModel {
     let biometricEnabled = this.useBiometric;
 
     if (useBiometric && !this.useBiometric) {
+      // Case 1: User just enabled biometric (preference changed from false to true)
       const result = await this.enableBiometricLogin(email, password, biometricType);
       biometricEnabled = result.success;
       if (!result.success && result.message) {
@@ -150,11 +145,30 @@ export class LoginViewModel {
         });
       }
     } else if (!useBiometric && this.useBiometric) {
+      // Case 2: User disabled biometric
       await this.disableBiometricLogin();
       biometricEnabled = false;
     } else if (useBiometric && this.useBiometric) {
-      await LoginViewModel.saveCredentials(email, password);
-      await LoginViewModel.setUseBiometricPreference(true);
+      // Case 3: Biometric already enabled - check if credentials exist
+      const { email: savedEmail, password: savedPassword } =
+        await LoginViewModel.getStoredCredentials();
+
+      if (!savedEmail || !savedPassword) {
+        // First login with biometric enabled - need to prompt and save credentials
+        const result = await this.enableBiometricLogin(email, password, biometricType);
+        biometricEnabled = result.success;
+        if (!result.success && result.message) {
+          showFlashMessage({
+            title: 'Face ID',
+            message: result.message,
+            type: 'warning',
+          });
+        }
+      } else {
+        // Credentials exist - just update them
+        await LoginViewModel.saveCredentials(email, password);
+        await LoginViewModel.setUseBiometricPreference(true);
+      }
     }
 
     this.handleSuccessfulLogin(email, shareParams);
@@ -213,11 +227,9 @@ export class LoginViewModel {
     }
 
     const promptMessage = `Enable ${biometricType ?? capability.type ?? 'biometric'} login?`;
-    const authResult = await LocalAuthentication.authenticateAsync({
-      promptMessage,
-      cancelLabel: 'Cancel',
-      fallbackLabel: 'Use Passcode',
-    });
+    const authResult = await LocalAuthentication.authenticateAsync(
+      LoginViewModel.getAuthOptions(promptMessage)
+    );
 
     if (!authResult.success) {
       // User cancelled - don't show an error message, just return failure silently
@@ -237,12 +249,55 @@ export class LoginViewModel {
   }
 
   // ---------- Static helpers ----------
+
+  /**
+   * Get platform-specific authentication options
+   * Android and iOS have different option support
+   */
+  static getAuthOptions(promptMessage: string, cancelLabel?: string) {
+    if (Platform.OS === 'android') {
+      // Android specific options
+      return {
+        promptMessage,
+        cancelLabel: cancelLabel || 'Cancel',
+        disableDeviceFallback: false,
+      };
+    } else {
+      // iOS specific options
+      return {
+        promptMessage,
+        cancelLabel: cancelLabel || 'Cancel',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      };
+    }
+  }
+
   static async detectBiometricType(): Promise<BiometricType> {
-    const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION))
-      return 'Face ID';
-    if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) return 'Touch ID';
-    return null;
+    try {
+      const supported = await LocalAuthentication.supportedAuthenticationTypesAsync();
+
+      // Android - return generic type if any biometric is supported
+      if (Platform.OS === 'android') {
+        if (supported.length > 0) {
+          return 'Biometric Authentication';
+        }
+        return null;
+      }
+
+      // iOS
+      if (supported.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+        return 'Face ID';
+      }
+      if (supported.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+        return 'Touch ID';
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error detecting biometric type:', error);
+      return null;
+    }
   }
 
   static async ensureCapability(): Promise<{
@@ -273,18 +328,33 @@ export class LoginViewModel {
   }
 
   static async getStoredCredentials(): Promise<{ email: string | null; password: string | null }> {
-    const email = await SecureStore.getItemAsync(EMAIL_KEY);
-    const password = await SecureStore.getItemAsync(PASSWORD_KEY);
-    return { email, password };
+    try {
+      const email = await SecureStore.getItemAsync(EMAIL_KEY);
+      const password = await SecureStore.getItemAsync(PASSWORD_KEY);
+      return { email, password };
+    } catch (error) {
+      console.error('Error reading stored credentials:', error);
+      return { email: null, password: null };
+    }
   }
 
   static async setUseBiometricPreference(value: boolean) {
-    await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, value ? 'true' : 'false');
+    try {
+      await SecureStore.setItemAsync(USE_BIOMETRIC_KEY, value ? 'true' : 'false');
+    } catch (error) {
+      console.error('Error saving biometric preference:', error);
+      throw error;
+    }
   }
 
   static async isBiometricEnabled(): Promise<boolean> {
-    const savedPref = await SecureStore.getItemAsync(USE_BIOMETRIC_KEY);
-    return savedPref === 'true';
+    try {
+      const savedPref = await SecureStore.getItemAsync(USE_BIOMETRIC_KEY);
+      return savedPref === 'true';
+    } catch (error) {
+      console.error('Error reading biometric preference:', error);
+      return false;
+    }
   }
 
   /**
@@ -300,7 +370,6 @@ export class LoginViewModel {
 
       const { email, password } = await LoginViewModel.getStoredCredentials();
       if (!email || !password) {
-        console.log('⚠️ No stored credentials, skipping Face ID auto trigger.');
         return { success: false };
       }
 
@@ -308,21 +377,17 @@ export class LoginViewModel {
       if (!capability.available) return { success: false };
 
       const type = capability.type;
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: `Authenticate with ${type ?? 'biometric'}`,
-        fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: false,
-      });
+      const result = await LocalAuthentication.authenticateAsync(
+        LoginViewModel.getAuthOptions(`Authenticate with ${type ?? 'biometric'}`)
+      );
 
       if (!result.success) {
-        console.log('❌ Biometric cancelled or failed');
         return { success: false };
       }
 
-      console.log('✅ Face ID success — returning saved credentials.');
       return { success: true, email, password };
     } catch (err) {
-      console.error('❌ autoTriggerBiometric error:', err);
+      console.error('Auto trigger biometric error:', err);
       return { success: false };
     }
   }

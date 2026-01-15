@@ -52,7 +52,6 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-    await fetchRecentHistoryToRedux(dispatch); // Only fetch 5 most recent items
     await balanceService.getBalance();
     await accountDataService.updateForwarderBalance(confirmTopUp);
     setBalances(balanceService.currentBalances);
@@ -63,6 +62,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void handleRefresh();
+      void fetchRecentHistoryToRedux(dispatch);
     }, [handleRefresh])
   );
 
@@ -80,6 +80,7 @@ export default function HomeScreen() {
               balance={`$${totalBalance || '0.00'}`}
               tokens={balances}
               onRefresh={handleRefresh}
+              loading={loading}
             />
           </View>
 

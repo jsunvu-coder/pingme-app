@@ -6,7 +6,7 @@ type Props = {
   value: string;
   onChange: (text: string) => void;
   balance: string;
-  mode: 'send' | 'request';
+  mode?: 'send' | 'request';
   autoFocus?: boolean;
   isLoading?: boolean;
 };

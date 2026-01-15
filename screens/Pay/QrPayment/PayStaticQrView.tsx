@@ -8,9 +8,16 @@ type Props = {
   amount: string;
   setAmount: (val: string) => void;
   scanned?: boolean;
+  isLoading?: boolean;
 };
 
-export default function PayStaticQrView({ recipient, amount, setAmount, scanned }: Props) {
+export default function PayStaticQrView({
+  recipient,
+  amount,
+  setAmount,
+  scanned,
+  isLoading,
+}: Props) {
   const shouldAutoFocus = scanned && (!amount || Number(amount) === 0);
 
   return (
@@ -31,6 +38,7 @@ export default function PayStaticQrView({ recipient, amount, setAmount, scanned 
           value={amount}
           onChange={setAmount}
           autoFocus={shouldAutoFocus}
+          isLoading={isLoading}
         />
       </ScrollView>
     </View>

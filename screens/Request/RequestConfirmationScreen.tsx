@@ -22,6 +22,7 @@ import {
   MIN_PAYMENT_AMOUNT,
   TOKEN_NAMES,
   TOKENS,
+  STABLE_TOKENS,
 } from 'business/Constants';
 import CloseButton from 'components/CloseButton';
 import PaymentSummaryCard from './PaymentSummaryCard';
@@ -69,6 +70,7 @@ export default function RequestConfirmationScreen() {
   const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState<any | null>(null);
   const [note, setNote] = useState('');
+  const [disabledInput, setDisabledInput] = useState(false);
 
   const requestService = RequestService.getInstance();
 
@@ -91,25 +93,25 @@ export default function RequestConfirmationScreen() {
             }
           };
 
-          const usdcAddress = TOKENS.USDC.toLowerCase();
-          const isUsdc = (b: any) => {
+          const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+            TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+          ).filter(Boolean);
+
+          const isStablecoin = (b: any) => {
             const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
             const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
-            return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+            return stableAddresses.includes(tokenAddress) || STABLE_TOKENS.includes(tokenName);
           };
 
           const bestByAmount = (list: any[]) =>
             list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
 
-          const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
-          const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
-          const matched =
-            (usdcBalances.length ? bestByAmount(usdcBalances) : undefined) ??
-            (positiveBalances.length ? bestByAmount(positiveBalances) : undefined) ??
-            bestByAmount(balances);
+          // Only allow stablecoin balances for request
+          const stablecoinBalances = balances.filter(isStablecoin);
+          const selected = stablecoinBalances.length ? bestByAmount(stablecoinBalances) : undefined;
 
-          setEntry(matched);
-          console.log('🔗 Active token entry:', matched);
+          setEntry(selected);
+          console.log('🔗 Active token entry:', selected);
         }
       } catch (e) {
         console.error('⚠️ Failed to load balances:', e);
@@ -143,93 +145,96 @@ export default function RequestConfirmationScreen() {
   }, []);
 
   const handleSendingRequest = async () => {
-    setLoading(true);
-    const rawAmount: number | string = amount as number | string;
-    const isAmountMissing =
-      rawAmount === undefined ||
-      rawAmount === null ||
-      (typeof rawAmount === 'string' && rawAmount.trim() === '');
-
-    if (isAmountMissing) {
-      await showLocalizedAlert({
-        title: 'Amount required',
-        message: 'Please input an amount.',
-      });
-      return;
-    }
-
-    const amountMicro = Utils.toMicro(
-      typeof rawAmount === 'number' ? String(rawAmount) : rawAmount
-    );
-    if (amountMicro <= 0n) {
-      await showLocalizedAlert({
-        title: 'Invalid amount',
-        message: 'Please enter a valid payment amount.',
-      });
-      return;
-    }
-
-    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
-    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
-    if (amountMicro < minMicro) {
-      await showLocalizedAlert({
-        title: 'Amount too low',
-        message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
-      });
-      return;
-    }
-
-    if (amountMicro > maxMicro) {
-      await showLocalizedAlert({
-        title: 'Amount too high',
-        message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}.`,
-      });
-      return;
-    }
-
-    if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
-      await showLocalizedAlert({
-        title: 'Invalid recipient',
-        message: 'Please provide a valid email address.',
-      });
-      return;
-    }
-
     try {
-      const state = await NetInfo.fetch();
-      const reachable = state.isConnected && state.isInternetReachable !== false;
-      if (!reachable) {
-        await showLocalizedAlert({ message: '_ALERT_NO_INTERNET' });
+      setLoading(true);
+      const rawAmount: number | string = amount as number | string;
+      const isAmountMissing =
+        rawAmount === undefined ||
+        rawAmount === null ||
+        (typeof rawAmount === 'string' && rawAmount.trim() === '');
+
+      if (isAmountMissing) {
+        await showLocalizedAlert({
+          title: 'Amount required',
+          message: 'Please input an amount.',
+        });
         return;
       }
-    } catch {
-      // If NetInfo fails, allow the request attempt to proceed.
-    }
 
-    try {
-      console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
-      const amountDecimal = Utils.formatMicroToUsd(amountMicro, undefined, {
-        grouping: false,
-        empty: '0.00',
-      });
-
-      if (channel === 'Email') {
-        await sendByEmail(amountDecimal);
-      } else {
-        await sendByLink(amountDecimal);
+      const amountMicro = Utils.toMicro(
+        typeof rawAmount === 'number' ? String(rawAmount) : rawAmount
+      );
+      if (amountMicro <= 0n) {
+        await showLocalizedAlert({
+          title: 'Invalid amount',
+          message: 'Please enter a valid payment amount.',
+        });
+        return;
       }
 
-      console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
-    } catch (err) {
-      console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
-      await showLocalizedAlert({
-        title: 'Error',
-        message: 'Failed to send payment request. Please try again.',
-      });
+      const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+      const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * Utils.MICRO_FACTOR;
+      if (amountMicro < minMicro) {
+        await showLocalizedAlert({
+          title: 'Amount too low',
+          message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
+        });
+        return;
+      }
+
+      if (amountMicro > maxMicro) {
+        await showLocalizedAlert({
+          title: 'Amount too high',
+          message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}.`,
+        });
+        return;
+      }
+
+      if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
+        await showLocalizedAlert({
+          title: 'Invalid recipient',
+          message: 'Please provide a valid email address.',
+        });
+        return;
+      }
+
+      try {
+        const state = await NetInfo.fetch();
+        const reachable = state.isConnected && state.isInternetReachable !== false;
+        if (!reachable) {
+          await showLocalizedAlert({ message: '_ALERT_NO_INTERNET' });
+          return;
+        }
+      } catch {
+        // If NetInfo fails, allow the request attempt to proceed.
+      }
+
+      try {
+        console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
+        const amountDecimal = Utils.formatMicroToUsd(amountMicro, undefined, {
+          grouping: false,
+          empty: '0.00',
+        });
+
+        if (channel === 'Email') {
+          await sendByEmail(amountDecimal);
+        } else {
+          await sendByLink(amountDecimal);
+        }
+
+        console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
+      } catch (err) {
+        console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
+        await showLocalizedAlert({
+          title: 'Error',
+          message: 'Failed to send payment request. Please try again.',
+        });
+      }
     } finally {
+      setLoading(false);
     }
   };
 
@@ -241,6 +246,7 @@ export default function RequestConfirmationScreen() {
       customMessage: note.trim(),
       confirm,
       setLoading,
+      setDisabledInput: setDisabledInput,
       setSent: async (sent) => {
         if (sent) {
           console.log('✅ Request sent successfully!');
@@ -345,6 +351,7 @@ export default function RequestConfirmationScreen() {
                       placeholder="Add an optional message for your request"
                       placeholderTextColor="#9CA3AF"
                       multiline
+                      editable={!disabledInput}
                       textAlignVertical="top"
                       maxLength={240}
                       className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"

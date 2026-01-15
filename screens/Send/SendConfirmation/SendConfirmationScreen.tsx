@@ -11,7 +11,7 @@ import PaymentSummaryCard from './PaymentSummaryCard';
 import PassphraseSection from './PassphraseSection';
 import CloseButton from 'components/CloseButton';
 import { PayService } from 'api/PayService';
-import { LOCKBOX_DURATION, TOKEN_NAMES, TOKENS } from 'business/Constants';
+import { LOCKBOX_DURATION, TOKEN_NAMES, TOKENS, STABLE_TOKENS } from 'business/Constants';
 import { SKIP_PASSPHRASE } from 'business/Config';
 import { BalanceService } from 'business/services/BalanceService';
 import { Utils } from 'business/Utils';
@@ -191,23 +191,22 @@ export default function SendConfirmationScreen() {
       }
     };
 
-    const usdcAddress = TOKENS.USDC.toLowerCase();
-    const isUsdc = (b: any) => {
+    const stableAddresses = STABLE_TOKENS.map((tokenName) =>
+      TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
+    ).filter(Boolean);
+
+    const isStablecoin = (b: any) => {
       const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
       const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
-      return tokenAddress === usdcAddress || tokenName === TOKEN_NAMES.USDC;
+      return stableAddresses.includes(tokenAddress) || STABLE_TOKENS.includes(tokenName);
     };
 
     const bestByAmount = (list: any[]) =>
       list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
 
-    const usdcBalances = balances.filter(isUsdc).filter((b) => getAmount(b) > 0n);
-    if (usdcBalances.length) return bestByAmount(usdcBalances);
-
-    const positiveBalances = balances.filter((b) => getAmount(b) > 0n);
-    if (positiveBalances.length) return bestByAmount(positiveBalances);
-
-    return bestByAmount(balances);
+    // Only allow stablecoin balances for send
+    const stablecoinBalances = balances.filter(isStablecoin).filter((b) => getAmount(b) > 0n);
+    return stablecoinBalances.length ? bestByAmount(stablecoinBalances) : null;
   }, []);
 
   const ensureEntry = useCallback(async () => {
@@ -327,9 +326,8 @@ export default function SendConfirmationScreen() {
       lockboxDuration: durationDays,
     });
 
+    setLoading(true);
     try {
-      setLoading(true);
-
       await PayService.getInstance().pay({
         entry: {
           token: usableEntry.tokenAddress ?? usableEntry.token,
@@ -469,6 +467,7 @@ export default function SendConfirmationScreen() {
         type: 'danger',
       });
     } finally {
+      setLoading(false);
     }
   };
 
