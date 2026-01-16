@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard'; // or use react-native-clipboard/cl
 import { BalanceEntry, RecordEntry } from './Types';
 import { MIN_PASSWORD_LENGTH } from './Config';
 import { EncryptSession } from './EncryptSession';
-import { GLOBALS, TOKENS, TOKEN_DECIMALS, TOKEN_NAMES } from './Constants';
+import { GLOBALS, TOKENS, TOKEN_DECIMALS, TOKEN_NAMES, STABLE_TOKENS } from './Constants';
 
 export class Utils {
   static readonly MICRO_FACTOR = 1_000_000n;
@@ -172,6 +172,35 @@ export class Utils {
     }
 
     return 6; // default fallback
+  }
+
+  /**
+   * Get token name from token address
+   * @param tokenAddress Token contract address
+   * @returns Token name (e.g., "USDC", "WMON") or "USDC" as default fallback
+   */
+  static getTokenName(tokenAddress: string | null | undefined): string {
+    if (!tokenAddress) return TOKEN_NAMES.USDC;
+    const tokenAddr = tokenAddress.toString().toLowerCase();
+
+    // Check if it matches any token address
+    for (const [key, addr] of Object.entries(TOKENS)) {
+      if (addr.toLowerCase() === tokenAddr) {
+        return TOKEN_NAMES[key as keyof typeof TOKEN_NAMES] || TOKEN_NAMES.USDC;
+      }
+    }
+
+    return TOKEN_NAMES.USDC; // Default fallback
+  }
+
+  /**
+   * Check if a token name is a stablecoin
+   * @param tokenName Token name (e.g., "USDC", "pUSDC", "WMON")
+   * @returns true if the token is a stablecoin, false otherwise
+   */
+  static isStablecoin(tokenName: string | null | undefined): boolean {
+    if (!tokenName) return false;
+    return STABLE_TOKENS.includes(tokenName);
   }
 
   // ------------------------

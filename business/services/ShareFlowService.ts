@@ -1,6 +1,7 @@
 type ClaimSharePayload = {
   amountUsdStr?: string;
   from?: 'login' | 'signup';
+  tokenName?: string;
 };
 
 class ShareFlowService {

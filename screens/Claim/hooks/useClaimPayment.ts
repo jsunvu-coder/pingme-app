@@ -174,16 +174,29 @@ export const useClaimPayment = () => {
           lockboxProof: proof,
           amountUsdStr,
           from: 'login',
+          tokenName: Utils.getTokenName(lockbox?.token),
         });
         return;
       }
 
       await authService.claimWithCurrentCrypto(proof);
+      let tokenName: string | undefined = Utils.getTokenName(lockbox?.token);
+      if (Utils.isStablecoin(tokenName)) {
+        tokenName = undefined;
+      }
       if (typeof onClaimSuccess === 'function') {
-        shareFlowService.setPendingClaim({ amountUsdStr, from: 'login' });
+        shareFlowService.setPendingClaim({
+          amountUsdStr,
+          from: 'login',
+          tokenName,
+        });
         onClaimSuccess();
       } else {
-        push('ClaimSuccessScreen', { amountUsdStr, from: 'login' });
+        push('ClaimSuccessScreen', {
+          amountUsdStr,
+          from: 'login',
+          tokenName,
+        });
       }
     } catch (err: any) {
       console.error('❌ Claim failed:', err);
@@ -248,12 +261,24 @@ export const useClaimPayment = () => {
       const isLoggedIn = await authService.isLoggedIn();
       if (isLoggedIn) {
         phase = 'claim';
+        let tokenName: string | undefined = Utils.getTokenName(ret.token);
+        if (Utils.isStablecoin(tokenName)) {
+          tokenName = undefined;
+        }
         await authService.claimWithCurrentCrypto(finalProof);
         if (typeof onClaimSuccess === 'function') {
-          shareFlowService.setPendingClaim({ amountUsdStr, from: 'login' });
+          shareFlowService.setPendingClaim({
+            amountUsdStr,
+            from: 'login',
+            tokenName,
+          });
           onClaimSuccess();
         } else {
-          push('ClaimSuccessScreen', { amountUsdStr, from: 'login' });
+          push('ClaimSuccessScreen', {
+            amountUsdStr,
+            from: 'login',
+            tokenName,
+          });
         }
         return;
       }
@@ -265,6 +290,7 @@ export const useClaimPayment = () => {
           lockboxProof: finalProof,
           amountUsdStr,
           from: 'signup',
+          tokenName: Utils.getTokenName(ret.token),
         });
       } else {
         push('AuthScreen', {
@@ -273,6 +299,7 @@ export const useClaimPayment = () => {
           lockboxProof: finalProof,
           amountUsdStr,
           from: 'login',
+          tokenName: Utils.getTokenName(ret.token),
         });
       }
     } catch (err: any) {

@@ -20,7 +20,12 @@ import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function CreateAccountView({ lockboxProof, prefillUsername, amountUsdStr }: any) {
+export default function CreateAccountView({
+  lockboxProof,
+  prefillUsername,
+  amountUsdStr,
+  tokenName,
+}: any) {
   const route = useRoute<any>();
   const initialEmail =
     prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
@@ -86,6 +91,7 @@ export default function CreateAccountView({ lockboxProof, prefillUsername, amoun
           shareFlowService.setPendingClaim({
             amountUsdStr: claimedAmountUsd,
             from: 'signup',
+            tokenName,
           });
         }
         setRootScreen(['MainTab']);

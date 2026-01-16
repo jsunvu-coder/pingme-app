@@ -25,6 +25,7 @@ type AuthParams = {
   lockboxProof?: string;
   username?: string;
   amountUsdStr?: string;
+  tokenName?: string;
 };
 
 export default function AuthScreen() {
@@ -122,6 +123,7 @@ export default function AuthScreen() {
                 prefillUsername={route.params?.username}
                 from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
+                tokenName={route.params?.tokenName}
               />
             ) : (
               <CreateAccountView
@@ -129,6 +131,7 @@ export default function AuthScreen() {
                 prefillUsername={route.params?.username}
                 from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
+                tokenName={route.params?.tokenName}
               />
             )}
           </View>

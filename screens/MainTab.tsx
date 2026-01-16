@@ -28,6 +28,7 @@ export default function MainTab() {
             amountUsdStr: pending.amountUsdStr,
             from: pending.from,
             disableAutoShare: true,
+            tokenName: pending.tokenName,
           });
         }, 1000);
 

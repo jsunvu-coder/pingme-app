@@ -21,10 +21,12 @@
     "fastlane:android:staging": "cd android && EXPO_PUBLIC_ENV=staging bundle exec fastlane staging",
     "fastlane:android:production": "cd android && EXPO_PUBLIC_ENV=production bundle exec fastlane production",
     "fastlane:android:production:upload": "cd android && EXPO_PUBLIC_ENV=production bundle exec fastlane production_upload",
+    "fastlane:android:production:firebase": "cd android && EXPO_PUBLIC_ENV=production bundle exec fastlane production_firebase",
     "fastlane:ios:staging": "cd ios && EXPO_PUBLIC_ENV=staging bundle exec fastlane staging",
     "fastlane:ios:production": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production",
     "fastlane:ios:production:upload": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_upload",
-    "fastlane:ios:production:testflight": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_testflight"
+    "fastlane:ios:production:testflight": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_testflight",
+    "fastlane:ios:production:firebase": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_firebase"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

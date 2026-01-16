@@ -11,17 +11,20 @@ import { t } from 'i18n';
 import { LoginViewModel, BiometricType } from './LoginViewModel';
 import { showFlashMessage } from 'utils/flashMessage';
 import * as SecureStore from 'expo-secure-store';
+import { Utils } from 'business/Utils';
 
 export default function LoginView({
   lockboxProof,
   prefillUsername,
   from,
   amountUsdStr,
+  tokenName,
 }: {
   lockboxProof?: string;
   prefillUsername?: string;
   from?: 'login' | 'signup';
   amountUsdStr?: string;
+  tokenName?: string;
 }) {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
@@ -129,6 +132,7 @@ export default function LoginView({
               mode: 'claimed',
               amountUsdStr: amountUsdStr ?? route?.params?.amountUsdStr,
               from: fromParam,
+              tokenName: tokenName,
             }
           : undefined
       );

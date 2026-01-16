@@ -92,7 +92,12 @@ export class LoginViewModel {
     useBiometric: boolean,
     biometricType: BiometricType,
     lockboxProof?: string,
-    shareParams?: { mode: 'claimed'; amountUsdStr?: string; from?: 'login' | 'signup' }
+    shareParams?: {
+      mode: 'claimed';
+      amountUsdStr?: string;
+      from?: 'login' | 'signup';
+      tokenName?: string;
+    }
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     const auth = AuthService.getInstance();
     let ok = false;
@@ -194,13 +199,19 @@ export class LoginViewModel {
 
   handleSuccessfulLogin(
     email: string,
-    shareParams?: { mode: 'claimed'; amountUsdStr?: string; from?: 'login' | 'signup' }
+    shareParams?: {
+      mode: 'claimed';
+      amountUsdStr?: string;
+      from?: 'login' | 'signup';
+      tokenName?: string;
+    }
   ) {
     AccountDataService.getInstance().email = email;
     if (shareParams?.mode === 'claimed') {
       shareFlowService.setPendingClaim({
         amountUsdStr: shareParams.amountUsdStr,
         from: shareParams.from ?? 'login',
+        tokenName: shareParams.tokenName,
       });
     }
     setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);

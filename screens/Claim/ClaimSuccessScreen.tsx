@@ -15,6 +15,7 @@ type ClaimSuccessParams = {
   from?: 'login' | 'signup';
   disableAutoShare?: boolean;
   autoShareDelayMs?: number;
+  tokenName?: string;
 };
 
 export default function ClaimSuccessScreen() {
@@ -28,6 +29,7 @@ export default function ClaimSuccessScreen() {
     from = 'login',
     disableAutoShare = false,
     autoShareDelayMs = 5000,
+    tokenName,
   } = (route.params as ClaimSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
 
@@ -64,7 +66,7 @@ export default function ClaimSuccessScreen() {
         <Header />
 
         <View className="my-8">
-          <ClaimDetails amount={displayAmount} />
+          <ClaimDetails amount={displayAmount} tokenName={tokenName} />
           {displayAmount === '0.00' && (
             <View className="mt-3 ml-4">
               <Text className="text-md mr-1 font-light text-[#FD4912]">
@@ -97,13 +99,19 @@ const Header = () => {
   );
 };
 
-const ClaimDetails = ({ amount }: { amount: string }) => (
+const ClaimDetails = ({ amount, tokenName }: { amount: string; tokenName?: string }) => (
   <View className="rounded-2xl bg-white px-6 py-8">
     <Text className="text-xl text-gray-800">You claimed a payment</Text>
 
     <View className="mt-6 flex-row items-center justify-between border-t border-[#FFDBD0] pt-6">
       <Text className="text-lg text-gray-500">Amount</Text>
-      <Text className="mr-1 text-2xl font-semibold">${amount}</Text>
+      {tokenName ? (
+        <Text className="mr-1 text-2xl font-semibold">
+          {amount} ${tokenName}
+        </Text>
+      ) : (
+        <Text className="mr-1 text-2xl font-semibold">${amount}</Text>
+      )}
     </View>
   </View>
 );
