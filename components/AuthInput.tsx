@@ -1,5 +1,5 @@
-import React, { forwardRef, useRef } from 'react';
-import { KeyboardTypeOptions, Text, TextInput, TextInputProps, View } from 'react-native';
+import React, { forwardRef, memo, useCallback, useMemo, useRef, useState } from 'react';
+import { KeyboardTypeOptions, Platform, Text, TextInput, TextInputProps, View } from 'react-native';
 
 type Props = {
   icon?: React.ReactNode;
@@ -16,6 +16,7 @@ type Props = {
   containerClassName?: string;
 };
 
+const MASK_CHAR = '•';
 const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInput(
   {
     icon,
@@ -39,6 +40,8 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
 ) {
   const isEmpty = !value || value.trim() === '';
   const inputRef = useRef<TextInput | null>(null);
+  const savedFirstCharRef = useRef<string | null>(null);
+
   const setInputRef = (node: TextInput | null) => {
     inputRef.current = node;
 
@@ -50,6 +53,51 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
     (ref as React.MutableRefObject<TextInput | null>).current = node;
   };
 
+  const handleChangeText = useCallback(
+    (text: string) => {
+      if (
+        Platform.OS === 'android' &&
+        secureTextEntry &&
+        value?.length === 2 &&
+        text.length < value.length
+      ) {
+        // save the first character when deleting from 2 to 1
+        savedFirstCharRef.current = value[0];
+        onChangeText(MASK_CHAR);
+        return;
+      }
+
+      // When user re-enters from 1 character (MASK_CHAR) to 2 characters
+      if (
+        Platform.OS === 'android' &&
+        secureTextEntry &&
+        value === MASK_CHAR &&
+        text.length === 2 &&
+        savedFirstCharRef.current
+      ) {
+        // If text[0] is MASK_CHAR, then text[1] is the new character
+        // If text[0] is not MASK_CHAR, then text[0] is the new character and text[1] is the next character
+        if (text[0] === MASK_CHAR) {
+          // Replace MASK_CHAR with the saved character + new character
+          onChangeText(savedFirstCharRef.current + text[1]);
+        } else {
+          // MASK_CHAR has been replaced, use the saved character + new character
+          onChangeText(savedFirstCharRef.current + text[0]);
+        }
+        savedFirstCharRef.current = null;
+        return;
+      }
+
+      // Reset saved char nếu value không còn là MASK_CHAR hoặc length > 2
+      if (value !== MASK_CHAR || text.length > 2) {
+        savedFirstCharRef.current = null;
+      }
+
+      onChangeText(text);
+    },
+    [secureTextEntry, value, onChangeText]
+  );
+
   return (
     <View className={containerClassName ?? 'mb-6'}>
       {icon && <View className="mb-2">{icon}</View>}
@@ -58,13 +106,14 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         ref={setInputRef}
         placeholder={placeholder}
         placeholderTextColor="#909090"
-        value={value}
         autoFocus={autoFocus}
         editable={editable}
         secureTextEntry={secureTextEntry}
-        onChangeText={onChangeText}
+        onChangeText={handleChangeText}
         keyboardType={keyboardType}
+        value={value}
         {...rest}
+        {...(secureTextEntry ? { multiline: false } : {})}
         autoCapitalize={'none'}
         autoCorrect={false}
         spellCheck={false}
