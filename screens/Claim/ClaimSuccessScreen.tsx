@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import SafeBottomView from 'components/SafeBottomView';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
+import { Utils } from 'business/Utils';
 
 type ClaimSuccessParams = {
   amount?: number;
@@ -99,19 +100,22 @@ const Header = () => {
   );
 };
 
-const ClaimDetails = ({ amount, tokenName }: { amount: string; tokenName?: string }) => (
-  <View className="rounded-2xl bg-white px-6 py-8">
-    <Text className="text-xl text-gray-800">You claimed a payment</Text>
+const ClaimDetails = ({ amount, tokenName }: { amount: string; tokenName?: string }) => {
+  const showTokenName = tokenName && !Utils.isStablecoin(tokenName);
+  return (
+    <View className="rounded-2xl bg-white px-6 py-8">
+      <Text className="text-xl text-gray-800">You claimed a payment</Text>
 
-    <View className="mt-6 flex-row items-center justify-between border-t border-[#FFDBD0] pt-6">
-      <Text className="text-lg text-gray-500">Amount</Text>
-      {tokenName ? (
-        <Text className="mr-1 text-2xl font-semibold">
-          {amount} ${tokenName}
-        </Text>
-      ) : (
-        <Text className="mr-1 text-2xl font-semibold">${amount}</Text>
-      )}
+      <View className="mt-6 flex-row items-center justify-between border-t border-[#FFDBD0] pt-6">
+        <Text className="text-lg text-gray-500">Amount</Text>
+        {showTokenName ? (
+          <Text className="mr-1 text-2xl font-semibold">
+            {amount} ${tokenName}
+          </Text>
+        ) : (
+          <Text className="mr-1 text-2xl font-semibold">${amount}</Text>
+        )}
+      </View>
     </View>
-  </View>
-);
+  );
+};
