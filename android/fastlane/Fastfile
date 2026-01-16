@@ -379,5 +379,122 @@ platform :android do
       skip_upload_screenshots: true
     )
   end
+
+  desc "Build Android APK for production and upload to Firebase"
+  lane :production_firebase do
+    # Ensure Firebase plugin is installed
+    ensure_firebase_plugin_installed
+    
+    # Get the android project root directory (parent of fastlane directory)
+    android_root = File.expand_path("..", __dir__)
+    gradle_file = File.join(android_root, "app", "build.gradle")
+    
+    # Get Firebase App ID for build number sync
+    firebase_app_id = ENV["FIREBASE_APP_ID_PROD"] || ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_ANDROID_APP_ID"]
+    
+    # Auto-increment build number based on Firebase latest release
+    if firebase_app_id && !firebase_app_id.empty?
+      UI.important("🔄 Syncing build number with Firebase App Distribution...")
+      next_build_number = get_next_build_number(gradle_file, firebase_app_id.strip)
+      update_version_code_in_gradle(gradle_file, next_build_number)
+    else
+      UI.important("⚠️  FIREBASE_APP_ID_PROD not set, skipping build number sync")
+      UI.important("   Build number will use current value from build.gradle")
+    end
+    
+    version_name = get_version_name_from_gradle(gradle_file)
+    version_code = get_version_code_from_gradle(gradle_file)
+
+    # Ensure keystore exists (copied by expo plugin during prebuild)
+    keystore_path = File.join(android_root, "app", "dev.jks")
+    if !File.exist?(keystore_path)
+      UI.important("⚠️  Keystore not found at #{keystore_path}")
+      UI.important("   Make sure to run 'expo prebuild' first or copy keystore manually")
+    end
+    
+    # Build APK for Firebase (not AAB, as Firebase App Distribution works better with APK)
+    gradle(
+      task: "assembleRelease",
+      project_dir: android_root,
+      properties: {
+        # These properties are already set in gradle.properties by app.plugin.js
+        # But we can override them here if needed
+      }
+    )
+    
+    # APK will be generated at: app/build/outputs/apk/release/app-release.apk
+    apk_path = File.join(android_root, "app", "build", "outputs", "apk", "release", "app-release.apk")
+    if !File.exist?(apk_path)
+      UI.user_error!("APK not found at #{apk_path}")
+    end
+    
+    new_apk_name = "PingMe-Android-Production-Firebase-v#{version_name}(#{version_code}).apk"
+    new_apk_path = File.join(File.dirname(apk_path), new_apk_name)
+    FileUtils.mv(apk_path, new_apk_path)
+    UI.success("✅ Production APK built successfully!")
+    UI.message("APK location: #{new_apk_path}")
+    
+    # Upload to Firebase App Distribution
+    # Get Firebase App ID from environment variable
+    firebase_app_id = ENV["FIREBASE_APP_ID_PROD"] || ENV["FIREBASE_APP_ID"] || ENV["FIREBASE_ANDROID_APP_ID"]
+    if firebase_app_id.nil? || firebase_app_id.empty?
+      UI.important("⚠️  FIREBASE_APP_ID_PROD not set, skipping upload")
+      UI.important("   APK is available at: #{new_apk_path}")
+      return
+    end
+    firebase_app_id = firebase_app_id.strip
+    
+    # Get testers and groups from environment variable (comma-separated strings)
+    # Plugin requires String, not Array. Empty strings should be nil
+    testers = ENV["FIREBASE_TESTERS"]&.strip
+    testers = nil if testers.nil? || testers.empty?
+    
+    groups = ENV["FIREBASE_TESTER_GROUPS"]&.strip
+    groups = nil if groups.nil? || groups.empty?
+    
+    release_notes = "Production build v#{version_name} (#{version_code})"
+    if ENV["FIREBASE_RELEASE_NOTES"]
+      release_notes = ENV["FIREBASE_RELEASE_NOTES"]
+    end
+    
+    UI.important("📤 Uploading to Firebase App Distribution...")
+    UI.important("   App ID: #{firebase_app_id}")
+    UI.important("   Testers: #{testers || 'none'}")
+    UI.important("   Groups: #{groups || 'none'}")
+    
+    begin
+      # Build parameters hash, only include non-nil values
+      params = {
+        app: firebase_app_id,
+        apk_path: new_apk_path,
+        release_notes: release_notes
+      }
+      params[:testers] = testers if testers
+      params[:groups] = groups if groups
+      params[:service_credentials_file] = ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"] if ENV["FIREBASE_SERVICE_CREDENTIALS_FILE"]
+      
+      firebase_app_distribution(params)
+      UI.success("✅ Successfully uploaded to Firebase App Distribution!")
+    rescue => ex
+      UI.important("⚠️  Failed to upload to Firebase App Distribution: #{ex.message}")
+      UI.important("   APK is still available at: #{new_apk_path}")
+      
+      if ex.message.include?("status_code: 400") || ex.message.include?("Invalid request")
+        UI.important("")
+        UI.important("💡 Troubleshooting 400 Bad Request error:")
+        UI.important("   1. Check Firebase App ID format:")
+        UI.important("      - Short name: 'app-id-name'")
+        UI.important("      - Full format: '1:PROJECT_ID:android:APP_ID'")
+        UI.important("   2. Verify App ID in Firebase Console:")
+        UI.important("      Project Settings > Your apps > Android app")
+        UI.important("   3. Ensure you have permission to upload to this app")
+        UI.important("   4. Check if testers/groups exist in Firebase Console")
+      elsif ex.message.include?("Could not find action") || ex.message.include?("firebase_app_distribution")
+        UI.important("   Make sure plugin is installed: bundle add fastlane-plugin-firebase_app_distribution")
+        UI.important("   Then run: bundle exec fastlane production_firebase")
+      end
+      raise ex
+    end
+  end
 end
 
