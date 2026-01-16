@@ -179,7 +179,7 @@ export class BalanceService {
           }
         } catch (error) {
           console.warn('[BalanceService] Failed to update commitment from input_data', error);
-          // Tiếp tục với commitment hiện có nếu có lỗi
+          // Continue with the current commitment if there's an error
         }
       }
 
@@ -291,10 +291,11 @@ export class BalanceService {
       }
 
       const stablecoinBalance = this.getStablecoinTotal();
+      const stablecoinEntries = this.getStablecoinBalances();
       const store = await getStore();
       // Dispatch action to update Redux store
       const dispatch = store.dispatch as AppDispatch;
-      dispatch(setStablecoinBalance({ accountEmail, stablecoinBalance }));
+      dispatch(setStablecoinBalance({ accountEmail, stablecoinBalance, stablecoinEntries }));
     } catch (error) {
       console.warn('[BalanceService] Failed to update Redux balance:', error);
       // Don't throw - this is a non-critical update

@@ -34,7 +34,7 @@ import { RequestService } from 'api/RequestService';
 import enUS from 'i18n/en-US.json';
 import { Utils } from 'business/Utils';
 import SafeBottomView from 'components/SafeBottomView';
-import { useAppDispatch } from 'store/hooks';
+import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 
 type RequestConfirmationParams = {
@@ -55,6 +55,7 @@ export default function RequestConfirmationScreen() {
   const dispatch = useAppDispatch();
 
   const balanceService = BalanceService.getInstance();
+  const { stablecoinEntries } = useCurrentAccountStablecoinBalance();
 
   const scrollRef = useRef<ScrollView>(null);
   const noteInputRef = useRef<TextInput>(null);
@@ -68,60 +69,18 @@ export default function RequestConfirmationScreen() {
   } = params;
 
   const [loading, setLoading] = useState(false);
-  const [entry, setEntry] = useState<any | null>(null);
   const [note, setNote] = useState('');
   const [disabledInput, setDisabledInput] = useState(false);
 
   const requestService = RequestService.getInstance();
 
+  // Get first entry from stablecoinEntries (already sorted by amount descending)
+  const entry = stablecoinEntries && stablecoinEntries.length > 0 ? stablecoinEntries[0] : null;
+
   useEffect(() => {
-    let isMounted = true;
-
-    (async () => {
-      try {
-        await balanceService.getBalance();
-        if (!isMounted) return;
-
-        const balances = balanceService.balances;
-        console.log('🔄 Balance update received:', balances);
-        if (balances && balances.length > 0) {
-          const getAmount = (b: any) => {
-            try {
-              return BigInt(b?.amount ?? '0');
-            } catch {
-              return 0n;
-            }
-          };
-
-          const stableAddresses = STABLE_TOKENS.map((tokenName) =>
-            TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
-          ).filter(Boolean);
-
-          const isStablecoin = (b: any) => {
-            const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
-            const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
-            return stableAddresses.includes(tokenAddress) || STABLE_TOKENS.includes(tokenName);
-          };
-
-          const bestByAmount = (list: any[]) =>
-            list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
-
-          // Only allow stablecoin balances for request
-          const stablecoinBalances = balances.filter(isStablecoin);
-          const selected = stablecoinBalances.length ? bestByAmount(stablecoinBalances) : undefined;
-
-          setEntry(selected);
-          console.log('🔗 Active token entry:', selected);
-        }
-      } catch (e) {
-        console.error('⚠️ Failed to load balances:', e);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-      console.log('🧹 Unsubscribing from balance updates...');
-    };
+    balanceService.getBalance().catch((e) => {
+      console.error('⚠️ Failed to load balances:', e);
+    });
   }, [balanceService]);
 
   // 🔐 Confirm helper (uses LocalizedAlert)
@@ -168,7 +127,7 @@ export default function RequestConfirmationScreen() {
         });
         return;
       }
-      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenAddress = entry.token;
       const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
       const amountMicro = Utils.toMicro(
         typeof rawAmount === 'number' ? String(rawAmount) : rawAmount,
@@ -225,7 +184,7 @@ export default function RequestConfirmationScreen() {
 
       try {
         console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
-        const tokenAddress = entry?.tokenAddress ?? entry?.token;
+        const tokenAddress = entry?.token;
         const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
         const amountDecimal = Utils.formatMicroToUsd(
           amountMicro,
@@ -271,7 +230,7 @@ export default function RequestConfirmationScreen() {
           // Refresh history in Redux to show the new request transaction
           await fetchHistoryToRedux(dispatch);
 
-          const tokenAddress = entry?.tokenAddress ?? entry?.token;
+          const tokenAddress = entry?.token;
           const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
           const displayUsd = Utils.formatMicroToUsd(
             Utils.toMicro(amountString, tokenDecimals),

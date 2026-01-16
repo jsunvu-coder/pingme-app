@@ -48,6 +48,7 @@ export function useCurrentAccountHistory(): AccountHistory {
 
 const DEFAULT_BALANCE: AccountBalance = {
   stablecoinBalance: '0.00',
+  stablecoinEntries: [],
   lastUpdated: null,
 };
 

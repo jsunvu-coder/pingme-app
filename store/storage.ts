@@ -62,6 +62,14 @@ export async function loadStoreState(): Promise<Record<string, any> | undefined>
         parsed.balance = {
           byAccount: {},
         };
+      } else {
+        // Migrate old balance entries to include stablecoinEntries
+        const byAccount = parsed.balance.byAccount;
+        for (const accountKey in byAccount) {
+          if (byAccount[accountKey] && !Array.isArray(byAccount[accountKey].stablecoinEntries)) {
+            byAccount[accountKey].stablecoinEntries = [];
+          }
+        }
       }
     }
 
