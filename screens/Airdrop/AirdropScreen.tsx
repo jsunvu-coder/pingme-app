@@ -59,7 +59,7 @@ function TokenCard({
   const hasBalance = useMemo(() => {
     try {
       const tokenDecimals = Utils.getTokenDecimals(tokenInfo.entry.token);
-      return BigInt(tokenInfo.entry.amount) >= 10n ** BigInt(tokenDecimals - 2);
+      return BigInt(tokenInfo.entry.amount) >= 10n ** BigInt(tokenDecimals + 2);
     } catch {
       return false;
     }
@@ -110,6 +110,7 @@ export default function AirdropScreen() {
   const [successData, setSuccessData] = useState<{
     amount: string;
     tokenName: string;
+    tokenAddress: string;
     walletAddress: string;
     txHash: string;
   } | null>(null);
@@ -341,6 +342,7 @@ export default function AirdropScreen() {
           setSuccessData({
             amount: selectedTokenInfo.entry.amount,
             tokenName: selectedTokenInfo.name,
+            tokenAddress: selectedTokenInfo.entry.token,
             walletAddress,
             txHash,
           });
@@ -434,6 +436,7 @@ export default function AirdropScreen() {
           visible={successModalVisible}
           amount={successData.amount}
           tokenName={successData.tokenName}
+          tokenAddress={successData.tokenAddress}
           walletAddress={successData.walletAddress}
           txHash={successData.txHash}
           onClose={() => {

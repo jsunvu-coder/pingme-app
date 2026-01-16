@@ -65,6 +65,13 @@ export default function ClaimSuccessScreen() {
 
         <View className="my-8">
           <ClaimDetails amount={displayAmount} />
+          {displayAmount === '0.00' && (
+            <View className="mt-3 ml-4">
+              <Text className="text-md mr-1 font-light text-[#FD4912]">
+                Amount is too small to display.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 

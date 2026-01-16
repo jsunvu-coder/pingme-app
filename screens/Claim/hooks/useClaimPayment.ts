@@ -17,6 +17,7 @@ export interface LockboxData {
   currentTime: number;
   createTime: number;
   amount: string;
+  token: string;
 }
 
 export interface ClaimPaymentParams {
@@ -132,7 +133,7 @@ export const useClaimPayment = () => {
     try {
       if (!lb?.amount) return undefined;
       // Default to 6 decimals for lockbox (typically stablecoin)
-      const tokenDecimals = 6;
+      const tokenDecimals = Utils.getTokenDecimals(lb?.token ?? null);
       const formatted = Utils.formatMicroToUsd(
         lb.amount,
         undefined,
