@@ -24,6 +24,7 @@ const before = xml;
 const permissionsToRemove = [
   'android.permission.RECORD_AUDIO',
   'android.permission.READ_MEDIA_AUDIO',
+  'android.permission.READ_MEDIA_VIDEO',
 ];
 
 let removedAny = false;
