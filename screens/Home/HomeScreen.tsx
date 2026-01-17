@@ -8,6 +8,10 @@ import PingHistoryView from './PingHistoryView';
 import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
+import { ContractService } from 'business/services/ContractService';
+import { RecordService } from 'business/services/RecordService';
+import { Utils } from 'business/Utils';
+import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
@@ -17,9 +21,9 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
   const accountDataService = useMemo(() => AccountDataService.getInstance(), []);
+  const contractService = useMemo(() => ContractService.getInstance(), []);
+  const recordService = useMemo(() => RecordService.getInstance(), []);
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
-
-  const [balances, setBalances] = useState<BalanceEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
@@ -36,27 +40,97 @@ export default function HomeScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    const onUpdate = (updated: BalanceEntry[]) => {
-      setBalances(updated);
-      setLoading(false);
-    };
 
-    balanceService.onBalanceChange(onUpdate);
+  /**
+   * Update balance following the flow from update_balance.md:
+   * 1. Check forwarder exists
+   * 2. Get forwarder balance
+   * 3. For each amount >= MIN_AMOUNT, retrieve and refresh
+   * 4. Always refresh balance and records at the end
+   */
+  const updateBalance = useCallback(async () => {
 
-    return () => {
-      balanceService.offBalanceChange(onUpdate);
-    };
-  }, [balanceService]);
+    // Step 1: Get forwarder
+    const forwarder = await accountDataService.getForwarder();
+
+    if (!forwarder) {
+      // No forwarder, no API calls needed
+      return;
+    }
+
+    try {
+      // Step 2: Get forwarder balance
+      const ret1 = await contractService.getForwarderBalance(forwarder);
+
+      const sessionGlobals = Utils.getSessionObject(GLOBALS);
+      const minAmountValue = sessionGlobals?.[MIN_AMOUNT];
+
+      if (minAmountValue === undefined) {
+        console.warn('⚠️ MIN_AMOUNT missing from session globals.');
+        // Still refresh balance even if MIN_AMOUNT is missing
+        await balanceService.getBalance();
+        
+        // Don't await updateRecord - it has 3s delay!
+        void recordService.updateRecord();
+        return;
+      }
+
+      const kMinAmount = BigInt(minAmountValue);
+
+      // Step 3: Check each amount for top-up retrieval
+      for (const amountEntry of ret1?.amounts ?? []) {
+        if (BigInt(amountEntry.amount) >= kMinAmount) {
+          try {
+            const cr = contractService.getCrypto();
+            if (!cr?.commitment) {
+              console.warn('⚠️ Missing commitment for retrieve call.');
+              continue;
+            }
+
+            // Retrieve balance
+            await contractService.retrieve(cr.commitment);
+
+            // Refresh balance after retrieve
+            await balanceService.getBalance();
+
+            // Update records with delay (3s default) - fire and forget
+            void recordService.updateRecord();
+
+            // Show confirmation dialog
+            await confirmTopUp('_ALERT_RECEIVED_TOPUP', false);
+            return; // Return after first successful retrieve
+          } catch (err) {
+            console.error('RETRIEVE', err);
+            // Continue to next amount if retrieve fails
+          }
+        }
+      }
+
+      // Step 4: Always refresh balance and records at the end
+      await balanceService.getBalance();
+
+      // Don't await updateRecord - it has 3s delay! This was the bottleneck!
+      void recordService.updateRecord();
+    } catch (err) {
+      console.error('GET_FORWARDER_BALANCE', err);
+      // On error, still try to refresh balance
+      try {
+        await balanceService.getBalance();
+      } catch (balanceErr) {
+        console.error('Failed to refresh balance after error:', balanceErr);
+      }
+    }
+  }, [accountDataService, contractService, balanceService, recordService, confirmTopUp]);
 
   const handleRefresh = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-    await balanceService.getBalance();
-    await accountDataService.updateForwarderBalance(confirmTopUp);
-    setBalances(balanceService.currentBalances);
+    const start_ts = Date.now();
+    await updateBalance();
+    const end_ts = Date.now();
+    console.log(`🔄 Refreshing balance took ${end_ts - start_ts}ms`);
     setLoading(false);
-  }, [accountDataService, balanceService, confirmTopUp, dispatch]);
+  }, [loading, updateBalance]);
 
   // Auto-refresh when screen is focused (including first mount)
   useFocusEffect(
@@ -78,7 +152,6 @@ export default function HomeScreen() {
           <View className="flex-1 justify-end">
             <BalanceView
               balance={`$${totalBalance || '0.00'}`}
-              tokens={balances}
               onRefresh={handleRefresh}
               loading={loading}
             />
