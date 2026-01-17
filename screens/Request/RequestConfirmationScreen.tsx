@@ -213,7 +213,7 @@ export default function RequestConfirmationScreen() {
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 500);
+      }, 1000);
     }
   };
 
