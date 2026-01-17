@@ -21,7 +21,7 @@ module.exports = {
   expo: {
     name: 'PingMe', // Always use same name, only bundle ID differs
     slug: 'pingme',
-    version: '1.1.1',
+    version: '1.1.5',
     scheme: 'pingme',
     web: {
       favicon: './assets/intro_1.png',
