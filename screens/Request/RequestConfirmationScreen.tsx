@@ -211,7 +211,9 @@ export default function RequestConfirmationScreen() {
         });
       }
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     }
   };
 
