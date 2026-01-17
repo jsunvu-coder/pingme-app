@@ -124,12 +124,14 @@ export default function HomeScreen() {
 
   const handleRefresh = useCallback(async () => {
     if (loading) return;
-    setLoading(true);
-    const start_ts = Date.now();
-    await updateBalance();
-    const end_ts = Date.now();
-    console.log(`🔄 Refreshing balance took ${end_ts - start_ts}ms`);
-    setLoading(false);
+    try {
+      setLoading(true);
+      await updateBalance();
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    } finally {      
+      setLoading(false);
+    }
   }, [loading, updateBalance]);
 
   // Auto-refresh when screen is focused (including first mount)
