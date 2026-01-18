@@ -50,6 +50,13 @@ for (const permission of permissionsToRemove) {
   }
 }
 
+// Remove requestLegacyExternalStorage attribute
+if (xml.includes('android:requestLegacyExternalStorage')) {
+  xml = xml.replace(/\s*android:requestLegacyExternalStorage="[^"]*"/g, '');
+  console.log('✅ Removed android:requestLegacyExternalStorage attribute');
+  removedAny = true;
+}
+
 if (removedAny) {
   fs.writeFileSync(manifestPath, xml, 'utf8');
 } else {
