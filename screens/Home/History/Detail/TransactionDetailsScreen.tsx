@@ -243,7 +243,7 @@ export default function TransactionDetailsScreen() {
           paddingBottom: 40,
         }}>
         {!initialLoadComplete ? (
-          <View className="mt-6 p-5">
+          <View className="mt-6 p-5 rounded-2xl bg-white">
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />
@@ -253,7 +253,7 @@ export default function TransactionDetailsScreen() {
           </View>
         ) : (
           <>
-            <View className="mt-6 p-5">
+            <View className="mt-6 p-5 rounded-2xl bg-white">
               <DetailRow label="Amount" value={amountDisplay} />
               <DetailRow label="Recipient" value={transaction.addr || '-'} />
               <DetailRow label="Created" value={formatTimestamp(createdSeconds)} autoAdjustFontSize />
