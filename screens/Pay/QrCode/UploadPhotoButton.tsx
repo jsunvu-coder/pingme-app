@@ -29,6 +29,10 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
   const handleUpload = async () => {
     if (loading) return; // Prevent multiple presses
 
+    // For Android versions < 13 (API 33), the Android Photo Picker is not available.
+    // We require Android 13+ to comply with Google Play Store policy:
+    // - Android Photo Picker provides one-time access without requiring READ_MEDIA_IMAGES permission
+    // - Apps that only need one-time access should NOT request READ_MEDIA_IMAGES permission
     if (Platform.OS === 'android' && Platform.Version < 33) {
       showFlashMessage({
         title: 'Not supported',
@@ -39,7 +43,8 @@ export default function UploadPhotoButton({ onScanSuccess }: Props) {
       return;
     }
 
-    // Pick an image
+    // Pick an image using Android Photo Picker (Android 13+) or iOS picker
+    // NO permissions required - one-time access only
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,

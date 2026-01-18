@@ -97,11 +97,6 @@ export default function RequestConfirmationScreen() {
     });
   };
 
-  useEffect(() => {
-    return () => {
-      setLoading(false);
-    };
-  }, []);
 
   const handleSendingRequest = async () => {
     try {
@@ -213,7 +208,7 @@ export default function RequestConfirmationScreen() {
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 1000);
+      }, 2000);
     }
   };
 

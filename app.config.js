@@ -33,7 +33,20 @@ module.exports = {
       [
         'expo-image-picker',
         {
-          cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera to let you upload images.',
+          // Don't request photo library permission - we use Android Photo Picker (Android 13+)
+          // which provides one-time access without requiring READ_MEDIA_IMAGES permission
+          photosPermission: false,
+        },
+      ],
+      [
+        'expo-media-library',
+        {
+          // Allow saving app-generated images to gallery (Recovery QR code)
+          // On Android 10+: No permission needed for saving app-generated images
+          // We use savePhotosPermission: false to prevent adding READ_MEDIA_IMAGES
+          photosPermission: false,
+          savePhotosPermission: false,
+          isAccessMediaLocationEnabled: false,
         },
       ],
       [

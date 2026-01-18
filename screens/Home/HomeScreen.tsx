@@ -16,6 +16,7 @@ import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
 import { useFocusEffect } from '@react-navigation/native';
+import { showFlashMessage } from 'utils/flashMessage';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -97,7 +98,11 @@ export default function HomeScreen() {
             void recordService.updateRecord();
 
             // Show confirmation dialog
-            await confirmTopUp('_ALERT_RECEIVED_TOPUP', false);
+            showFlashMessage({
+              title: 'Top-up received',
+              message: 'You have received a top up.',
+              type: 'success',
+            });
             return; // Return after first successful retrieve
           } catch (err) {
             console.error('RETRIEVE', err);

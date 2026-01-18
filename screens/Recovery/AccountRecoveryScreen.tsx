@@ -55,6 +55,10 @@ export default function AccountRecoveryScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    void ensurePhotoPermission();
+  }, []);
+
   const promptOpenSettingsForPhotos = useCallback(() => {
     Alert.alert(
       'Photo Library Access Required',
