@@ -76,7 +76,11 @@ export default function LoginView({
         setUseBiometric(value);
 
         if (!value) {
-          await vm.clearStoredCredentials();
+          // User explicitly disabled biometric - clear both credentials AND preference
+          await LoginViewModel.clearSavedCredentials();
+          await LoginViewModel.setUseBiometricPreference(false);
+          // IMPORTANT: Update ViewModel instance state to keep it in sync with storage
+          vm.useBiometric = false;
           return;
         }
 
@@ -91,14 +95,16 @@ export default function LoginView({
           return;
         }
 
-        // Save preference immediately when turning ON
-        await LoginViewModel.setUseBiometricPreference(true);
+        // Don't save preference here - let handleLogin manage it during actual login
+        // This prevents the case where biometric is enabled but no credentials are saved
+        // But DO update the instance state so handleLogin knows user wants to enable it
+        vm.useBiometric = false; // Set to false so handleLogin enters Case 1 (enableBiometricLogin)
       } catch (error) {
         console.error('Error toggling biometric:', error);
         setUseBiometric(false);
         showFlashMessage({
           title: t('NOTICE'),
-          message: 'Failed to save biometric preference',
+          message: 'Failed to validate biometric capability',
           type: 'danger',
         });
       }

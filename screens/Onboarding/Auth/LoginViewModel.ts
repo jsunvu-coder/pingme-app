@@ -99,6 +99,13 @@ export class LoginViewModel {
       tokenName?: string;
     }
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
+    console.log('🔐 [Biometric] handleLogin START:', {
+      useBiometric_param: useBiometric,
+      'this.useBiometric': this.useBiometric,
+      biometricType,
+    });
+
+
     const auth = AuthService.getInstance();
     let ok = false;
 
@@ -138,28 +145,11 @@ export class LoginViewModel {
 
     let biometricEnabled = this.useBiometric;
 
-    if (useBiometric && !this.useBiometric) {
-      // Case 1: User just enabled biometric (preference changed from false to true)
-      const result = await this.enableBiometricLogin(email, password, biometricType);
-      biometricEnabled = result.success;
-      if (!result.success && result.message) {
-        showFlashMessage({
-          title: 'Face ID',
-          message: result.message,
-          type: 'warning',
-        });
-      }
-    } else if (!useBiometric && this.useBiometric) {
-      // Case 2: User disabled biometric
-      await this.disableBiometricLogin();
-      biometricEnabled = false;
-    } else if (useBiometric && this.useBiometric) {
-      // Case 3: Biometric already enabled - check if credentials exist
-      const { email: savedEmail, password: savedPassword } =
-        await LoginViewModel.getStoredCredentials();
-
-      if (!savedEmail || !savedPassword) {
-        // First login with biometric enabled - need to prompt and save credentials
+    // Handle biometric preference changes
+    if (useBiometric) {
+      // User wants biometric enabled
+      if (!this.useBiometric) {
+        // Case 1: User just enabled biometric (toggle switched from OFF to ON)
         const result = await this.enableBiometricLogin(email, password, biometricType);
         biometricEnabled = result.success;
         if (!result.success && result.message) {
@@ -170,10 +160,19 @@ export class LoginViewModel {
           });
         }
       } else {
-        // Credentials exist - just update them
+        // Case 2: Biometric preference was already ON
+        // Always save/update credentials to ensure they persist after logout+login
         await LoginViewModel.saveCredentials(email, password);
         await LoginViewModel.setUseBiometricPreference(true);
+        biometricEnabled = true;
       }
+    } else {
+      // User wants biometric disabled
+      if (this.useBiometric) {
+        // Case 3: User just disabled biometric (toggle switched from ON to OFF)
+        await this.disableBiometricLogin();
+      }
+      biometricEnabled = false;
     }
 
     this.handleSuccessfulLogin(email, shareParams);
@@ -181,11 +180,16 @@ export class LoginViewModel {
   }
 
   async clearStoredCredentials() {
-    await this.disableBiometricLogin();
+    // Only clear credentials (EMAIL, PASSWORD), preserve user preference (USE_BIOMETRIC_KEY)
+    // This allows biometric to auto-trigger after logout+login if user had it enabled
+    await LoginViewModel.clearSavedCredentials();
   }
 
   async logout() {
-    await this.clearStoredCredentials();
+    // Only clear credentials, NOT the biometric preference
+    // User preference should persist across logout/login sessions
+    await LoginViewModel.clearSavedCredentials();
+    
     try {
       const keys = await AsyncStorage.getAllKeys();
       const keysToRemove = keys.filter((k) => !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX));
@@ -389,9 +393,7 @@ export class LoginViewModel {
         LoginViewModel.getAuthOptions(`Authenticate with ${type ?? 'biometric'}`)
       );
 
-      if (!result.success) {
-        return { success: false };
-      }
+      if (!result.success) return { success: false };
 
       // Only return credentials if they exist
       const { email, password } = await LoginViewModel.getStoredCredentials();

@@ -43,9 +43,9 @@ module.exports = {
         {
           // Allow saving app-generated images to gallery (Recovery QR code)
           // On Android 10+: No permission needed for saving app-generated images
-          // We use savePhotosPermission: false to prevent adding READ_MEDIA_IMAGES
-          photosPermission: false,
-          savePhotosPermission: false,
+          // On iOS: We need both read and write permissions when using full access mode
+          photosPermission: 'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',
+          savePhotosPermission: 'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',
           isAccessMediaLocationEnabled: false,
         },
       ],
@@ -84,6 +84,7 @@ module.exports = {
           'twitter',
           'x-com.twitter.android',
         ],
+        NSPhotoLibraryAddUsageDescription: 'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',
       },
     },
     android: {

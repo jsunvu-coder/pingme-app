@@ -144,7 +144,7 @@ export default function HomeScreen() {
     useCallback(() => {
       void handleRefresh();
       void fetchRecentHistoryToRedux(dispatch);
-    }, [handleRefresh])
+    }, [])
   );
 
   return (

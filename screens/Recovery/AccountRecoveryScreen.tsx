@@ -31,7 +31,10 @@ export default function AccountRecoveryScreen() {
 
   const ensurePhotoPermission = useCallback(async (): Promise<boolean> => {
     try {
-      const current = await MediaLibrary.getPermissionsAsync();
+      // Request write-only permission (iOS 14+: "Add Photos Only", not full library access)
+      // On Android 10+: Scoped storage allows saving without permission
+      // writeOnly: true means we only want permission to add photos, not read them
+      const current = await MediaLibrary.getPermissionsAsync(true);
       if (current.granted) {
         setPhotoPermissionGranted(true);
         return true;
@@ -42,10 +45,7 @@ export default function AccountRecoveryScreen() {
         return false;
       }
 
-      // On Android 13+, we can request write-only permissions which don't require audio
-      // However, expo-media-library doesn't support write-only, so we'll only request
-      // permissions when actually saving, not on screen load
-      const requested = await MediaLibrary.requestPermissionsAsync();
+      const requested = await MediaLibrary.requestPermissionsAsync(true);
       setPhotoPermissionGranted(requested.granted);
       return requested.granted;
     } catch (e) {
@@ -55,10 +55,7 @@ export default function AccountRecoveryScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void ensurePhotoPermission();
-  }, []);
-
+  
   const promptOpenSettingsForPhotos = useCallback(() => {
     Alert.alert(
       'Photo Library Access Required',
