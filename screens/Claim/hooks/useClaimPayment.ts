@@ -206,7 +206,9 @@ export const useClaimPayment = () => {
         type: 'danger',
       });
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000);
     }
   }, [authService, loading, lockbox, lockboxProof, onClaimSuccess]);
 
@@ -313,7 +315,9 @@ export const useClaimPayment = () => {
         setVerifyError('Incorrect passphrase, please try again');
       }
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000);
     }
   };
 

@@ -44,7 +44,7 @@ export const ActionButtons = ({
     return (
       <View className="mt-10 flex-1 flex-row items-center justify-between space-x-3">
         <View className="mr-3 flex-1">
-          <OutlineButton title="Back" onPress={onBack} />
+          <OutlineButton title="Back" disabled={loading} onPress={onBack} />
         </View>
         <View className="ml-3 flex-1">
           <PrimaryButton title="Claim" onPress={onClaim} loading={loading} loadingText="Claiming" />

@@ -79,6 +79,7 @@ export default function TransactionDetailsScreen() {
 
   const [lockboxDetail, setLockboxDetail] = useState<LockboxDetail | null>(null);
   const [fetchingDetail, setFetchingDetail] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [reclaiming, setReclaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localMeta, setLocalMeta] = useState<LockboxMetadata | null>(null);
@@ -112,6 +113,7 @@ export default function TransactionDetailsScreen() {
   const fetchLockboxDetail = useCallback(async () => {
     if (!lockboxCommitment) {
       setLockboxDetail(null);
+      setInitialLoadComplete(true);
       return;
     }
 
@@ -129,6 +131,7 @@ export default function TransactionDetailsScreen() {
       setError(message);
     } finally {
       setFetchingDetail(false);
+      setInitialLoadComplete(true);
     }
   }, [contractService, lockboxCommitment]);
 
@@ -239,87 +242,109 @@ export default function TransactionDetailsScreen() {
         contentContainerStyle={{
           paddingBottom: 40,
         }}>
-        <View className="mt-6 rounded-2xl bg-white p-5">
-          <DetailRow label="Amount" value={amountDisplay} />
-          <DetailRow label="Recipient" value={transaction.addr || '-'} />
-          <DetailRow label="Created" value={formatTimestamp(createdSeconds)} autoAdjustFontSize />
-          {expirySeconds ? (
-            <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} autoAdjustFontSize />
-          ) : null}
-          {showStatusRow ? (
-            <DetailRow
-              label="Status"
-              value={statusMeta.label}
-              valueClassName="flex-row items-center"
-              valueTextClassName={statusMeta.textClass}
-              icon={
-                <Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />
-              }
-            />
-          ) : null}
-          {localPayLink ? (
-            <View className="mb-6 flex-row items-center justify-between">
-              <Text className="mb-1 text-[15px] text-[#909090]">Pay link</Text>
-              <View className="min-w-0 flex-1 flex-row items-center justify-end">
-                <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="middle"
-                    className="min-w-0 text-right text-[16px]">
-                    {localPayLink}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className="ml-3 active:opacity-80"
-                  onPress={handleCopyPayLink}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <CopyIcon />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-          {localMeta ? (
-            <View className="mb-6 flex-row items-center justify-between">
-              <Text className="mb-1 text-[15px] text-[#909090]">Passphrase</Text>
-              <View className="min-w-0 flex-1 flex-row items-center justify-end">
-                <Text
-                  numberOfLines={1}
-                  ellipsizeMode="middle"
-                  className="w-2/3 min-w-0 text-right text-[16px] text-[#0F0F0F]">
-                  {localMeta.passphrase || '-'}
-                </Text>
-
-                <TouchableOpacity
-                  className="ml-3 active:opacity-80"
-                  onPress={handleCopyPassphrase}
-                  disabled={!localMeta.passphrase}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <CopyIcon />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-        </View>
-
-        {fetchingDetail ? (
-          <View className="mt-6 flex-row items-center justify-center space-x-3">
-            <ActivityIndicator color="#FD4912" />
-            <Text className="text-sm text-gray-500">Refreshing transaction status…</Text>
+        {!initialLoadComplete ? (
+          <View className="mt-6 p-5">
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
           </View>
-        ) : null}
+        ) : (
+          <>
+            <View className="mt-6 p-5">
+              <DetailRow label="Amount" value={amountDisplay} />
+              <DetailRow label="Recipient" value={transaction.addr || '-'} />
+              <DetailRow label="Created" value={formatTimestamp(createdSeconds)} autoAdjustFontSize />
+              {expirySeconds ? (
+                <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} autoAdjustFontSize />
+              ) : null}
+              {showStatusRow ? (
+                <DetailRow
+                  label="Status"
+                  value={statusMeta.label}
+                  valueClassName="flex-row items-center"
+                  valueTextClassName={statusMeta.textClass}
+                  icon={
+                    <Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />
+                  }
+                />
+              ) : null}
+              {localPayLink ? (
+                <View className="mb-6 flex-row items-center justify-between">
+                  <Text className="mb-1 text-[15px] text-[#909090]">Pay link</Text>
+                  <View className="min-w-0 flex-1 flex-row items-center justify-end">
+                    <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
+                      <Text
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                        className="min-w-0 text-right text-[16px]">
+                        {localPayLink}
+                      </Text>
+                    </TouchableOpacity>
 
-        {showReclaim ? (
-          <View className="mt-10">
-            <GhostButton
-              title="Reclaim Payment"
-              onPress={handleReclaim}
-              loading={reclaiming}
-              loadingText="Reclaiming"
-            />
-          </View>
-        ) : null}
+                    <TouchableOpacity
+                      className="ml-3 active:opacity-80"
+                      onPress={handleCopyPayLink}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <CopyIcon />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+              {localMeta ? (
+                <View className="mb-6 flex-row items-center justify-between">
+                  <Text className="mb-1 text-[15px] text-[#909090]">Passphrase</Text>
+                  <View className="min-w-0 flex-1 flex-row items-center justify-end">
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                      className="w-2/3 min-w-0 text-right text-[16px] text-[#0F0F0F]">
+                      {localMeta.passphrase || '-'}
+                    </Text>
+
+                    <TouchableOpacity
+                      className="ml-3 active:opacity-80"
+                      onPress={handleCopyPassphrase}
+                      disabled={!localMeta.passphrase}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <CopyIcon />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+
+            {fetchingDetail && initialLoadComplete ? (
+              <View className="mt-6 flex-row items-center justify-center space-x-3">
+                <ActivityIndicator color="#FD4912" />
+                <Text className="text-sm text-gray-500">Refreshing transaction status…</Text>
+              </View>
+            ) : null}
+
+            {showReclaim ? (
+              <View className="mt-10">
+                <GhostButton
+                  title="Reclaim Payment"
+                  onPress={handleReclaim}
+                  loading={reclaiming}
+                  loadingText="Reclaiming"
+                />
+              </View>
+            ) : null}
+          </>
+        )}
       </ScrollView>
+    </View>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <View className="mb-6 flex-row justify-between">
+      <View className="h-4 w-20 rounded bg-gray-200" />
+      <View className="h-4 w-32 rounded bg-gray-200" />
     </View>
   );
 }

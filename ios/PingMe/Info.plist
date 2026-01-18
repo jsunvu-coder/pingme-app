@@ -45,7 +45,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>5</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSApplicationQueriesSchemes</key>
@@ -69,7 +69,7 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera to let you upload images.</string>
+    <string>Allow $(PRODUCT_NAME) to access your camera to use feature "Scan QR".</string>
     <key>NSContactsUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your contacts</string>
     <key>NSFaceIDUsageDescription</key>
@@ -77,9 +77,7 @@
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to save photos</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your photos</string>
+    <string>Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UILaunchStoryboardName</key>
