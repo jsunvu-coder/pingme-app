@@ -33,9 +33,9 @@ module.exports = {
       [
         'expo-image-picker',
         {
-          // Don't request photo library permission - we use Android Photo Picker (Android 13+)
-          // which provides one-time access without requiring READ_MEDIA_IMAGES permission
-          photosPermission: false,
+          // Need to set photosPermission to avoid conflicts with expo-media-library
+          // Both plugins manage NSPhotoLibraryUsageDescription, so must have consistent values
+          photosPermission: 'Allow $(PRODUCT_NAME) to access your photos.',
         },
       ],
       [
