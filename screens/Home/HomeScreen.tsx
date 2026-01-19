@@ -98,11 +98,8 @@ export default function HomeScreen() {
             void recordService.updateRecord();
 
             // Show confirmation dialog
-            showFlashMessage({
-              title: 'Top-up received',
-              message: 'You have received a top up.',
-              type: 'success',
-            });
+            await confirmTopUp('_ALERT_RECEIVED_TOPUP', true);
+
             return; // Return after first successful retrieve
           } catch (err) {
             console.error('RETRIEVE', err);
