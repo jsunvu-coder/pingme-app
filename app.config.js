@@ -21,7 +21,7 @@ module.exports = {
   expo: {
     name: 'PingMe', // Always use same name, only bundle ID differs
     slug: 'pingme',
-    version: '1.1.5',
+    version: '1.1.6',
     scheme: 'pingme',
     web: {
       favicon: './assets/intro_1.png',
@@ -85,6 +85,7 @@ module.exports = {
           'x-com.twitter.android',
         ],
         NSPhotoLibraryAddUsageDescription: 'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',
+        NSPhotoLibraryUsageDescription: 'Allow $(PRODUCT_NAME) to access your photos.',
       },
     },
     android: {
