@@ -33,7 +33,7 @@ export default function App() {
   }, []);
 
   // Global commitment/session guard
-  useCommitmentGuard();
+  // useCommitmentGuard();
 
   // Install crypto polyfill
   useEffect(() => {
