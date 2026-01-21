@@ -17,6 +17,7 @@ import { getStore } from './store';
 import { useState as useStateOriginal } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import LogoWithText from 'assets/LogoWithText';
+import OverlayManager from 'screens/Overlay/OverlayManager';
 
 export default function App() {
   const [storeReady, setStoreReady] = useStateOriginal(false);
@@ -93,6 +94,7 @@ export default function App() {
           <RootNavigator />
           <NetworkBanner visible={offline} onRetry={retryConnectivity} />
           <FlashMessage position="top" />
+          <OverlayManager />
         </NavigationContainer>
       </SafeAreaProvider>
     </Provider>

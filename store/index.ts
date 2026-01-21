@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import type { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import historyReducer from './historySlice';
 import balanceReducer from './balanceSlice';
+import overlayReducer from './overlaySlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -17,11 +18,13 @@ export async function createStore() {
     reducer: {
       history: historyReducer,
       balance: balanceReducer,
+      overlay: overlayReducer,
     },
     preloadedState: persistedState
       ? ({
           history: persistedState.history,
           balance: persistedState.balance,
+          // Don't persist overlay state
         } as Partial<{ history: any; balance: any }>)
       : undefined,
   });
@@ -74,11 +77,13 @@ void storePromise;
 const reducer = {
   history: historyReducer,
   balance: balanceReducer,
+  overlay: overlayReducer,
 };
 
 // Export types - define directly from reducer structure
 export type RootState = {
   history: ReturnType<typeof historyReducer>;
   balance: ReturnType<typeof balanceReducer>;
+  overlay: ReturnType<typeof overlayReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
