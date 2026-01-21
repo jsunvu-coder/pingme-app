@@ -11,6 +11,8 @@ import UserIcon from 'assets/UserIcon';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { push } from 'navigation/Navigation';
 import AirdropIcon from 'assets/AirdropIcon';
+import HongBaoIcon from 'assets/HongBaoIcon';
+import HongBaoScreen from './HongBao/HongBaoScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -69,6 +71,8 @@ export default function MainTab() {
             return <AirdropIcon isActive={focused} />;
           } else if (route.name === 'Account') {
             return <UserIcon isActive={focused} />;
+          } else if (route.name === 'HongBao') {
+            return <HongBaoIcon isActive={focused} />;
           } else {
             return <HomeIcon isActive={focused} />;
           }
@@ -76,6 +80,7 @@ export default function MainTab() {
       })}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Ping Now" component={PingMeScreen} />
+      <Tab.Screen name="HongBao" component={HongBaoScreen} />
       <Tab.Screen name="Airdrop" component={AirdropScreen} />
       <Tab.Screen name="Account" component={AccountScreen} />
     </Tab.Navigator>
