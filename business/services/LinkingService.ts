@@ -9,6 +9,7 @@ export const linking = {
       SendConfirmationScreen: 'pay',
       ClaimPaymentScreen: 'claim',
       PayQrConfirmationScreen: 'deposit',
+      HongBaoWithAuthScreen: 'redPocket',
     },
   },
 

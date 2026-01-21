@@ -2,8 +2,6 @@ import * as React from "react";
 import Svg, { Path, SvgProps } from "react-native-svg";
 const EnvelopeIcon = (props: SvgProps) => (
   <Svg
-    width={20}
-    height={20}
     viewBox="0 0 20 20"
     fill="none"
     {...props}

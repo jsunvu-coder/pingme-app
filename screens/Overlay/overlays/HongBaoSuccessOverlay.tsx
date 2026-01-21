@@ -76,7 +76,7 @@ export function HongBaoSuccessOverlay({ payload }: HongBaoSuccessOverlayProps) {
         <Text className="text-white/90 text-base mr-2">
           Send Another Hongbao
         </Text>
-        <EnvelopeIcon color="#FD6D41" />
+        <EnvelopeIcon color="#FD6D41" width={20} height={20} />
       </TouchableOpacity>
     </Animated.View>
   );

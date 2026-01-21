@@ -11,9 +11,10 @@ import { parseDepositLink } from 'screens/Home/Deposit/hooks/useDepositFlow';
  *  - https://app.pingme.xyz/claim?lockboxSalt=0x...
  *  - https://app.pingme.xyz/send?token=...&amount=...&requester=...
  *  - https://app.pingme.xyz/deposit?commitment=...
+ *  - https://app.pingme.xyz/redPocket?bundle_uuid=<hex> (HongBao)
  *  - https://app.staging.pingme.xyz/... (for staging builds and production builds with both domains)
  */
-export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
+export const handleUrl = async (rawData: string, releaseScanLock?: () => void) => {
   const showError = ({ title, message }: { title: string; message: string }) => {
     showFlashMessage({
       title,
@@ -67,6 +68,34 @@ export const handleUrl = (rawData: string, releaseScanLock?: () => void) => {
 
       console.log('📦 Navigating to ClaimPaymentScreen:', { lockboxSalt, username });
       push('ClaimPaymentScreen', { lockboxSalt, username });
+      return;
+    }
+
+    // ---------- Handle /redPocket (HongBao) ----------
+    if (path === '/redPocket') {
+      const bundle_uuid = url.searchParams.get('bundle_uuid');
+      if (!bundle_uuid) {
+        console.warn('⚠️ Missing bundle_uuid in redPocket URL');
+        showError({
+          title: t('Unsupported QR code', undefined, 'Unsupported QR code'),
+          message: t('ALERT_INVALID_HONGBAO_QR', undefined, 'Invalid HongBao QR code.'),
+        });
+        return;
+      }
+
+      // Check if user is logged in
+      const { AuthService } = require('business/services/AuthService');
+      const isLoggedIn = await AuthService.getInstance().isLoggedIn();
+
+      if (isLoggedIn) {
+        // Already logged in → skip auth screen, go directly to verification
+        console.log('🧧 User logged in → Navigating to HongBaoVerificationScreen:', { bundle_uuid });
+        push('HongBaoVerificationScreen', { bundle_uuid });
+      } else {
+        // Not logged in → show auth screen first
+        console.log('🧧 User not logged in → Navigating to HongBaoWithAuthScreen:', { bundle_uuid });
+        push('HongBaoWithAuthScreen', { bundle_uuid });
+      }
       return;
     }
 

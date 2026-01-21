@@ -5,6 +5,7 @@ import HeaderView from 'components/HeaderView';
 import BalanceView from './BalanceView';
 import QuickActionsView from './QuickActionView';
 import PingHistoryView from './PingHistoryView';
+import HongBaoPopup from 'components/HongBaoPopup';
 import { BalanceEntry } from 'business/Types';
 import { BalanceService } from 'business/services/BalanceService';
 import { AccountDataService } from 'business/services/AccountDataService';
@@ -17,6 +18,7 @@ import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks'
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
 import { useFocusEffect } from '@react-navigation/native';
 import { showFlashMessage } from 'utils/flashMessage';
+import { push } from 'navigation/Navigation';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -26,6 +28,7 @@ export default function HomeScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
   const [loading, setLoading] = useState(false);
+  const [showHongBaoPopup, setShowHongBaoPopup] = useState(true); // Show popup on first load
 
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
@@ -148,6 +151,11 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const handleSendHongBao = useCallback(() => {
+    // Navigate to HongBao creation screen
+    push('HongBao');
+  }, []);
+
   return (
     <View className="flex-1 bg-[#FD4912]">
       <SafeAreaView edges={['top']} />
@@ -171,6 +179,13 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {/* HongBao Popup */}
+      <HongBaoPopup
+        visible={showHongBaoPopup}
+        onClose={() => setShowHongBaoPopup(false)}
+        onSendHongBao={handleSendHongBao}
+      />
     </View>
   );
 }

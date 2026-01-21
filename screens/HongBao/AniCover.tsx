@@ -24,7 +24,6 @@ const COVER_WIDTH = 0.94 * width;
 const COVER_HEIGHT = COVER_WIDTH / (351 / 666);
 
 
-const CONTAINER_HEIGHT = Platform.OS === 'ios' ? 0.82 * windowHeight : 0.9 * windowHeight;
 const CONTAINER_WIDTH = COVER_WIDTH - 28;
 
 export interface AniCoverRef {
@@ -35,10 +34,12 @@ export interface AniCoverRef {
 interface AniCoverProps {
   children: React.ReactNode;
   offsetAdjustment?: number;
+  containerHeightAdjustment?: number;
 }
 
-const AniCover = forwardRef<AniCoverRef, AniCoverProps>(({children, offsetAdjustment = 0}, ref) => {
+const AniCover = forwardRef<AniCoverRef, AniCoverProps>(({children, offsetAdjustment = 0, containerHeightAdjustment = 0}, ref) => {
   const BOTTOM_OFFSET = -0.57 * COVER_HEIGHT + offsetAdjustment;
+  const CONTAINER_HEIGHT = (Platform.OS === 'ios' ? 0.82 * windowHeight : 0.9 * windowHeight) + containerHeightAdjustment;
   
   
   const isFocused = useIsFocused();

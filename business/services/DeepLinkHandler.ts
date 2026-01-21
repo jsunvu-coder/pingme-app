@@ -112,6 +112,22 @@ class DeepLinkHandler {
           return;
         }
 
+        // REDPOCKET (HongBao) → check login status
+        if (path === 'redPocket' || path === 'redpocket') {
+          const params = Object.fromEntries(u.searchParams);
+          if (isLoggedIn) {
+            // Logged in → skip auth, go to verification
+            console.log('[DeepLinkHandler] Cold start redPocket (logged in) → open HongBaoVerificationScreen');
+            setRootScreen(['MainTab']);
+            setTimeout(() => this.navigateHongBaoVerification(params), 400);
+          } else {
+            // Not logged in → show auth screen
+            console.log('[DeepLinkHandler] Cold start redPocket (not logged in) → open HongBaoWithAuthScreen');
+            this.navigateHongBao(params, true);
+          }
+          return;
+        }
+
         // Other links → respect login status
         if (!isLoggedIn) {
           console.log('[DeepLinkHandler] Not logged in → save pending URL & open AuthScreen');
@@ -173,6 +189,17 @@ class DeepLinkHandler {
           await this.handleClaimWithSignup(params);
         } else {
           this.navigateClaim(params);
+        }
+        return;
+      }
+
+      case 'redPocket':
+      case 'redpocket': {
+        // Check if logged in to decide which screen to show
+        if (isLoggedIn) {
+          this.navigateHongBaoVerification(params);
+        } else {
+          this.navigateHongBao(params);
         }
         return;
       }
@@ -307,6 +334,42 @@ class DeepLinkHandler {
       } else {
         push('ClaimPaymentScreen', route.params);
       }
+    }
+  }
+
+  private navigateHongBao(params: Record<string, string>, resetStack = false) {
+    console.log('[DeepLinkHandler] Navigating to HongBaoWithAuthScreen', params);
+    this.clearPendingURL();
+    const route = {
+      name: 'HongBaoWithAuthScreen',
+      params: {
+        ...params,
+      },
+    };
+
+    if (resetStack) {
+      setRootScreen([route]);
+    } else {
+      const isHongBaoOnTop =
+        navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoWithAuthScreen';
+      if (isHongBaoOnTop) {
+        replace('HongBaoWithAuthScreen', route.params);
+      } else {
+        push('HongBaoWithAuthScreen', route.params);
+      }
+    }
+  }
+
+  private navigateHongBaoVerification(params: Record<string, string>) {
+    console.log('[DeepLinkHandler] Navigating to HongBaoVerificationScreen', params);
+    this.clearPendingURL();
+    
+    const isVerificationOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoVerificationScreen';
+    if (isVerificationOnTop) {
+      replace('HongBaoVerificationScreen', params);
+    } else {
+      push('HongBaoVerificationScreen', params);
     }
   }
 

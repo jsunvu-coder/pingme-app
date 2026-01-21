@@ -1,10 +1,9 @@
 import { Fragment, type ComponentType } from 'react';
-import { Platform } from 'react-native';
+import { Platform , TouchableOpacity } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { StackNavigationOptions } from '@react-navigation/stack';
 import { goBack } from 'navigation/Navigation';
 import BackIcon from 'assets/BackIcon';
-import { TouchableOpacity } from 'react-native';
 
 import MainTab from 'screens/MainTab';
 import SendPaymentScreen from 'screens/Send/PingMe/PingMeScreen';
@@ -31,6 +30,10 @@ import TransactionDetailsScreen from 'screens/Home/History/Detail/TransactionDet
 import WithdrawScreen from 'screens/Withdraw/WithdrawScreen';
 import WithdrawSuccessScreen from 'screens/Withdraw/WithdrawSuccessScreen';
 import WithdrawConfirmationScreen from 'screens/Withdraw/WithdrawConfirmationScreen';
+import HongBaoWithAuthScreen from 'screens/HongBao/HongBaoWithAuthScreen';
+import HongBaoVerificationScreen from 'screens/HongBao/HongBaoVerificationScreen';
+import HongBaoSuccessScreen from 'screens/HongBao/HongBaoSuccessScreen';
+import HongBaoErrorScreen from 'screens/HongBao/HongBaoErrorScreen';
 
 const Stack = createStackNavigator();
 
@@ -41,16 +44,16 @@ const transparentModalOptions: StackNavigationOptions = {
 
 const modalOptions = Platform.OS === 'ios' ? transparentModalOptions : undefined;
 
-const SCREEN_GROUPS: Array<{
+const SCREEN_GROUPS: {
   label: string;
-  screens: Array<{
+  screens: {
     name: string;
     component: ComponentType<any>;
     options?:
       | StackNavigationOptions
       | ((props: { route: any; navigation: any }) => StackNavigationOptions);
-  }>;
-}> = [
+  }[];
+}[] = [
   {
     label: 'Onboarding & Auth',
     screens: [
@@ -145,6 +148,27 @@ const SCREEN_GROUPS: Array<{
         name: 'ShareScreen',
         component: ShareScreen,
         options: transparentModalOptions,
+      },
+    ],
+  },
+  {
+    label: 'HongBao',
+    screens: [
+      { name: 'HongBaoWithAuthScreen', component: HongBaoWithAuthScreen },
+      { name: 'HongBaoVerificationScreen', component: HongBaoVerificationScreen },
+      {
+        name: 'HongBaoSuccessScreen',
+        component: HongBaoSuccessScreen,
+        options: {
+          gestureEnabled: false,
+        },
+      },
+      {
+        name: 'HongBaoErrorScreen',
+        component: HongBaoErrorScreen,
+        options: {
+          gestureEnabled: false,
+        },
       },
     ],
   },
