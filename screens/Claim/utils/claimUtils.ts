@@ -1,6 +1,26 @@
 /**
- * Utility functions for Claim Payment Screen
+ * General utility functions for Claim Payment Screen
+ * 
+ * ⚠️ DEPRECATED: Core utilities have been moved to utils/claim/
+ * 
+ * This file now re-exports from the new location and provides some
+ * backward-compatible functions.
+ * 
+ * For new code, please use:
+ * ```ts
+ * import { ... } from 'utils/claim';
+ * ```
  */
+
+// ============================================================================
+// Re-export from new location
+// ============================================================================
+
+export * from '../../../utils/claim';
+
+// ============================================================================
+// Time Formatting
+// ============================================================================
 
 /**
  * Format timestamp to readable date string
