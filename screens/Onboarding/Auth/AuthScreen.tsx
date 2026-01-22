@@ -21,11 +21,12 @@ import LoginView from './LoginView';
 type AuthParams = {
   mode?: 'signup' | 'login';
   headerFull?: boolean;
-  from?: string;
+  from?: 'signup' | 'login';
   lockboxProof?: string;
   username?: string;
   amountUsdStr?: string;
   tokenName?: string;
+  disableSuccessScreen?: boolean;
 };
 
 export default function AuthScreen() {
@@ -124,6 +125,7 @@ export default function AuthScreen() {
                 from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
                 tokenName={route.params?.tokenName}
+                disableSuccessScreen={route.params?.disableSuccessScreen}
               />
             ) : (
               <CreateAccountView
@@ -132,6 +134,7 @@ export default function AuthScreen() {
                 from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
                 tokenName={route.params?.tokenName}
+                disableSuccessScreen={route.params?.disableSuccessScreen}
               />
             )}
           </View>

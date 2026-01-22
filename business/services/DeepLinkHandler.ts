@@ -1,6 +1,11 @@
 import { navigationRef, presentOverMain, push, replace, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
+import {
+  computeLockboxProof,
+  getLockbox,
+  getLockboxInfo,
+} from 'utils/claim';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -85,13 +90,20 @@ class DeepLinkHandler {
 
         // CLAIM → open immediately regardless of login
         if (path === 'claim') {
-          console.log('[DeepLinkHandler] Cold start claim → open ClaimPaymentScreen');
+          console.log('[DeepLinkHandler] Cold start claim → processing');
           const params = Object.fromEntries(u.searchParams);
+          
           if (isLoggedIn) {
             setRootScreen(['MainTab']);
             setTimeout(() => this.navigateClaim(params), 400);
           } else {
-            this.navigateClaim(params, true); // reset stack so splash isn't behind
+            // If signup=true and not logged in, verify first then go to auth
+            if (params.signup === 'true') {
+              console.log('[DeepLinkHandler] Claim with signup=true and not logged in → verify first');
+              await this.handleClaimWithSignup(params);
+            } else {
+              this.navigateClaim(params, true); // reset stack so splash isn't behind
+            }
           }
           return;
         }
@@ -149,7 +161,13 @@ class DeepLinkHandler {
 
     switch (path) {
       case 'claim': {
-        this.navigateClaim(params);
+        // If signup=true and not logged in, verify first then go to auth
+        if (params.signup === 'true' && !isLoggedIn) {
+          console.log('[DeepLinkHandler] Runtime claim with signup=true and not logged in → verify first');
+          await this.handleClaimWithSignup(params);
+        } else {
+          this.navigateClaim(params);
+        }
         return;
       }
 
@@ -173,6 +191,82 @@ class DeepLinkHandler {
   }
 
   // --- Navigation helpers ---
+  
+  /**
+   * Handle claim with signup=true when not logged in
+   * Verify with empty passphrase in background, then navigate to AuthScreen
+   */
+  private async handleClaimWithSignup(params: Record<string, string>) {
+    try {
+      console.log('[DeepLinkHandler] Starting background verify for signup flow');
+      
+      const { username, lockboxSalt, code } = params;
+      
+      if (!lockboxSalt) {
+        console.error('[DeepLinkHandler] Missing required params for signup flow');
+        // Fallback to normal claim flow
+        this.navigateClaim(params, true);
+        return;
+      }
+
+      // Verify with empty passphrase
+      const passphrase = '';
+      // Use empty string as default if username is not provided
+      const crypto = computeLockboxProof(username || '', passphrase, lockboxSalt, code);
+      
+      console.log('[DeepLinkHandler] Getting lockbox with empty passphrase');
+      const lockbox = await getLockbox(crypto.lockboxCommitment);
+      
+      // Get lockbox info
+      const info = getLockboxInfo(lockbox);
+      
+      if (!info) {
+        console.error('[DeepLinkHandler] Failed to get lockbox info');
+        this.navigateClaim(params, true);
+        return;
+      }
+
+      // Check if lockbox is still claimable
+      if (!info.isClaimable) {
+        console.warn(
+          `[DeepLinkHandler] Lockbox is not claimable (status: ${info.derivedStatus}), showing ClaimPaymentScreen`
+        );
+        // Navigate to ClaimPaymentScreen to show the status (EXPIRED/CLAIMED/RECLAIMED)
+        this.navigateClaim({
+          ...params,
+          // Pass pre-verified data so ClaimPaymentScreen can show status immediately
+          _lockboxData: JSON.stringify(lockbox),
+          _lockboxProof: crypto.lockboxProof,
+          _derivedStatus: info.derivedStatus,
+        }, true);
+        return;
+      }
+
+      console.log('[DeepLinkHandler] Lockbox verified and claimable, navigating to AuthScreen (signup)');
+      
+      // Navigate directly to AuthScreen with lockbox info
+      setRootScreen([
+        {
+          name: 'AuthScreen',
+          params: {
+            mode: 'signup',
+            headerFull: true,
+            lockboxProof: crypto.lockboxProof,
+            amountUsdStr: info.formattedAmount,
+            from: 'signup',
+            tokenName: info.tokenName,
+            disableSuccessScreen: true,
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('[DeepLinkHandler] Verify failed for signup flow:', error);
+      // Fallback to normal claim flow on error
+      console.log('[DeepLinkHandler] Falling back to normal claim flow');
+      this.navigateClaim(params, true);
+    }
+  }
+
   private navigateClaim(params: Record<string, string>, resetStack = false) {
     console.log('[DeepLinkHandler] Navigating to ClaimPaymentScreen', params);
     this.clearPendingURL();

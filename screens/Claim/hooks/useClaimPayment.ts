@@ -29,14 +29,43 @@ export interface ClaimPaymentParams extends ClaimDeeplinkParams {
 export const useClaimPayment = () => {
   const route = useRoute<any>();
   const params = useMemo(() => route?.params ?? {}, [route?.params]);
-  const { username, lockboxSalt, code, paymentId, onClaimSuccess, signup, ...restParams } =
-    params as ClaimPaymentParams;
+  const { 
+    username, 
+    lockboxSalt, 
+    code, 
+    paymentId, 
+    onClaimSuccess, 
+    signup,
+    // Pre-verified data from DeepLinkHandler (when signup flow with empty passphrase)
+    _lockboxData,
+    _lockboxProof,
+    _derivedStatus,
+    ...restParams 
+  } = params as ClaimPaymentParams & {
+    _lockboxData?: string;
+    _lockboxProof?: string;
+    _derivedStatus?: LockboxStatus;
+  };
 
   const [passphrase, setPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [lockbox, setLockbox] = useState<LockboxData | null>(null);
   const [lockboxProof, setLockboxProof] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  // Initialize with pre-verified data if available
+  useEffect(() => {
+    if (_lockboxData && _lockboxProof) {
+      try {
+        const parsedLockbox = JSON.parse(_lockboxData);
+        console.log('🔗 [useClaimPayment] Using pre-verified lockbox data');
+        setLockbox(parsedLockbox);
+        setLockboxProof(_lockboxProof);
+      } catch (error) {
+        console.error('❌ [useClaimPayment] Failed to parse pre-verified lockbox data:', error);
+      }
+    }
+  }, [_lockboxData, _lockboxProof]);
 
   // Validate deep link params using utility
   useEffect(() => {

@@ -97,6 +97,7 @@ export class LoginViewModel {
       amountUsdStr?: string;
       from?: 'login' | 'signup';
       tokenName?: string;
+      disableSuccessScreen?: boolean;
     }
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     console.log('🔐 [Biometric] handleLogin START:', {
@@ -208,9 +209,11 @@ export class LoginViewModel {
       amountUsdStr?: string;
       from?: 'login' | 'signup';
       tokenName?: string;
+      disableSuccessScreen?: boolean;
     }
   ) {
     AccountDataService.getInstance().email = email;
+    // Only set pending claim if we want to show success screen
     if (shareParams?.mode === 'claimed') {
       shareFlowService.setPendingClaim({
         amountUsdStr: shareParams.amountUsdStr,

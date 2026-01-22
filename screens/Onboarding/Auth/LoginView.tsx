@@ -19,12 +19,14 @@ export default function LoginView({
   from,
   amountUsdStr,
   tokenName,
+  disableSuccessScreen,
 }: {
   lockboxProof?: string;
   prefillUsername?: string;
   from?: 'login' | 'signup';
   amountUsdStr?: string;
   tokenName?: string;
+  disableSuccessScreen?: boolean;
 }) {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
@@ -139,6 +141,7 @@ export default function LoginView({
               amountUsdStr: amountUsdStr ?? route?.params?.amountUsdStr,
               from: fromParam,
               tokenName: tokenName,
+              disableSuccessScreen: disableSuccessScreen ?? route?.params?.disableSuccessScreen,
             }
           : undefined
       );

@@ -25,6 +25,7 @@ export default function CreateAccountView({
   prefillUsername,
   amountUsdStr,
   tokenName,
+  disableSuccessScreen,
 }: any) {
   const route = useRoute<any>();
   const initialEmail =
@@ -87,7 +88,8 @@ export default function CreateAccountView({
 
       if (ok) {
         AccountDataService.getInstance().email = email;
-        if (lockbox) {
+        // Only set pending claim if we want to show success screen
+        if (lockbox && !disableSuccessScreen) {
           shareFlowService.setPendingClaim({
             amountUsdStr: claimedAmountUsd,
             from: 'signup',
