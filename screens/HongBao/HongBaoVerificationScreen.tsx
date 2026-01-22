@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Text, View, Animated } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { push } from 'navigation/Navigation';
@@ -17,6 +17,30 @@ export default function HongBaoVerificationScreen() {
   const { bundle_uuid, email, password } = (route.params as HongBaoVerificationParams) || {};
   const lottieRef = useRef<LottieView>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Show button after 2 seconds with animation
+    const timer = setTimeout(() => {
+      setShowButton(true);
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 1700);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const verifyHongBao = async () => {
     setIsLoading(true);
@@ -24,7 +48,7 @@ export default function HongBaoVerificationScreen() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Mock verification result
-      const isValid = Math.random() > 0.9; // 70% success rate for testing
+      const isValid = Math.random() > 0.1; // 70% success rate for testing
 
       if (isValid) {
         // Success - navigate to success screen
@@ -64,24 +88,36 @@ export default function HongBaoVerificationScreen() {
           ref={lottieRef}
           source={require('../../assets/HongBaoAni/receive_claim.json')}
           autoPlay
-          loop={true}
+          loop={false}
           style={{ width: '100%', height: '100%' }}
         />
 
-        <View className='absolute bottom-16 w-full px-10'>
-          <View className='mb-4 rounded-2xl bg-white p-6'>
-            <Text className='text-center text-xl font-bold text-[#FD4912]'>
-            May your wallet and your days stay full ❤️
-            </Text>
-          </View>
-          <PrimaryButton
-            title='Claim Hongbao'
-            onPress={verifyHongBao}
-            disabled={isLoading}
-            loading={isLoading}
-            loadingText='Verifying...'
-          />
-        </View>
+        {showButton && (
+          <Animated.View 
+            className='absolute bottom-16 w-full px-10'
+            style={{
+              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
+              position: 'absolute',
+              bottom: 70,
+              width: '100%',
+              paddingHorizontal: 40,
+            }}
+          >
+            <View className='mb-4 rounded-2xl bg-white p-6'>
+              <Text className='text-center text-xl font-bold text-[#FD4912]'>
+              May your wallet and your days stay full ❤️
+              </Text>
+            </View>
+            <PrimaryButton
+              title='Claim Hongbao'
+              onPress={verifyHongBao}
+              disabled={isLoading}
+              loading={isLoading}
+              loadingText='Verifying...'
+            />
+          </Animated.View>
+        )}
       </View>
       <SafeAreaView edges={['bottom']} />
     </View>
