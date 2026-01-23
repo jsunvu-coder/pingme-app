@@ -97,6 +97,8 @@ export default function HomeScreen() {
             // Update records with delay (3s default) - fire and forget
             void recordService.updateRecord();
 
+            // Fetch recent history to redux
+            void fetchRecentHistoryToRedux(dispatch);
             // Show confirmation dialog
             await confirmTopUp('_ALERT_RECEIVED_TOPUP', true);
 
