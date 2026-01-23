@@ -39,14 +39,6 @@ Build Android AAB for production (Play Store)
 
 Build and upload to Play Store Internal Testing
 
-### android production_firebase
-
-```sh
-[bundle exec] fastlane android production_firebase
-```
-
-Build Android APK for production and upload to Firebase
-
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
