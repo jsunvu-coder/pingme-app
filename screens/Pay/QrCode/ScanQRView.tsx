@@ -14,32 +14,32 @@ export default function ScanQRView() {
   const [deniedPermanently, setDeniedPermanently] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(true);
 
-  useEffect(() => {
-    initializePermission();
-  }, []);
-
   const handleQRCode = (data: string, releaseScanLock: () => void) => {
     handleUrl(data, releaseScanLock);
   };
 
-  const initializePermission = async () => {
-    setPermissionLoading(true);
-    try {
-      const { status, canAskAgain } = await Camera.getCameraPermissionsAsync();
-      if (status === 'granted') {
-        setHasPermission(true);
-        setDeniedPermanently(false);
-      } else if (canAskAgain) {
-        await requestPermission();
-        return;
-      } else {
-        setHasPermission(false);
-        setDeniedPermanently(true);
+  useEffect(() => {
+    const initializePermission = async () => {
+      setPermissionLoading(true);
+      try {
+        const { status, canAskAgain } = await Camera.getCameraPermissionsAsync();
+        if (status === 'granted') {
+          setHasPermission(true);
+          setDeniedPermanently(false);
+        } else if (canAskAgain) {
+          await requestPermission();
+          return;
+        } else {
+          setHasPermission(false);
+          setDeniedPermanently(true);
+        }
+      } finally {
+        setPermissionLoading(false);
       }
-    } finally {
-      setPermissionLoading(false);
-    }
-  };
+    };
+  
+    initializePermission();
+  }, []);
 
   const requestPermission = async () => {
     setPermissionLoading(true);
