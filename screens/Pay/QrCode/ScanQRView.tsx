@@ -22,7 +22,8 @@ export default function ScanQRView() {
     const initializePermission = async () => {
       setPermissionLoading(true);
       try {
-        const { status, canAskAgain } = await Camera.getCameraPermissionsAsync();
+        const { status, canAskAgain } = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status === 'granted');
         if (status === 'granted') {
           setHasPermission(true);
           setDeniedPermanently(false);
@@ -37,7 +38,7 @@ export default function ScanQRView() {
         setPermissionLoading(false);
       }
     };
-  
+
     initializePermission();
   }, []);
 
