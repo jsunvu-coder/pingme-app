@@ -21,6 +21,7 @@ type CounterInputProps = {
   placeholder?: string;
   helperText?: string;
   helperTextColor?: string;
+  placeholderTextColor?: string;
 };
 
 export default function CounterInput({
@@ -38,6 +39,7 @@ export default function CounterInput({
   placeholder = '0',
   helperText,
   helperTextColor = '#FB1028',
+  placeholderTextColor = '#909090',
 }: CounterInputProps) {
   const numValue = parseInt(value, 10) || 0;
 
@@ -72,16 +74,20 @@ export default function CounterInput({
   const handleTextChange = (text: string) => {
     if (disabled) return;
 
-    // Allow empty input for editing
+    // Allow empty input (user deleting all)
     if (text === '') {
       onValueChange('');
       return;
     }
 
+    // When already at max: allow only deletion, block adding digits
+    if (numValue >= max && text.length > value.length) {
+      return;
+    }
+
     // Parse and validate numeric input
-    const parsedValue = parseInt(text, 10);
+    const parsedValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
     if (!isNaN(parsedValue)) {
-      // Clamp value between min and max
       const clampedValue = Math.max(min, Math.min(max, parsedValue));
       onValueChange(String(clampedValue));
     }
@@ -128,12 +134,12 @@ export default function CounterInput({
           keyboardType="numeric"
           editable={!disabled}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={placeholderTextColor}
           style={{
             flex: 1,
             textAlign: 'center',
             fontSize: 16,
-            fontWeight: '500',
+            fontWeight: '400',
             color: '#111827',
             minWidth: 80,
           }}

@@ -1,4 +1,4 @@
-import { useRoute } from '@react-navigation/native';
+import { useIsFocused, useRoute } from '@react-navigation/native';
 import { RedPocketService } from 'business/services/RedPocketService';
 import { Utils } from 'business/Utils';
 import PrimaryButton from 'components/PrimaryButton';
@@ -21,41 +21,86 @@ export default function HongBaoVerificationScreen() {
   const [showButton, setShowButton] = useState(false);
   const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [readyToClaim, setReadyToClaim] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const isFocused = useIsFocused();
   const redPocketService = RedPocketService.getInstance();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowButton(true);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 1700);
+    const getBundleStatus = async () => {
+      if (bundle_uuid) {
+        const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
+          setMessage(bundleStatus.message || 'May your wallet and your days stay full ❤️');
+          setReadyToClaim(true);
+      }
+    };
+    getBundleStatus();
+  }, [bundle_uuid]);
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    if (isFocused) {
+      return () => {
+        setMessage('');
+        setReadyToClaim(false);
+      };
+    }
+  }, [isFocused]);
+
+  // Start looping animation from 0-40 when not ready
+  useEffect(() => {
+    if (!readyToClaim) {
+      lottieRef.current?.play(0, 42);
+    }
   }, []);
+
+  // Play once when ready
+  useEffect(() => {
+    if (readyToClaim) {
+      lottieRef.current?.play(0);
+    }
+  }, [readyToClaim]);
+
+  useEffect(() => {
+    if (readyToClaim) {
+      const timer = setTimeout(() => {
+        setShowButton(true);
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 1700);
+
+      return () => clearTimeout(timer);
+    }
+  }, [readyToClaim]);
 
   const verifyHongBao = async () => {
     setIsLoading(true);
     try {
       if (bundle_uuid) {
         const claimResult = await redPocketService.claimBundle(bundle_uuid);
-        if (claimResult.status === 1) {
+        if (claimResult.status === 1 ||claimResult.status === -1) {
           const username = getCurrentUserCrypto()?.username;
+          let amount = claimResult.amount || 0;
+          
           const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
           const ranking = bundleStatus.claimed.map((claimed, index) => {
             const isCurrentUser = claimed.username === username;
+            if(isCurrentUser){
+                amount = claimed.amount;
+            }
             return {
               rank: index + 1,
-              username: isCurrentUser? 'YOU' : claimed.username,
+              username: isCurrentUser ? 'YOU' : claimed.username,
               amount: Utils.formatMicroToUsd(
                 claimed.amount,
                 undefined,
@@ -68,17 +113,18 @@ export default function HongBaoVerificationScreen() {
 
           const tokenDecimals = Utils.getTokenDecimals(claimResult.token);
           const amountUsdStr = Utils.formatMicroToUsd(
-            claimResult.amount,
+            amount.toString(),
             undefined,
             { grouping: false, empty: '' },
             tokenDecimals
           );
 
           push('HongBaoSuccessScreen', {
-            amount: claimResult.amount,
+            amount,
             amountUsdStr: amountUsdStr,
             ranking,
             remainingCount: bundleStatus.quantity - bundleStatus.claimed.length,
+            isClaimed: claimResult.status !== 1,
           });
         } else {
           push('HongBaoErrorScreen');
@@ -99,8 +145,13 @@ export default function HongBaoVerificationScreen() {
         <LottieView
           ref={lottieRef}
           source={require('../../assets/HongBaoAni/receive_claim.json')}
-          autoPlay={true}
+          autoPlay={false}
           loop={false}
+          onAnimationFinish={() => {
+            if (!readyToClaim) {
+              lottieRef.current?.play(0, 42);
+            }
+          }}
           style={{ width: '100%', height: '100%' }}
         />
 
@@ -117,7 +168,7 @@ export default function HongBaoVerificationScreen() {
             }}>
             <View className="mb-4 rounded-2xl bg-white p-6">
               <Text className="text-center text-xl font-bold text-[#FD4912]">
-                May your wallet and your days stay full ❤️
+                {message}
               </Text>
             </View>
             <PrimaryButton

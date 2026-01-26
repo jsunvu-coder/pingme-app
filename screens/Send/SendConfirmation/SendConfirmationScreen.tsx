@@ -260,11 +260,6 @@ export default function SendConfirmationScreen() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      setLoading(false);
-    };
-  }, []);
 
   const pay = async () => {
     const isEmailChannel = params?.channel === 'Email';
@@ -472,7 +467,9 @@ export default function SendConfirmationScreen() {
         type: 'danger',
       });
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000);
     }
   };
 

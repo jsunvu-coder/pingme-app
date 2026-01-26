@@ -204,11 +204,12 @@ export default function RequestConfirmationScreen() {
           title: 'Error',
           message: 'Failed to send payment request. Please try again.',
         });
+        setLoading(false);
       }
     } finally {
       setTimeout(() => {
         setLoading(false);
-      }, 2000);
+      }, 3000);
     }
   };
 

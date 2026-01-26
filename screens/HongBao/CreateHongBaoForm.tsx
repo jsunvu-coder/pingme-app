@@ -15,6 +15,7 @@ type CreateHongBaoFormProps = {
 
 export type CreateHongBaoFormRef = {
   clearForm: () => void;
+  setEditable: (editable: boolean) => void;
 };
 
 export type HongBaoFormData = {
@@ -32,7 +33,8 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
   ({ onSubmit, loading = false }, ref) => {
     const [recipientCount, setRecipientCount] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState('恭喜发财🧧');
+    const [editable, setEditable] = useState(true);
 
     const tokens = ALL_TOKENS;
 
@@ -43,7 +45,10 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
       clearForm: () => {
         setRecipientCount('');
         setTotalAmount('');
-        setMessage('');
+        setMessage('恭喜发财🧧');
+      },
+      setEditable: (editable: boolean) => {
+        setEditable(editable);
       },
     }));
 
@@ -77,7 +82,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
       recipientCountNum <= MAX_RECIPIENTS;
 
     return (
-      <View className="w-full">
+      <View pointerEvents={editable ? 'auto' : 'none'} className="w-full" >
         {/* Title */}
         <View className="mb-6 flex-row items-center">
           <Text className=" flex-1 text-2xl font-bold text-[#982C0B] text-center mb-6">

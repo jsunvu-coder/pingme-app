@@ -1,4 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
+import ArrowLeftIcon from 'assets/ArrowLeftIcon';
 import QuestionCircleIcon from 'assets/QuestionCircleIcon';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import {
@@ -9,9 +10,9 @@ import {
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
-  ScrollView,
+  View
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -19,9 +20,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  KeyboardAwareScrollView,
-} from 'react-native-keyboard-controller';
+import { useDispatch } from 'react-redux';
+import { hideOverlay, triggerAction } from 'store/overlaySlice';
 
 const HongbaoCoverLibImage = require('../../assets/HongBaoAni/Hongbao_opened_2.png');
 const HongbaoCoverBaseImage = require('../../assets/HongBaoAni/Hongbao_opened_3.png');
@@ -58,7 +58,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
 
     const isFocused = useIsFocused();
     const progress = useSharedValue(0);
-    const keyboardHeight = useSharedValue(0);
+    const dispatch = useDispatch();
 
     useEffect(() => {
       progress.value = withTiming(1, { duration: 2500 });
@@ -71,6 +71,11 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     const resetProgress = () => {
       progress.value = 0;
       progress.value = withTiming(1, { duration: 2500 });
+    };
+
+    const backButtonPress = () => {
+      dispatch(hideOverlay());
+      dispatch(triggerAction('hongbao:reset'));
     };
 
     // Expose methods to parent component via ref
@@ -115,6 +120,20 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
         left: 0,
         right: 0,
         paddingHorizontal: 16,
+      };
+    });
+
+    const backButtonAnimatedStyle = useAnimatedStyle(() => {
+      const opacity = interpolate(progress.value, [0, 2.5, 3, 3.5, 5], [0, 0, 0, 1, 1]);
+      const translateY = interpolate(progress.value, [0, 2.5, 3, 3.5, 5], [-200, -200, -200, 0, 0]);
+      return {
+        opacity,
+        transform: [{ translateY }],
+        position: 'absolute',
+        left: 16,
+        top: 16,
+        height: 40,
+        width: 40,
       };
     });
 
@@ -262,6 +281,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                         paddingHorizontal: 16,
                         paddingBottom: 0.25 * CONTAINER_HEIGHT,
                       }}
+                      bottomOffset={50}
                       showsVerticalScrollIndicator={true}
                       keyboardShouldPersistTaps="handled"
                       bounces={false}>
@@ -292,6 +312,21 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                 <QuestionCircleIcon />
               </TouchableOpacity>
             </View>
+          </Animated.View>
+
+          <Animated.View style={backButtonAnimatedStyle}>
+            <TouchableOpacity
+              style={{
+                height: 40,
+                width: 40,
+                borderRadius: 100,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'white',
+              }}
+              onPress={backButtonPress}>
+              <ArrowLeftIcon />
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </View>

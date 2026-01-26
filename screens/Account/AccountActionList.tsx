@@ -12,6 +12,7 @@ import { LoginViewModel } from 'screens/Onboarding/Auth/LoginViewModel';
 import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
 import { useAppDispatch } from 'store/hooks';
 import { clearHistory } from 'store/historySlice';
+import { resetHongBaoPopupShown } from 'store/eventSlice';
 
 const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
@@ -52,6 +53,8 @@ export default function AccountActionList() {
   const handleLogout = async () => {
     if (loggingOut) return;
     setLoggingOut(true);
+
+    dispatch(resetHongBaoPopupShown());
     try {
       const preservedEnv = await AsyncStorage.getItem(ENV_STORAGE_KEY);
       await AuthService.getInstance().logout();

@@ -21,6 +21,8 @@ type LabeledInputProps = {
   textClassName?: string;
   helperText?: string;
   helperTextColor?: string;
+  placeholderTextColor?: string;
+  integerOnly?: boolean;
 };
 
 export default function LabeledInput({
@@ -39,6 +41,8 @@ export default function LabeledInput({
   keyboardType = 'default',
   helperText,
   helperTextColor = '#FB1028',
+  placeholderTextColor = '#909090',
+  integerOnly = false,
 }: LabeledInputProps) {
   // Render icon - either Ionicons or custom component
   const renderIcon = () => {
@@ -80,8 +84,12 @@ export default function LabeledInput({
         onChangeText={(text) => {
           let processedText = text;
           
+          // Handle integerOnly: only allow digits (0-9)
+          if (integerOnly) {
+            processedText = text.replace(/[^0-9]/g, '');
+          }
           // Handle decimal-pad keyboard: convert comma to period and validate
-          if (keyboardType === 'decimal-pad') {
+          else if (keyboardType === 'decimal-pad') {
             // Allow numbers, comma, and period
             processedText = text.replace(/[^0-9.,]/g, '');
             // Convert comma to period for consistency (iOS may use comma)
@@ -103,6 +111,7 @@ export default function LabeledInput({
           }
         }}
         placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
         editable={editable}
         multiline={multiline}
         keyboardType={keyboardType}

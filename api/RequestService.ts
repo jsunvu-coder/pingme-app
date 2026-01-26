@@ -96,7 +96,6 @@ export class RequestService {
     amount,
     customMessage,
     confirm,
-    setLoading,
     setDisabledInput,
     setSent,
   }: {
