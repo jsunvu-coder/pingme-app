@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { push } from 'navigation/Navigation';
 import PrimaryButton from 'components/PrimaryButton';
@@ -7,131 +7,102 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AddUserIcon from 'assets/AddUserIcon';
 import LoginIcon from 'assets/LoginIcon';
 import AuthFormFields from './AuthFormFields';
+import { RedPocketService } from 'business/services/RedPocketService';
+import LoginView, { LoginViewRef } from 'screens/Onboarding/Auth/LoginView';
+import { AuthService } from 'business/services/AuthService';
+import CreateAccountView, { CreateAccountViewRef } from 'screens/Onboarding/Auth/CreateAccountView';
 
 type HongBaoWithAuthParams = {
   bundle_uuid?: string;
 };
 
-const ratio = 375 / 86
+const ratio = 375 / 86;
 
 const imageHeight = Dimensions.get('window').width / ratio;
 
+const SignUpIcon = ({ isActive }: { isActive: boolean }) => <AddUserIcon isActive={isActive} />;
 
-const SignUpIcon = ({ isActive }: { isActive: boolean }) => (
-  <AddUserIcon isActive={isActive} />
-);
-
-const LogInIcon = ({ isActive }: { isActive: boolean }) => (
-  <LoginIcon isActive={isActive} />
-);
+const LogInIcon = ({ isActive }: { isActive: boolean }) => <LoginIcon isActive={isActive} />;
 
 export default function HongBaoWithAuthScreen() {
   const route = useRoute();
   const { bundle_uuid } = (route.params as HongBaoWithAuthParams) || {};
 
   const [mode, setMode] = useState<'signup' | 'login'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const loginViewRef = useRef<LoginViewRef>(null);
+  const createAccountViewRef = useRef<CreateAccountViewRef>(null);
+  const [isSignupFormValid, setIsSignupFormValid] = useState(false);
   const handleCreateAccount = async () => {
-    if (mode === 'signup' && !agreedToTerms) {
-      return;
-    }
-
     setLoading(true);
-
-    // Mock signup/login
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to verification screen with auth data
+    try {
+      if (mode === 'signup') {
+        await createAccountViewRef.current?.register();
+      } else {
+        await loginViewRef.current?.login();
+      }
       push('HongBaoVerificationScreen', {
         bundle_uuid,
-        email,
-        password,
+        verified: true,
       });
+    } catch (err) {
+      console.error('Error signing in', err);
+    } finally {
+      setLoading(false);
+    }
+    setTimeout(() => {
+      setLoading(false);
     }, 1500);
   };
 
   return (
     <View className="flex flex-1 bg-[#F5E9E1]">
       <SafeAreaView edges={['top']} />
-      <Image source={require('../../assets/HongBaoAni/HongBaoWithAuthBanner.png')} style={{ width: '100%', height: imageHeight, marginTop: 16 }} resizeMode='stretch' />
-      <Text className="text-center text-2xl mt-4 px-6 font-bold text-[#982C0B]">
+      <Image
+        source={require('../../assets/HongBaoAni/HongBaoWithAuthBanner.png')}
+        style={{ width: '100%', height: imageHeight, marginTop: 16 }}
+        resizeMode="stretch"
+      />
+      <Text className="mt-4 px-6 text-center text-2xl font-bold text-[#982C0B]">
         You're one step away from{'\n'}claiming your Hongbao!
       </Text>
       {/* Main Content */}
-      <View className=" flex-1 rounded-3xl bg-white p-4 mx-4 mt-4">
-
+      <View className="mx-4 mt-4 flex-1 rounded-3xl bg-white">
         {/* Tabs */}
-        <View className="flex-row rounded-full border border-[#E9E9E9] bg-white p-1">
+        <View className="flex-row rounded-full border border-[#E9E9E9] bg-white p-1 m-4">
           <TouchableOpacity
             onPress={() => setMode('signup')}
-            className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'signup' ? 'bg-black' : 'bg-transparent'}`}
-          >
+            className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'signup' ? 'bg-black' : 'bg-transparent'}`}>
             <SignUpIcon isActive={mode === 'signup'} />
             <Text
-              className={`ml-1 text-center text-base  ${mode === 'signup' ? 'text-white font-bold' : 'text-gray-500 font-medium'}`}
-            >
+              className={`ml-2 text-center text-base ${mode === 'signup' ? 'font-bold text-white' : 'font-medium text-gray-500'}`}>
               Sign Up
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setMode('login')}
-            className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'login' ? 'bg-black' : 'bg-transparent'}`}
-          >
+            className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'login' ? 'bg-black' : 'bg-transparent'}`}>
             <LogInIcon isActive={mode === 'login'} />
             <Text
-              className={`ml-1 text-center text-base  ${mode === 'login' ? 'text-white font-bold' : 'text-gray-500 font-medium'}`}
-            >
+              className={`ml-2 text-center text-base ${mode === 'login' ? 'font-bold text-white' : 'font-medium text-gray-500'}`}>
               Log In
             </Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-          {/* Form */}
-          <View className="mt-6">
-            <AuthFormFields
-              mode={mode}
-              email={email}
-              password={password}
-              confirmPassword={confirmPassword}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              onConfirmPasswordChange={setConfirmPassword}
-              disabled={loading}
-            />
-
-            {/* Terms Checkbox (only for signup) */}
-            {mode === 'signup' && (
-              <TouchableOpacity
-                onPress={() => setAgreedToTerms(!agreedToTerms)}
-                className="mt-6 flex-row items-center"
-              >
-                <View
-                  className={`mr-3 h-5 w-5 items-center justify-center rounded ${agreedToTerms ? 'bg-[#E85D35]' : 'border border-gray-400 bg-white'}`}
-                >
-                  {agreedToTerms && <Text className="text-white">✓</Text>}
-                </View>
-                <Text className="flex-1 text-sm text-gray-700">
-                  I confirm that I have read and agreed to{' '}
-                  <Text className="text-[#E85D35]">TOS</Text>
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 24 }}>
+          {mode === 'login' && <LoginView ref={loginViewRef} removeButtonLogin={true} disableSuccessCallback={true} />}
+          {mode === 'signup' && <CreateAccountView ref={createAccountViewRef} removeButtonCreateAccount={true} disableSuccessCallback={true} setIsFormValid={setIsSignupFormValid} />}
         </ScrollView>
-
       </View>
       <View className="my-6 px-6">
         <PrimaryButton
           title={mode === 'signup' ? 'Create Account' : 'Log In'}
           onPress={handleCreateAccount}
           loading={loading}
-          disabled={mode === 'signup' && !agreedToTerms}
+          disabled={loading || (mode === 'signup' && !isSignupFormValid)}
         />
       </View>
       <SafeAreaView edges={['bottom']} />

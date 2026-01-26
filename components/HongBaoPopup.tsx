@@ -13,13 +13,16 @@ const ratio = 375 / 290
 const imageHeight = Dimensions.get('window').width / ratio;
 
 export default function HongBaoPopup({ visible, onClose, onSendHongBao }: Props) {
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
       onRequestClose={onClose}
-
     >
       <View className="flex-1 bg-[##000000B2] justify-center items-center w-full p-4">
         {/* Close Button */}

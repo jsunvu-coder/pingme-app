@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef, useImperativeHandle, useCallback, useEffect } from 'react';
 import { View, Text, Linking, TouchableWithoutFeedback } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PasswordRules from 'components/PasswordRules';
@@ -20,13 +20,31 @@ import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function CreateAccountView({
+export interface CreateAccountViewRef {
+  register: () => Promise<void>;
+}
+
+interface CreateAccountViewProps {
+  lockboxProof?: string;
+  prefillUsername?: string;
+  amountUsdStr?: string;
+  tokenName?: string;
+  disableSuccessScreen?: boolean;
+  disableSuccessCallback?: boolean;
+  removeButtonCreateAccount?: boolean;
+  setIsFormValid?: (valid: boolean) => void;
+}
+
+const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(({
   lockboxProof,
   prefillUsername,
   amountUsdStr,
   tokenName,
   disableSuccessScreen,
-}: any) {
+  disableSuccessCallback,
+  removeButtonCreateAccount,
+  setIsFormValid = (valid: boolean) => valid,
+}, ref) => {
   const route = useRoute<any>();
   const initialEmail =
     prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
@@ -73,7 +91,11 @@ export default function CreateAccountView({
   const isFormValid =
     !!email && !!password && !!confirm && isEmailValid && passwordOk && !hasErrors && agreeToC;
 
-  const handleRegister = async () => {
+  useEffect(() => {
+    setIsFormValid(isFormValid);
+  }, [isFormValid, setIsFormValid]);
+
+  const handleRegister = useCallback(async () => {
     setLoading(true);
     const auth = AuthService.getInstance();
 
@@ -89,17 +111,19 @@ export default function CreateAccountView({
       if (ok) {
         AccountDataService.getInstance().email = email;
         // Only set pending claim if we want to show success screen
-        if (lockbox && !disableSuccessScreen) {
-          shareFlowService.setPendingClaim({
-            amountUsdStr: claimedAmountUsd,
-            from: 'signup',
-            tokenName,
-          });
-        }
-        setRootScreen(['MainTab']);
+        if (!disableSuccessCallback) {
+          if (lockbox && !disableSuccessScreen) {
+            shareFlowService.setPendingClaim({
+              amountUsdStr: claimedAmountUsd,
+              from: 'signup',
+              tokenName,
+            });
+          }
+          setRootScreen(['MainTab']);
 
-        const pendingLink = deepLinkHandler.getPendingLink();
-        if (pendingLink) deepLinkHandler.resumePendingLink();
+          const pendingLink = deepLinkHandler.getPendingLink();
+          if (pendingLink) deepLinkHandler.resumePendingLink();
+        }
       }
     } catch (err: any) {
       console.error('Signup error:', err);
@@ -119,10 +143,18 @@ export default function CreateAccountView({
         message,
         type: 'danger',
       });
+
+      if(disableSuccessCallback) {
+        throw err;
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, lockboxProof, route, disableSuccessCallback, disableSuccessScreen, claimedAmountUsd, tokenName]);
+
+  useImperativeHandle(ref, () => ({
+    register: handleRegister,
+  }), [handleRegister]);
 
   return (
     <View className="flex-1 bg-white">
@@ -199,7 +231,7 @@ export default function CreateAccountView({
         </TouchableWithoutFeedback>
       </View>
 
-      <View className="mt-6 px-6 pb-12">
+      {!removeButtonCreateAccount && <View className="mt-6 px-6 pb-12">
         <PrimaryButton
           title="Create Account"
           disabled={loading || !isFormValid}
@@ -207,7 +239,11 @@ export default function CreateAccountView({
           loadingText="Creating account..."
           onPress={handleRegister}
         />
-      </View>
+      </View>}
     </View>
   );
-}
+});
+
+CreateAccountView.displayName = 'CreateAccountView';
+
+export default CreateAccountView;

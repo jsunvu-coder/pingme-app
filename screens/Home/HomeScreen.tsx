@@ -19,6 +19,7 @@ import { fetchRecentHistoryToRedux } from 'store/historyThunks';
 import { useFocusEffect } from '@react-navigation/native';
 import { showFlashMessage } from 'utils/flashMessage';
 import { push } from 'navigation/Navigation';
+import { shareFlowService } from 'business/services/ShareFlowService';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -28,7 +29,7 @@ export default function HomeScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
   const [loading, setLoading] = useState(false);
-  const [showHongBaoPopup, setShowHongBaoPopup] = useState(true); // Show popup on first load
+  const [showHongBaoPopup, setShowHongBaoPopup] = useState(false); // Show popup on first load
 
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
@@ -44,6 +45,12 @@ export default function HomeScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    const pending = shareFlowService.consumePendingClaim();
+    if (!pending) {
+      setShowHongBaoPopup(true);
+    }
+  }, []);
 
   /**
    * Update balance following the flow from update_balance.md:
@@ -53,7 +60,6 @@ export default function HomeScreen() {
    * 4. Always refresh balance and records at the end
    */
   const updateBalance = useCallback(async () => {
-
     // Step 1: Get forwarder
     const forwarder = await accountDataService.getForwarder();
 
@@ -73,7 +79,7 @@ export default function HomeScreen() {
         console.warn('⚠️ MIN_AMOUNT missing from session globals.');
         // Still refresh balance even if MIN_AMOUNT is missing
         await balanceService.getBalance();
-        
+
         // Don't await updateRecord - it has 3s delay!
         void recordService.updateRecord();
         return;
@@ -138,7 +144,7 @@ export default function HomeScreen() {
       await updateBalance();
     } catch (error) {
       console.error('Failed to refresh balance:', error);
-    } finally {      
+    } finally {
       setLoading(false);
     }
   }, [loading, updateBalance]);

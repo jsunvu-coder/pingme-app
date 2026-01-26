@@ -88,7 +88,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         return;
       }
 
-      // Reset saved char nếu value không còn là MASK_CHAR hoặc length > 2
+      // Reset saved char if value is not MASK_CHAR or length > 2
       if (value !== MASK_CHAR || text.length > 2) {
         savedFirstCharRef.current = null;
       }

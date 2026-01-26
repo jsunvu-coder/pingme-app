@@ -6,6 +6,7 @@ import CounterInput from 'components/CounterInput';
 import ChatTextIcon from 'assets/ChatTextIcon';
 import DollarSignIcon from 'assets/DollarSignIcon';
 import EnvelopeIcon from 'assets/HongBaoAni/EnvelopeIcon';
+import { ALL_TOKENS, TOKENS } from 'business/Constants';
 
 type CreateHongBaoFormProps = {
   onSubmit: (data: HongBaoFormData) => void;
@@ -20,6 +21,7 @@ export type HongBaoFormData = {
   recipientCount: number;
   totalAmount: number;
   message: string;
+  token: keyof typeof TOKENS;
 };
 
 const MAX_RECIPIENTS = 20;
@@ -31,6 +33,10 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
     const [recipientCount, setRecipientCount] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
     const [message, setMessage] = useState('');
+
+    const tokens = ALL_TOKENS;
+
+    const [selectedToken, setSelectedToken] = useState(tokens[0]);
 
     // Expose clearForm method via ref
     useImperativeHandle(ref, () => ({
@@ -46,6 +52,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         recipientCount: parseInt(recipientCount, 10) || 0,
         totalAmount: parseFloat(totalAmount) || 0,
         message,
+        token: selectedToken,
       });
     };
 
@@ -98,16 +105,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         <View className="mb-6">
           <LabeledInput
             value={totalAmount}
-            onChangeText={(text) => {
-              // Only allow numbers and one decimal point
-              const cleaned = text.replace(/[^0-9.]/g, '');
-              const parts = cleaned.split('.');
-              if (parts.length > 2) {
-                return;
-              }
-              setTotalAmount(cleaned);
-            }}
-
+            onChangeText={setTotalAmount}
             icon={<DollarSignIcon width={24} height={24} />}
             showMaxInfo={`Max $${MAX_AMOUNT}`}
             showCharCount={false}

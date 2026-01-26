@@ -1,28 +1,29 @@
-import { Text, View, Animated } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
-import { push } from 'navigation/Navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
+import { RedPocketService } from 'business/services/RedPocketService';
+import { Utils } from 'business/Utils';
 import PrimaryButton from 'components/PrimaryButton';
+import LottieView from 'lottie-react-native';
+import { push } from 'navigation/Navigation';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getCurrentUserCrypto } from 'utils/claim';
 
-type HongBaoVerificationParams = {
+export type HongBaoVerificationParams = {
   bundle_uuid?: string;
-  email?: string;
-  password?: string;
 };
 
 export default function HongBaoVerificationScreen() {
   const route = useRoute();
-  const { bundle_uuid, email, password } = (route.params as HongBaoVerificationParams) || {};
+  const { bundle_uuid } = (route.params as HongBaoVerificationParams) || {};
   const lottieRef = useRef<LottieView>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const redPocketService = RedPocketService.getInstance();
 
   useEffect(() => {
-    // Show button after 2 seconds with animation
     const timer = setTimeout(() => {
       setShowButton(true);
       Animated.parallel([
@@ -45,36 +46,47 @@ export default function HongBaoVerificationScreen() {
   const verifyHongBao = async () => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (bundle_uuid) {
+        const claimResult = await redPocketService.claimBundle(bundle_uuid);
+        if (claimResult.status === 1) {
+          const username = getCurrentUserCrypto()?.username;
+          const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
+          const ranking = bundleStatus.claimed.map((claimed, index) => {
+            const isCurrentUser = claimed.username === username;
+            return {
+              rank: index + 1,
+              username: isCurrentUser? 'YOU' : claimed.username,
+              amount: Utils.formatMicroToUsd(
+                claimed.amount,
+                undefined,
+                { grouping: false, empty: '' },
+                tokenDecimals
+              ),
+              isCurrentUser: claimed.username === username,
+            };
+          });
 
-      // Mock verification result
-      const isValid = Math.random() > 0.1; // 70% success rate for testing
+          const tokenDecimals = Utils.getTokenDecimals(claimResult.token);
+          const amountUsdStr = Utils.formatMicroToUsd(
+            claimResult.amount,
+            undefined,
+            { grouping: false, empty: '' },
+            tokenDecimals
+          );
 
-      if (isValid) {
-        // Success - navigate to success screen
-        push('HongBaoSuccessScreen', {
-          amount: 20.0,
-          amountUsdStr: '20.00',
-          ranking: [
-            { rank: 1, email: 'chris...@icloud.com', amount: '$25.00' },
-            { rank: 2, email: 'anna2...@gmail.com', amount: '$22.00' },
-            { rank: 3, email: 'YOU', amount: '$20.00', isCurrentUser: true },
-            { rank: 4, email: 'kai_c...@gmail.com', amount: '$9.00' },
-            { rank: 5, email: 'emily...@hotmail.com', amount: '$8.00' },
-          ],
-          remainingCount: 5,
-        });
-        setIsLoading(false);
-      } else {
-        // Failed - navigate to error screen
-        push('HongBaoErrorScreen', {
-          bundle_uuid,
-        });
-        setIsLoading(false);
+          push('HongBaoSuccessScreen', {
+            amount: claimResult.amount,
+            amountUsdStr: amountUsdStr,
+            ranking,
+            remainingCount: bundleStatus.quantity - bundleStatus.claimed.length,
+          });
+        } else {
+          push('HongBaoErrorScreen');
+        }
       }
     } catch (error) {
-        
-    }finally {
+      push('HongBaoErrorScreen');
+    } finally {
       setTimeout(() => setIsLoading(false), 2000);
     }
   };
@@ -87,14 +99,14 @@ export default function HongBaoVerificationScreen() {
         <LottieView
           ref={lottieRef}
           source={require('../../assets/HongBaoAni/receive_claim.json')}
-          autoPlay
+          autoPlay={true}
           loop={false}
           style={{ width: '100%', height: '100%' }}
         />
 
         {showButton && (
-          <Animated.View 
-            className='absolute bottom-16 w-full px-10'
+          <Animated.View
+            className="absolute bottom-16 w-full px-10"
             style={{
               transform: [{ translateY: slideAnim }],
               opacity: fadeAnim,
@@ -102,19 +114,18 @@ export default function HongBaoVerificationScreen() {
               bottom: 70,
               width: '100%',
               paddingHorizontal: 40,
-            }}
-          >
-            <View className='mb-4 rounded-2xl bg-white p-6'>
-              <Text className='text-center text-xl font-bold text-[#FD4912]'>
-              May your wallet and your days stay full ❤️
+            }}>
+            <View className="mb-4 rounded-2xl bg-white p-6">
+              <Text className="text-center text-xl font-bold text-[#FD4912]">
+                May your wallet and your days stay full ❤️
               </Text>
             </View>
             <PrimaryButton
-              title='Claim Hongbao'
+              title="Claim Hongbao"
               onPress={verifyHongBao}
               disabled={isLoading}
               loading={isLoading}
-              loadingText='Verifying...'
+              loadingText="Claiming..."
             />
           </Animated.View>
         )}

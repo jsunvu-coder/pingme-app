@@ -1,6 +1,6 @@
 /**
  * API utilities for Claim Payment
- * 
+ *
  * High-level wrapper functions for claim-related API calls.
  * These functions provide a cleaner interface and better error handling.
  */
@@ -10,11 +10,7 @@ import { AuthService } from 'business/services/AuthService';
 import { BalanceService } from 'business/services/BalanceService';
 import { RecordService } from 'business/services/RecordService';
 import { computeCommitHashes } from './crypto';
-import type {
-  LockboxData,
-  CommitStateResponse,
-  ClaimResponse,
-} from './types';
+import type { LockboxData, CommitStateResponse, ClaimResponse } from './types';
 
 // ============================================================================
 // Service Instances (lazy initialization)
@@ -30,7 +26,7 @@ function getServices() {
   if (!authService) authService = AuthService.getInstance();
   if (!balanceService) balanceService = BalanceService.getInstance();
   if (!recordService) recordService = RecordService.getInstance();
-  
+
   return { contractService, authService, balanceService, recordService };
 }
 
@@ -40,10 +36,10 @@ function getServices() {
 
 /**
  * Get lockbox data by commitment
- * 
+ *
  * @param lockboxCommitment - Lockbox commitment hash
  * @returns Lockbox data
- * 
+ *
  * @example
  * ```ts
  * const lockbox = await getLockbox(commitment);
@@ -52,9 +48,9 @@ function getServices() {
  */
 export async function getLockbox(lockboxCommitment: string): Promise<LockboxData> {
   const { contractService } = getServices();
-  
+
   console.log('📦 [ClaimAPI] Getting lockbox:', lockboxCommitment);
-  
+
   try {
     const result = await contractService.getLockbox(lockboxCommitment);
     console.log('✅ [ClaimAPI] Lockbox retrieved:', result);
@@ -67,10 +63,10 @@ export async function getLockbox(lockboxCommitment: string): Promise<LockboxData
 
 /**
  * Check if a lockbox exists
- * 
+ *
  * @param lockboxCommitment - Lockbox commitment hash
  * @returns True if lockbox exists
- * 
+ *
  * @example
  * ```ts
  * const exists = await hasLockbox(commitment);
@@ -81,7 +77,7 @@ export async function getLockbox(lockboxCommitment: string): Promise<LockboxData
  */
 export async function hasLockbox(lockboxCommitment: string): Promise<boolean> {
   const { contractService } = getServices();
-  
+
   try {
     const result = await contractService.hasLockbox(lockboxCommitment);
     return result.has_lockbox === true;
@@ -97,12 +93,12 @@ export async function hasLockbox(lockboxCommitment: string): Promise<boolean> {
 
 /**
  * Get commit state for the commit-reveal pattern
- * 
+ *
  * @param lockboxProof - Lockbox proof to claim
  * @param userSalt - User's account salt
  * @param userCommitment - User's balance commitment
  * @returns Commit state (0=need commit, 1=valid, 2=blocked)
- * 
+ *
  * @example
  * ```ts
  * const state = await getCommitState(proof, salt, commitment);
@@ -117,11 +113,11 @@ export async function getCommitState(
   userCommitment: string
 ): Promise<CommitStateResponse> {
   const { contractService } = getServices();
-  
+
   const commitData = computeCommitHashes(lockboxProof, userSalt, userCommitment);
-  
+
   console.log('🔍 [ClaimAPI] Getting commit state');
-  
+
   try {
     const result = await contractService.getCommitState(
       commitData.lockboxProofHash,
@@ -138,12 +134,12 @@ export async function getCommitState(
 
 /**
  * Submit commit for the commit-reveal pattern
- * 
+ *
  * @param lockboxProof - Lockbox proof to claim
  * @param userSalt - User's account salt
  * @param userCommitment - User's balance commitment
  * @returns Commit result
- * 
+ *
  * @example
  * ```ts
  * await submitCommit(proof, salt, commitment);
@@ -156,11 +152,11 @@ export async function submitCommit(
   userCommitment: string
 ): Promise<any> {
   const { contractService } = getServices();
-  
+
   const commitData = computeCommitHashes(lockboxProof, userSalt, userCommitment);
-  
+
   console.log('📤 [ClaimAPI] Submitting commit');
-  
+
   try {
     const result = await contractService.commit(
       commitData.lockboxProofHash,
@@ -177,12 +173,12 @@ export async function submitCommit(
 
 /**
  * Check commit state and submit if needed (convenience function)
- * 
+ *
  * @param lockboxProof - Lockbox proof to claim
  * @param userSalt - User's account salt
  * @param userCommitment - User's balance commitment
  * @returns True if ready to claim (commit valid or just submitted)
- * 
+ *
  * @example
  * ```ts
  * const ready = await ensureCommitReady(proof, salt, commitment);
@@ -198,7 +194,7 @@ export async function ensureCommitReady(
 ): Promise<boolean> {
   try {
     const state = await getCommitState(lockboxProof, userSalt, userCommitment);
-    
+
     if (state.commit_state === 0) {
       // Need to submit commit
       await submitCommit(lockboxProof, userSalt, userCommitment);
@@ -223,10 +219,10 @@ export async function ensureCommitReady(
 
 /**
  * Execute claim using current user's credentials
- * 
+ *
  * @param lockboxProof - Lockbox proof computed from passphrase
  * @returns Claim result with transaction hash
- * 
+ *
  * @example
  * ```ts
  * const result = await claimWithCurrentUser(lockboxProof);
@@ -235,9 +231,9 @@ export async function ensureCommitReady(
  */
 export async function claimWithCurrentUser(lockboxProof: string): Promise<void> {
   const { authService } = getServices();
-  
+
   console.log('💰 [ClaimAPI] Claiming with current user');
-  
+
   try {
     await authService.claimWithCurrentCrypto(lockboxProof);
     console.log('✅ [ClaimAPI] Claim successful');
@@ -249,10 +245,10 @@ export async function claimWithCurrentUser(lockboxProof: string): Promise<void> 
 
 /**
  * Execute full claim flow with commit-reveal pattern
- * 
+ *
  * @param lockboxProof - Lockbox proof
  * @returns True if claim successful
- * 
+ *
  * @example
  * ```ts
  * try {
@@ -265,7 +261,7 @@ export async function claimWithCurrentUser(lockboxProof: string): Promise<void> 
  */
 export async function executeFullClaimFlow(lockboxProof: string): Promise<boolean> {
   const { contractService } = getServices();
-  
+
   try {
     // Get user credentials
     const crypto = contractService.getCrypto();
@@ -302,7 +298,7 @@ export async function executeFullClaimFlow(lockboxProof: string): Promise<boolea
 
 /**
  * Refresh balance and transaction history after claim
- * 
+ *
  * @example
  * ```ts
  * await executeClaim(proof);
@@ -311,14 +307,14 @@ export async function executeFullClaimFlow(lockboxProof: string): Promise<boolea
  */
 export async function refreshAfterClaim(): Promise<void> {
   const { balanceService, recordService } = getServices();
-  
+
   console.log('🔄 [ClaimAPI] Refreshing balance and records');
-  
+
   try {
     // Refresh balance first
     await balanceService.getBalance();
     console.log('✅ [ClaimAPI] Balance refreshed');
-    
+
     // Then refresh transaction history (fire and forget)
     recordService.updateRecord().catch((err) => {
       console.warn('⚠️ [ClaimAPI] Failed to refresh records:', err);
@@ -335,9 +331,9 @@ export async function refreshAfterClaim(): Promise<void> {
 
 /**
  * Check if user is logged in
- * 
+ *
  * @returns True if user is logged in
- * 
+ *
  * @example
  * ```ts
  * if (!(await isUserLoggedIn())) {
@@ -347,7 +343,7 @@ export async function refreshAfterClaim(): Promise<void> {
  */
 export async function isUserLoggedIn(): Promise<boolean> {
   const { authService } = getServices();
-  
+
   try {
     return await authService.isLoggedIn();
   } catch (error) {
@@ -358,9 +354,9 @@ export async function isUserLoggedIn(): Promise<boolean> {
 
 /**
  * Get current user's crypto credentials (if logged in)
- * 
+ *
  * @returns User crypto data or null if not logged in
- * 
+ *
  * @example
  * ```ts
  * const crypto = getCurrentUserCrypto();

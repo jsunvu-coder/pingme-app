@@ -98,14 +98,14 @@ export class LoginViewModel {
       from?: 'login' | 'signup';
       tokenName?: string;
       disableSuccessScreen?: boolean;
-    }
+    },
+    disableSuccessCallback?: boolean
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     console.log('🔐 [Biometric] handleLogin START:', {
       useBiometric_param: useBiometric,
       'this.useBiometric': this.useBiometric,
       biometricType,
     });
-
 
     const auth = AuthService.getInstance();
     let ok = false;
@@ -176,7 +176,9 @@ export class LoginViewModel {
       biometricEnabled = false;
     }
 
-    this.handleSuccessfulLogin(email, shareParams);
+    if (!disableSuccessCallback) {
+      this.handleSuccessfulLogin(email, shareParams);
+    }
     return { success: true, biometricEnabled };
   }
 
@@ -190,7 +192,7 @@ export class LoginViewModel {
     // Only clear credentials, NOT the biometric preference
     // User preference should persist across logout/login sessions
     await LoginViewModel.clearSavedCredentials();
-    
+
     try {
       const keys = await AsyncStorage.getAllKeys();
       const keysToRemove = keys.filter((k) => !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX));

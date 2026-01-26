@@ -63,10 +63,10 @@ export default function LabeledInput({
             {label && <Text className="ml-2 text-base text-gray-700">{label}</Text>}
           </View>
           {showMaxInfo ? (
-            <Text className="text-sm text-[#444]">{showMaxInfo}</Text>
+            <Text style={{ fontSize: 14, color: '#444' }}>{showMaxInfo}</Text>
           ) : (
             showCharCount && (
-              <Text className="text-sm text-[#444]">
+              <Text style={{ fontSize: 14, color: '#444' }}>
                 {value.length}/{maxLength}
               </Text>
             )
@@ -78,10 +78,28 @@ export default function LabeledInput({
       <TextInput
         value={value}
         onChangeText={(text) => {
-          if (maxLength && text.length <= maxLength) {
-            onChangeText(text);
+          let processedText = text;
+          
+          // Handle decimal-pad keyboard: convert comma to period and validate
+          if (keyboardType === 'decimal-pad') {
+            // Allow numbers, comma, and period
+            processedText = text.replace(/[^0-9.,]/g, '');
+            // Convert comma to period for consistency (iOS may use comma)
+            processedText = processedText.replace(/,/g, '.');
+            
+            // Only allow one decimal point
+            const parts = processedText.split('.');
+            if (parts.length > 2) {
+              // If more than one decimal point, keep only the first one
+              processedText = parts[0] + '.' + parts.slice(1).join('');
+            }
+          }
+          
+          // Apply maxLength if specified
+          if (maxLength && processedText.length <= maxLength) {
+            onChangeText(processedText);
           } else if (!maxLength) {
-            onChangeText(text);
+            onChangeText(processedText);
           }
         }}
         placeholder={placeholder}

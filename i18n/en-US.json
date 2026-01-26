@@ -233,5 +233,6 @@
   "AIRDROP_SUCCESS_MESSAGE": "{{amount}} ${{tokenName}} has been sent to your external wallet.",
   "AIRDROP_VIEW_ON_MONADSCAN": "View on MonadScan",
   "AIRDROP_BACK_TO_REWARDS": "Back to Rewards",
-  "AIRDROP_ERROR_UNABLE_TO_OPEN_LINK": "Unable to open link. Transaction hash copied."
+  "AIRDROP_ERROR_UNABLE_TO_OPEN_LINK": "Unable to open link. Transaction hash copied.",
+  "_CONFIRM_CREATE_HONG_BAO": "Are you sure you want to create a Hongbao?"
 }

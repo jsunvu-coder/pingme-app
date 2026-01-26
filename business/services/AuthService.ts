@@ -357,7 +357,7 @@ export class AuthService {
   }
 
   // ---------- Signup ----------
-  async signup(username: string, password: string, lockboxProof: string): Promise<boolean> {
+  async signup(username: string, password: string, lockboxProof?: string): Promise<boolean> {
     try {
       this.log('Starting signup process...');
       const input_data = CryptoUtils.strToHex2(username, password);
@@ -381,22 +381,24 @@ export class AuthService {
         expiry: Date.now() + EXPIRY_MS,
       });
 
-      const _lockboxProof = lockboxProof ?? CryptoUtils.strToHex(username);
-      const lockboxProofHash = CryptoUtils.globalHash(_lockboxProof);
+      if (lockboxProof) {
+        const _lockboxProof = lockboxProof ?? CryptoUtils.strToHex(username);
+        const lockboxProofHash = CryptoUtils.globalHash(_lockboxProof);
 
-      if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
-      const saltHash = CryptoUtils.globalHash(salt);
-      if (!lockboxProofHash || !saltHash)
-        throw new Error('Failed to generate lockbox proof or salt hash.');
-      const commitmentHash = CryptoUtils.globalHash(commitment);
-      if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
+        if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
+        const saltHash = CryptoUtils.globalHash(salt);
+        if (!lockboxProofHash || !saltHash)
+          throw new Error('Failed to generate lockbox proof or salt hash.');
+        const commitmentHash = CryptoUtils.globalHash(commitment);
+        if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
 
-      await this.commitProtect(
-        () => this.contractService.claim(_lockboxProof, salt, commitment),
-        lockboxProofHash,
-        saltHash,
-        commitmentHash
-      );
+        await this.commitProtect(
+          () => this.contractService.claim(_lockboxProof, salt, commitment),
+          lockboxProofHash,
+          saltHash,
+          commitmentHash
+        );
+      }
 
       this.log('Signup completed successfully.');
       return true;

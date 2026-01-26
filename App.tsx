@@ -18,6 +18,7 @@ import { useState as useStateOriginal } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import LogoWithText from 'assets/LogoWithText';
 import OverlayManager from 'screens/Overlay/OverlayManager';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 export default function App() {
   const [storeReady, setStoreReady] = useStateOriginal(false);
@@ -89,14 +90,16 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <NavigationContainer ref={navigationRef} linking={linking}>
-          <RootNavigator />
-          <NetworkBanner visible={offline} onRetry={retryConnectivity} />
-          <FlashMessage position="top" />
-          <OverlayManager />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <NavigationContainer ref={navigationRef} linking={linking}>
+            <RootNavigator />
+            <NetworkBanner visible={offline} onRetry={retryConnectivity} />
+            <FlashMessage position="top" />
+            <OverlayManager />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </Provider>
   );
 }

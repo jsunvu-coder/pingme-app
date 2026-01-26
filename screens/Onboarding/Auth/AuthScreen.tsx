@@ -131,7 +131,6 @@ export default function AuthScreen() {
               <CreateAccountView
                 lockboxProof={route.params?.lockboxProof}
                 prefillUsername={route.params?.username}
-                from={route.params?.from}
                 amountUsdStr={route.params?.amountUsdStr}
                 tokenName={route.params?.tokenName}
                 disableSuccessScreen={route.params?.disableSuccessScreen}

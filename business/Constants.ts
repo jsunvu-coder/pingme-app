@@ -1,3 +1,5 @@
+import { getEnv } from './Config';
+
 export const ACCOUNT = 'ACCOUNT';
 export const ACTION = 'ACTION';
 export const ARROW_DOWN = 'ArrowDown';
@@ -19,6 +21,7 @@ export const LOCKBOX = 'LOCKBOX';
 export const MIN_AMOUNT = 'MIN_AMOUNT';
 export const MIN_PAYMENT_AMOUNT = 1;
 export const MAX_PAYMENT_AMOUNT = 1_000_000;
+export const MAX_BUNDLE_AMOUNT = 100;
 export const NOT_HEX = 'NOT_HEX';
 export const NOTIFICATION = 'NOTIFICATION';
 export const OPEN = 'OPEN';
@@ -62,6 +65,15 @@ export const TOKEN_DECIMALS = {
 };
 
 export const STABLE_TOKENS = ['USDC', 'pUSDC'];
+
+export const TESTNET_TOKENS: (keyof typeof TOKENS)[] = ['pUSDC', 'pWMON'];
+
+export const MAINNET_TOKENS: (keyof typeof TOKENS)[] = ['USDC', 'WMON'];
+
+export const ENV: 'staging' | 'production' = getEnv();
+
+export const ALL_TOKENS: (keyof typeof TOKENS)[] =
+  ENV === 'production' ? MAINNET_TOKENS : TESTNET_TOKENS;
 
 export const STABLE_TOKEN_ADDRESSES = STABLE_TOKENS.map(
   (token) => TOKENS[token as keyof typeof TOKENS]

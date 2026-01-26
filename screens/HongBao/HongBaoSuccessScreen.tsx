@@ -10,7 +10,7 @@ import AniCover from './AniCover';
 
 type RankingItem = {
   rank: number;
-  email: string;
+  username: string;
   amount: string;
   isCurrentUser?: boolean;
 };
@@ -114,7 +114,7 @@ export default function HongBaoSuccessScreen() {
                 <Text
                   className={`text-sm ${item.isCurrentUser ? 'font-bold text-[#E85D35]' : 'text-gray-800'}`}
                 >
-                  {item.email}
+                  {item.username}
                 </Text>
               </View>
               <Text

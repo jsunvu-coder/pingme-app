@@ -6309,6 +6309,11 @@ loose-envify@^1.0.0, loose-envify@^1.4.0:
   dependencies:
     js-tokens "^3.0.0 || ^4.0.0"
 
+lottie-react-native@~7.3.1:
+  version "7.3.5"
+  resolved "https://registry.yarnpkg.com/lottie-react-native/-/lottie-react-native-7.3.5.tgz#515c703e8a8845c54dbd54d489467c0c1f21d8bd"
+  integrity sha512-5VPrHGbEmpNxrcEfmxyFZBvDksMaZ6LhyQZL0S0VIDwMRVrhGwOZQZKVFSEFU5HxNuDjxm/vPSoEhlKKfbYKHw==
+
 lru-cache@^10.0.1:
   version "10.4.3"
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-10.4.3.tgz#410fc8a17b70e598013df257c2446b7f3383f119"
@@ -7414,6 +7419,13 @@ react-native-is-edge-to-edge@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.2.1.tgz#64e10851abd9d176cbf2b40562f751622bde3358"
   integrity sha512-FLbPWl/MyYQWz+KwqOZsSyj2JmLKglHatd3xLZWskXOpRaio4LfEDEz8E/A6uD8QoTHW6Aobw1jbEwK7KMgR7Q==
+
+react-native-keyboard-controller@^1.20.6:
+  version "1.20.6"
+  resolved "https://registry.yarnpkg.com/react-native-keyboard-controller/-/react-native-keyboard-controller-1.20.6.tgz#139a66f36734a69648822bf2e7ec3c90e7b3dc8e"
+  integrity sha512-RS6FjIjTFtAMQGdcXp3m6jUs1XgDa8qkpO5c4ix1S5HS0z3L2E1LUOY5rD73YUADOO3MfQN1z3JkHdBtzKucbg==
+  dependencies:
+    react-native-is-edge-to-edge "^1.2.1"
 
 react-native-qr-image-reader@^1.0.5:
   version "1.0.5"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, TouchableOpacity, Switch, Keyboard } from 'react-native';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
@@ -13,21 +13,31 @@ import { showFlashMessage } from 'utils/flashMessage';
 import * as SecureStore from 'expo-secure-store';
 import { Utils } from 'business/Utils';
 
-export default function LoginView({
-  lockboxProof,
-  prefillUsername,
-  from,
-  amountUsdStr,
-  tokenName,
-  disableSuccessScreen,
-}: {
+export interface LoginViewRef {
+  login: () => Promise<void>;
+}
+
+interface LoginViewProps {
   lockboxProof?: string;
   prefillUsername?: string;
   from?: 'login' | 'signup';
   amountUsdStr?: string;
   tokenName?: string;
   disableSuccessScreen?: boolean;
-}) {
+  removeButtonLogin?: boolean;
+  disableSuccessCallback?: boolean;
+}
+
+const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
+  lockboxProof,
+  prefillUsername,
+  from,
+  amountUsdStr,
+  tokenName,
+  disableSuccessScreen,
+  removeButtonLogin,
+  disableSuccessCallback,
+}, ref) => {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
   const routeLockboxProof = route?.params?.lockboxProof;
@@ -114,7 +124,7 @@ export default function LoginView({
     [vm]
   );
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     Keyboard.dismiss();
     if (!email || !password) {
       showFlashMessage({
@@ -143,7 +153,8 @@ export default function LoginView({
               tokenName: tokenName,
               disableSuccessScreen: disableSuccessScreen ?? route?.params?.disableSuccessScreen,
             }
-          : undefined
+          : undefined,
+          disableSuccessCallback
       );
 
       const result = await Promise.race([
@@ -168,8 +179,17 @@ export default function LoginView({
         type: 'danger',
       });
       setLoading(false);
+      if(disableSuccessCallback) {
+        throw err;
+      }
     }
-  };
+  }, [email, password, useBiometric, biometricType, lockboxProof, routeLockboxProof, from, amountUsdStr, tokenName, disableSuccessScreen, route, vm]);
+
+  useImperativeHandle(ref, () => ({
+    login: handleLogin,
+  }), [handleLogin]);
+
+
 
   const biometricLabel =
     biometricType === 'Face ID'
@@ -232,7 +252,7 @@ export default function LoginView({
         </View>
       </View>
 
-      <View className="mt-6 px-6 pb-12">
+      {!removeButtonLogin && <View className="mt-6 px-6 pb-12">
         <PrimaryButton
           title={t('AUTH_LOGIN_BUTTON')}
           onPress={handleLogin}
@@ -240,7 +260,11 @@ export default function LoginView({
           loading={loading}
           loadingText={t('AUTH_LOGIN_LOADING')}
         />
-      </View>
+      </View>}
     </View>
   );
-}
+});
+
+LoginView.displayName = 'LoginView';
+
+export default LoginView;

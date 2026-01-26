@@ -8,6 +8,8 @@ import {
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
 import { computeLockboxProof, getLockbox, getLockboxInfo } from 'utils/claim';
+import { RedPocketService } from './RedPocketService';
+import { HongBaoVerificationParams } from 'screens/HongBao/HongBaoVerificationScreen';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -43,6 +45,7 @@ class DeepLinkHandler {
       await new Promise((res) => setTimeout(res, 1000));
 
       const auth = AuthService.getInstance();
+      const redPocketService = RedPocketService.getInstance();
       const isLoggedIn = await auth.isLoggedIn();
 
       if (this.initialURLHandled) {
@@ -115,16 +118,20 @@ class DeepLinkHandler {
         // REDPOCKET (HongBao) → check login status
         if (path === 'redPocket' || path === 'redpocket') {
           const params = Object.fromEntries(u.searchParams);
+
           if (isLoggedIn) {
-            // Logged in → skip auth, go to verification
-            console.log('[DeepLinkHandler] Cold start redPocket (logged in) → open HongBaoVerificationScreen');
             setRootScreen(['MainTab']);
-            setTimeout(() => this.navigateHongBaoVerification(params), 400);
+            setTimeout(
+              () =>
+                this.navigateHongBaoVerification({
+                  ...params,
+                }),
+              400
+            );
           } else {
-            // Not logged in → show auth screen
-            console.log('[DeepLinkHandler] Cold start redPocket (not logged in) → open HongBaoWithAuthScreen');
             this.navigateHongBao(params, true);
           }
+
           return;
         }
 
@@ -201,6 +208,7 @@ class DeepLinkHandler {
         } else {
           this.navigateHongBao(params);
         }
+
         return;
       }
 
@@ -338,7 +346,6 @@ class DeepLinkHandler {
   }
 
   private navigateHongBao(params: Record<string, string>, resetStack = false) {
-    console.log('[DeepLinkHandler] Navigating to HongBaoWithAuthScreen', params);
     this.clearPendingURL();
     const route = {
       name: 'HongBaoWithAuthScreen',
@@ -351,7 +358,8 @@ class DeepLinkHandler {
       setRootScreen([route]);
     } else {
       const isHongBaoOnTop =
-        navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoWithAuthScreen';
+        navigationRef.isReady() &&
+        navigationRef.getCurrentRoute()?.name === 'HongBaoWithAuthScreen';
       if (isHongBaoOnTop) {
         replace('HongBaoWithAuthScreen', route.params);
       } else {
@@ -360,12 +368,13 @@ class DeepLinkHandler {
     }
   }
 
-  private navigateHongBaoVerification(params: Record<string, string>) {
+  private navigateHongBaoVerification(params: HongBaoVerificationParams) {
     console.log('[DeepLinkHandler] Navigating to HongBaoVerificationScreen', params);
     this.clearPendingURL();
-    
+
     const isVerificationOnTop =
-      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoVerificationScreen';
+      navigationRef.isReady() &&
+      navigationRef.getCurrentRoute()?.name === 'HongBaoVerificationScreen';
     if (isVerificationOnTop) {
       replace('HongBaoVerificationScreen', params);
     } else {
