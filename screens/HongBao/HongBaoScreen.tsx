@@ -19,7 +19,9 @@ import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { setPreventTouch } from 'store/mainTabSlice';
 
-const DEFAULT_DURATION = 7 * 60 * 60 * 24;
+// const DEFAULT_DURATION = 7 * 60 * 60 * 24;
+
+const DEFAULT_DURATION = 60 * 60;
 
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
