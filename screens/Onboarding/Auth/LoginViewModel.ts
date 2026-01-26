@@ -176,9 +176,7 @@ export class LoginViewModel {
       biometricEnabled = false;
     }
 
-    if (!disableSuccessCallback) {
-      this.handleSuccessfulLogin(email, shareParams);
-    }
+    this.handleSuccessfulLogin(email, shareParams, disableSuccessCallback);
     return { success: true, biometricEnabled };
   }
 
@@ -212,23 +210,26 @@ export class LoginViewModel {
       from?: 'login' | 'signup';
       tokenName?: string;
       disableSuccessScreen?: boolean;
-    }
+    },
+    disableSuccessCallback?: boolean
   ) {
     AccountDataService.getInstance().email = email;
-    // Only set pending claim if we want to show success screen
-    if (shareParams?.mode === 'claimed') {
-      shareFlowService.setPendingClaim({
-        amountUsdStr: shareParams.amountUsdStr,
-        from: shareParams.from ?? 'login',
-        tokenName: shareParams.tokenName,
-      });
-    }
-    setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
+    if (!disableSuccessCallback) {
+      // Only set pending claim if we want to show success screen
+      if (shareParams?.mode === 'claimed') {
+        shareFlowService.setPendingClaim({
+          amountUsdStr: shareParams.amountUsdStr,
+          from: shareParams.from ?? 'login',
+          tokenName: shareParams.tokenName,
+        });
+      }
+      setRootScreen([{ name: 'MainTab', params: { entryAnimation: 'slide_from_right' } }]);
 
-    const pendingLink = deepLinkHandler.getPendingLink();
-    if (pendingLink) {
-      console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
-      setTimeout(() => deepLinkHandler.resumePendingLink(), 500);
+      const pendingLink = deepLinkHandler.getPendingLink();
+      if (pendingLink) {
+        console.log('[Auth] Pending deep link detected → delaying resume by 0.5s...');
+        setTimeout(() => deepLinkHandler.resumePendingLink(), 500);
+      }
     }
   }
 
