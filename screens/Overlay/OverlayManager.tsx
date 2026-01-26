@@ -1,10 +1,10 @@
-import { useSelector } from 'react-redux';
 import { StyleSheet, View } from 'react-native';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 // Import overlay content components
-import { HongBaoSuccessOverlay } from './overlays/HongBaoSuccessOverlay'
+import { HongBaoSuccessOverlay } from './overlays/HongBaoSuccessOverlay';
 
 export default function OverlayManager() {
   const { isVisible, type, payload } = useSelector((state: RootState) => state.overlay);
@@ -29,7 +29,7 @@ export default function OverlayManager() {
       style={styles.overlay}
       pointerEvents="box-none"
     > 
-      {/* Content container */}
+     {/* Content container */}
       <View style={styles.container} pointerEvents="box-none">
         {renderOverlayContent()}
       </View>

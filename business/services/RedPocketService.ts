@@ -107,6 +107,7 @@ export interface BundleStatusResponse {
   unlock_time: number;
   state: string; // 'A' = Active
   claimed: ClaimedPocket[];
+  message?: string;
 }
 
 export interface ReclaimRequest {
@@ -455,8 +456,6 @@ export class RedPocketService {
    * ```
    */
   async claimBundle(bundle_uuid: string): Promise<ClaimBundleResponse> {
-    this.scopedLogger.info('Claiming bundle', { bundle_uuid });
-
     // Validate inputs
     if (!bundle_uuid) {
       throw new Error('Bundle UUID is required');
@@ -476,26 +475,35 @@ export class RedPocketService {
     };
 
     try {
-      const data = await this.apiClient.post<ClaimBundleResponse>('/pm_claim_bundle', request);
+      const data = await this.apiClient.post<ClaimBundleResponse>(
+        '/pm_claim_bundle',
+        request,
+        undefined,
+        true
+      );
 
       if (data.status === 1) {
-        this.scopedLogger.info('Claimed successfully', { amount: data.amount });
         // Refresh balance after successful claim
         await refreshAfterClaim();
-      } else if (data.status === -1) {
-        this.scopedLogger.info('Already claimed by user');
-      } else if (data.status === -2) {
-        this.scopedLogger.warn('Bundle already reclaimed');
-      } else if (data.status === -3) {
-        this.scopedLogger.warn('Bundle expired');
-      } else if (data.status === 0) {
-        this.scopedLogger.info('All pockets claimed');
       }
 
       return data;
-    } catch (error) {
-      this.scopedLogger.error('Failed to claim bundle', error);
-      throw error;
+    } catch (error: any) {
+      if (error?.response?.data) {
+        const data = error.response.data as ClaimBundleResponse;
+        switch (data.status) {
+          case -1: // already claimed
+          case -2: // already reclaimed
+          case -3: // expired
+          case 0: // all pockets claimed
+            return data;
+          default:
+            throw new Error(error.response.data.error);
+        }
+      }
+      return {
+        status: -4,
+      };
     }
   }
 

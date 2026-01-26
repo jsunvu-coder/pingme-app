@@ -16,48 +16,13 @@ export function useOverlay() {
     dispatch(hideOverlay());
   };
 
-  // Convenience methods for common overlay types
-  const showLoading = (message?: string) => {
-    show('loading', { message });
-  };
-
-  const showError = (message: string, title?: string) => {
-    show('error', { message, title });
-  };
-
-  const showConfirmation = (
-    message: string,
-    options?: {
-      title?: string;
-      confirmText?: string;
-      cancelText?: string;
-    }
-  ) => {
-    show('confirmation', {
-      message,
-      ...options,
-    });
-  };
-
   const showHongBaoSuccess = (link: string) => {
     show('hongbao-success', { link });
-  };
-
-  const showHongBaoClaimed = (
-    amount: string,
-    sender: string,
-    message?: string
-  ) => {
-    show('hongbao-claimed', { amount, sender, message });
   };
 
   return {
     show,
     hide,
-    showLoading,
-    showError,
-    showConfirmation,
     showHongBaoSuccess,
-    showHongBaoClaimed,
   };
 }

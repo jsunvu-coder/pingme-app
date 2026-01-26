@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { BottomTabBarProps, BottomTabNavigationProp, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import HomeScreen from './Home/HomeScreen';
 import PingMeScreen from './Send/PingMe/PingMeScreen';
@@ -13,10 +13,16 @@ import { push } from 'navigation/Navigation';
 import AirdropIcon from 'assets/AirdropIcon';
 import HongBaoIcon from 'assets/HongBaoIcon';
 import HongBaoScreen from './HongBao/HongBaoScreen';
+import { RootState } from 'store';
+import { useSelector } from 'react-redux';
+import { RouteProp } from '@react-navigation/native';
+import { TouchableOpacity } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
+  const preventTouch = useSelector((state: RootState) => state.mainTab.preventTouch);
+  
   useEffect(() => {
     let claimTimer: ReturnType<typeof setTimeout> | null = null;
     let shareTimer: ReturnType<typeof setTimeout> | null = null;
@@ -64,6 +70,9 @@ export default function MainTab() {
           paddingTop: 6,
         },
         animation: 'none',
+        tabBarButton(props) {
+          return <TouchableOpacity disabled={preventTouch} onPress={props.onPress} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 50 }}>{props.children}</TouchableOpacity>
+        },
         tabBarIcon: ({ focused }) => {
           if (route.name === 'Ping Now') {
             return <PingIcon isActive={focused} />;

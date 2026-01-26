@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import AniCover, { AniCoverRef } from './AniCover';
 import CreateHongBaoForm, { CreateHongBaoFormRef, HongBaoFormData } from './CreateHongBaoForm';
@@ -16,6 +16,8 @@ import { useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { t } from 'i18n';
 import enUS from 'i18n/en-US.json';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { setPreventTouch } from 'store/mainTabSlice';
 
 const DEFAULT_DURATION = 7 * 60 * 60 * 24;
 
@@ -45,7 +47,7 @@ const confirm = async (msg: string) => {
 };
 
 export default function HongBaoScreen() {
-  const { showHongBaoSuccess } = useOverlay();
+  const { showHongBaoSuccess, hide } = useOverlay();
   const dispatch = useDispatch();
   const aniCoverRef = useRef<AniCoverRef>(null);
   const createHongBaoFormRef = useRef<CreateHongBaoFormRef>(null);
@@ -56,8 +58,6 @@ export default function HongBaoScreen() {
   // Listen to overlay actions
   const actionTriggered = useSelector((state: RootState) => state.overlay.actionTriggered);
 
-  console.log('stablecoinEntries', stablecoinEntries);
-
   useEffect(() => {
     if (actionTriggered === 'hongbao:reset') {
       // Reset animation when triggered from overlay
@@ -65,8 +65,24 @@ export default function HongBaoScreen() {
       createHongBaoFormRef.current?.clearForm();
       // Clear the action
       dispatch(clearAction());
+      hide();
     }
   }, [actionTriggered, dispatch]);
+
+  const isFocused = useIsFocused();
+
+  useFocusEffect(useCallback(() => {
+    return () => {
+      hide();
+    };
+  }, [hide]));
+
+  useEffect(() => {
+    // Clear form when screen is not on top of the stack (becomes unfocused)
+    if (!isFocused) {
+      createHongBaoFormRef.current?.clearForm();
+    }
+  }, [isFocused]);
 
   const handleCreateHongBao = async (data: HongBaoFormData) => {
     // console.log('Creating HongBao:', data);
@@ -118,6 +134,19 @@ export default function HongBaoScreen() {
       return;
     }
 
+    if (data.totalAmount < data.recipientCount) {
+      showFlashMessage({
+        title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
+        message: t(
+          '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY',
+          undefined,
+          'Amount must be greater than or equal to quantity'
+        ),
+        type: 'danger',
+      });
+      return;
+    }
+
     if (!(await confirm('_CONFIRM_CREATE_HONG_BAO'))) return;
 
     const createBundleRequest: CreateBundleRequest = {
@@ -127,9 +156,12 @@ export default function HongBaoScreen() {
       duration: DEFAULT_DURATION,
       message: data.message,
     };
+    console.log('createBundleRequest', createBundleRequest);
 
     // Call create bundle
     setLoading(true);
+    dispatch(setPreventTouch(true))
+    createHongBaoFormRef.current?.setEditable(false);
     try {
       const result = await redPocketService.createBundle(createBundleRequest);
       await balanceService.getBalance();
@@ -149,10 +181,13 @@ export default function HongBaoScreen() {
         message: 'Failed to create HongBao',
         type: 'danger',
       });
+      hide();
       return;
     } finally {
       setTimeout(() => {
         setLoading(false);
+        dispatch(setPreventTouch(false));
+        createHongBaoFormRef.current?.setEditable(true);
       }, 1500);
     }
   };

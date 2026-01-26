@@ -3,22 +3,22 @@ import { logger } from 'utils/logger';
 
 /**
  * Reusable API Client
- * 
+ *
  * Provides a singleton HTTP client with:
  * - Structured logging using utils/logger
  * - GET/POST methods with consistent error handling
  * - Configurable base URL
  * - Request/response interceptors support
  * - Performance tracking
- * 
+ *
  * Usage:
  * ```typescript
  * const apiClient = ApiClient.getInstance();
- * 
+ *
  * // With default base URL (from Config)
  * const data = await apiClient.get('/endpoint');
  * const result = await apiClient.post('/endpoint', { key: 'value' });
- * 
+ *
  * // With custom base URL
  * const customClient = ApiClient.getInstance('https://custom-api.com');
  * ```
@@ -55,10 +55,7 @@ export class ApiClient {
     // Setup response interceptor for logging
     this.axiosInstance.interceptors.response.use(
       (response) => {
-        const url = this.getFullUrl(
-          response.config.url || '',
-          response.config.baseURL
-        );
+        const url = this.getFullUrl(response.config.url || '', response.config.baseURL);
         this.scopedLogger.debug(`[${response.config.method?.toUpperCase()}] ${url} success`, {
           status: response.status,
           data: response.data,
@@ -102,7 +99,7 @@ export class ApiClient {
   async get<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
     const url = this.getFullUrl(endpoint);
     const start = Date.now();
-    
+
     try {
       this.scopedLogger.info(`[GET] ${url}`, config?.params);
       const response: AxiosResponse<T> = await this.axiosInstance.get(endpoint, config);
@@ -127,25 +124,28 @@ export class ApiClient {
   async post<T = any>(
     endpoint: string,
     body?: Record<string, any>,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
+    disableLogging?: boolean
   ): Promise<T> {
     const url = this.getFullUrl(endpoint);
     const start = Date.now();
-    
+
     try {
-      this.scopedLogger.info(`[POST] ${url}`, body);
-      const response: AxiosResponse<T> = await this.axiosInstance.post(
-        endpoint,
-        body,
-        config
-      );
+      if (!disableLogging) {
+        this.scopedLogger.info(`[POST] ${url}`, body);
+      }
+      const response: AxiosResponse<T> = await this.axiosInstance.post(endpoint, body, config);
       const duration = Date.now() - start;
-      this.scopedLogger.info(`[POST] ${url} completed in ${duration}ms`, {
-        status: response.status,
-      });
+      if (!disableLogging) {
+        this.scopedLogger.info(`[POST] ${url} completed in ${duration}ms`, {
+          status: response.status,
+        });
+      }
       return response.data;
     } catch (error: any) {
-      this.logHttpError(error, 'POST', url, start);
+      if (!disableLogging) {
+        this.logHttpError(error, 'POST', url, start);
+      }
       throw error;
     }
   }
@@ -164,14 +164,10 @@ export class ApiClient {
   ): Promise<T> {
     const url = this.getFullUrl(endpoint);
     const start = Date.now();
-    
+
     try {
       this.scopedLogger.info(`[PUT] ${url}`, body);
-      const response: AxiosResponse<T> = await this.axiosInstance.put(
-        endpoint,
-        body,
-        config
-      );
+      const response: AxiosResponse<T> = await this.axiosInstance.put(endpoint, body, config);
       const duration = Date.now() - start;
       this.scopedLogger.info(`[PUT] ${url} completed in ${duration}ms`, {
         status: response.status,
@@ -192,7 +188,7 @@ export class ApiClient {
   async delete<T = any>(endpoint: string, config?: AxiosRequestConfig): Promise<T> {
     const url = this.getFullUrl(endpoint);
     const start = Date.now();
-    
+
     try {
       this.scopedLogger.info(`[DELETE] ${url}`);
       const response: AxiosResponse<T> = await this.axiosInstance.delete(endpoint, config);
@@ -221,14 +217,10 @@ export class ApiClient {
   ): Promise<T> {
     const url = this.getFullUrl(endpoint);
     const start = Date.now();
-    
+
     try {
       this.scopedLogger.info(`[PATCH] ${url}`, body);
-      const response: AxiosResponse<T> = await this.axiosInstance.patch(
-        endpoint,
-        body,
-        config
-      );
+      const response: AxiosResponse<T> = await this.axiosInstance.patch(endpoint, body, config);
       const duration = Date.now() - start;
       this.scopedLogger.info(`[PATCH] ${url} completed in ${duration}ms`, {
         status: response.status,
@@ -277,16 +269,11 @@ export class ApiClient {
     return base ? `${base}${endpoint}` : endpoint;
   }
 
-  private logHttpError(
-    error: any,
-    method?: string,
-    url?: string,
-    startTime?: number
-  ): void {
+  private logHttpError(error: any, method?: string, url?: string, startTime?: number): void {
     const duration = startTime ? Date.now() - startTime : undefined;
     const methodStr = method || error?.config?.method?.toUpperCase() || 'UNKNOWN';
     const urlStr = url || this.getFullUrl(error?.config?.url || '', error?.config?.baseURL);
-    
+
     const errorDetails: any = {
       message: error?.message,
       status: error?.response?.status ?? 'N/A',

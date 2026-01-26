@@ -1,13 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type OverlayType = 
-  | 'hongbao-success'
-  | 'hongbao-claimed'
-  | 'payment-pending'
-  | 'error'
-  | 'loading'
-  | 'confirmation'
-  | null;
+export type OverlayType = 'hongbao-success' | 'prevent-touch-main-tab' | null;
 
 export interface OverlayPayload {
   [key: string]: any;
@@ -56,5 +49,6 @@ const overlaySlice = createSlice({
   },
 });
 
-export const { showOverlay, hideOverlay, updateOverlayPayload, triggerAction, clearAction } = overlaySlice.actions;
+export const { showOverlay, hideOverlay, updateOverlayPayload, triggerAction, clearAction } =
+  overlaySlice.actions;
 export default overlaySlice.reducer;

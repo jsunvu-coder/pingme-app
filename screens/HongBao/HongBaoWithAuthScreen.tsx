@@ -11,6 +11,7 @@ import { RedPocketService } from 'business/services/RedPocketService';
 import LoginView, { LoginViewRef } from 'screens/Onboarding/Auth/LoginView';
 import { AuthService } from 'business/services/AuthService';
 import CreateAccountView, { CreateAccountViewRef } from 'screens/Onboarding/Auth/CreateAccountView';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 type HongBaoWithAuthParams = {
   bundle_uuid?: string;
@@ -90,12 +91,14 @@ export default function HongBaoWithAuthScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={100}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}>
           {mode === 'login' && <LoginView ref={loginViewRef} removeButtonLogin={true} disableSuccessCallback={true} />}
           {mode === 'signup' && <CreateAccountView ref={createAccountViewRef} removeButtonCreateAccount={true} disableSuccessCallback={true} setIsFormValid={setIsSignupFormValid} />}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </View>
       <View className="my-6 px-6">
         <PrimaryButton

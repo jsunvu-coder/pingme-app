@@ -20,6 +20,7 @@ type HongBaoSuccessParams = {
   amountUsdStr?: string;
   ranking?: RankingItem[];
   remainingCount?: number;
+  isClaimed?: boolean;
 };
 
 /**
