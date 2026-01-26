@@ -1,11 +1,13 @@
-import { navigationRef, presentOverMain, push, replace, setRootScreen } from 'navigation/Navigation';
+import {
+  navigationRef,
+  presentOverMain,
+  push,
+  replace,
+  setRootScreen,
+} from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
-import {
-  computeLockboxProof,
-  getLockbox,
-  getLockboxInfo,
-} from 'utils/claim';
+import { computeLockboxProof, getLockbox, getLockboxInfo } from 'utils/claim';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -92,14 +94,16 @@ class DeepLinkHandler {
         if (path === 'claim') {
           console.log('[DeepLinkHandler] Cold start claim → processing');
           const params = Object.fromEntries(u.searchParams);
-          
+
           if (isLoggedIn) {
             setRootScreen(['MainTab']);
             setTimeout(() => this.navigateClaim(params), 400);
           } else {
             // If signup=true and not logged in, verify first then go to auth
             if (params.signup === 'true') {
-              console.log('[DeepLinkHandler] Claim with signup=true and not logged in → verify first');
+              console.log(
+                '[DeepLinkHandler] Claim with signup=true and not logged in → verify first'
+              );
               await this.handleClaimWithSignup(params);
             } else {
               this.navigateClaim(params, true); // reset stack so splash isn't behind
@@ -163,7 +167,9 @@ class DeepLinkHandler {
       case 'claim': {
         // If signup=true and not logged in, verify first then go to auth
         if (params.signup === 'true' && !isLoggedIn) {
-          console.log('[DeepLinkHandler] Runtime claim with signup=true and not logged in → verify first');
+          console.log(
+            '[DeepLinkHandler] Runtime claim with signup=true and not logged in → verify first'
+          );
           await this.handleClaimWithSignup(params);
         } else {
           this.navigateClaim(params);
@@ -175,9 +181,14 @@ class DeepLinkHandler {
       case 'deposit':
         if (!isLoggedIn) {
           this.setPendingURL(url);
-          console.log(`[DeepLinkHandler] Not logged in → AuthScreen (${path})`);
-          // Ensure we always surface the login screen even if the user is deep in another flow.
-          setRootScreen([{ name: 'AuthScreen', params: { mode: 'login' } }]);
+
+          const isPayOnTop =
+            navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'AuthScreen';
+          if (!isPayOnTop) {
+            console.log(`[DeepLinkHandler] Not logged in → AuthScreen (${path})`);
+            // Ensure we always surface the login screen even if the user is deep in another flow.
+            setRootScreen([{ name: 'AuthScreen', params: { mode: 'login' } }]);
+          }
           return;
         }
 
@@ -191,7 +202,7 @@ class DeepLinkHandler {
   }
 
   // --- Navigation helpers ---
-  
+
   /**
    * Handle claim with signup=true when not logged in
    * Verify with empty passphrase in background, then navigate to AuthScreen
@@ -199,9 +210,9 @@ class DeepLinkHandler {
   private async handleClaimWithSignup(params: Record<string, string>) {
     try {
       console.log('[DeepLinkHandler] Starting background verify for signup flow');
-      
+
       const { username, lockboxSalt, code } = params;
-      
+
       if (!lockboxSalt) {
         console.error('[DeepLinkHandler] Missing required params for signup flow');
         // Fallback to normal claim flow
@@ -213,13 +224,13 @@ class DeepLinkHandler {
       const passphrase = '';
       // Use empty string as default if username is not provided
       const crypto = computeLockboxProof(username || '', passphrase, lockboxSalt, code);
-      
+
       console.log('[DeepLinkHandler] Getting lockbox with empty passphrase');
       const lockbox = await getLockbox(crypto.lockboxCommitment);
-      
+
       // Get lockbox info
       const info = getLockboxInfo(lockbox);
-      
+
       if (!info) {
         console.error('[DeepLinkHandler] Failed to get lockbox info');
         this.navigateClaim(params, true);
@@ -232,18 +243,23 @@ class DeepLinkHandler {
           `[DeepLinkHandler] Lockbox is not claimable (status: ${info.derivedStatus}), showing ClaimPaymentScreen`
         );
         // Navigate to ClaimPaymentScreen to show the status (EXPIRED/CLAIMED/RECLAIMED)
-        this.navigateClaim({
-          ...params,
-          // Pass pre-verified data so ClaimPaymentScreen can show status immediately
-          _lockboxData: JSON.stringify(lockbox),
-          _lockboxProof: crypto.lockboxProof,
-          _derivedStatus: info.derivedStatus,
-        }, true);
+        this.navigateClaim(
+          {
+            ...params,
+            // Pass pre-verified data so ClaimPaymentScreen can show status immediately
+            _lockboxData: JSON.stringify(lockbox),
+            _lockboxProof: crypto.lockboxProof,
+            _derivedStatus: info.derivedStatus,
+          },
+          true
+        );
         return;
       }
 
-      console.log('[DeepLinkHandler] Lockbox verified and claimable, navigating to AuthScreen (signup)');
-      
+      console.log(
+        '[DeepLinkHandler] Lockbox verified and claimable, navigating to AuthScreen (signup)'
+      );
+
       // Navigate directly to AuthScreen with lockbox info
       setRootScreen([
         {
@@ -315,7 +331,6 @@ class DeepLinkHandler {
       replace('SendConfirmationScreen', payload);
       return;
     }
-
     // Always surface the send flow, even if the user is currently deep in another stack.
     presentOverMain('SendConfirmationScreen', payload);
   }
@@ -324,7 +339,8 @@ class DeepLinkHandler {
     console.log('[DeepLinkHandler] Navigating to PayQrConfirmationScreen', params);
     this.clearPendingURL();
     const isPayQrOnTop =
-      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'PayQrConfirmationScreen';
+      navigationRef.isReady() &&
+      navigationRef.getCurrentRoute()?.name === 'PayQrConfirmationScreen';
     if (isPayQrOnTop) {
       replace('PayQrConfirmationScreen', params);
       return;

@@ -43,7 +43,25 @@ export const setRootScreen = (items: (string | { name: string; params?: any })[]
 
 // Reset to MainTab, then present a screen (e.g., modal) on top.
 export const presentOverMain = (name: string, params?: any) => {
-  setRootScreen(['MainTab']);
+  const isHomeScreenOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'Home';
+  const isPingNowScreenOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'Ping Now';
+  const isAirdropScreenOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'Airdrop';
+  const isAccountScreenOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'Account';
+  const isHongBaoOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBao';
+  
+  console.log('navigationRef.getCurrentRoute()?.name', navigationRef.getCurrentRoute()?.name);
+  
+
+  const isMainTabOnTop = isHomeScreenOnTop || isPingNowScreenOnTop || isAirdropScreenOnTop || isAccountScreenOnTop || isHongBaoOnTop;
+  if (!isMainTabOnTop) {
+    setRootScreen(['MainTab']);
+  } 
+  
   // Defer navigation to next tick to allow reset to apply
   setTimeout(() => {
     push(name, params);
