@@ -3,6 +3,7 @@ import type { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import historyReducer from './historySlice';
 import balanceReducer from './balanceSlice';
 import overlayReducer from './overlaySlice';
+import eventReducer from './eventSlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -19,12 +20,13 @@ export async function createStore() {
       history: historyReducer,
       balance: balanceReducer,
       overlay: overlayReducer,
+      event: eventReducer,
     },
     preloadedState: persistedState
       ? ({
           history: persistedState.history,
           balance: persistedState.balance,
-          // Don't persist overlay state
+          // Don't persist overlay and event state (reset on app restart)
         } as Partial<{ history: any; balance: any }>)
       : undefined,
   });
@@ -78,6 +80,7 @@ const reducer = {
   history: historyReducer,
   balance: balanceReducer,
   overlay: overlayReducer,
+  event: eventReducer,
 };
 
 // Export types - define directly from reducer structure
@@ -85,5 +88,6 @@ export type RootState = {
   history: ReturnType<typeof historyReducer>;
   balance: ReturnType<typeof balanceReducer>;
   overlay: ReturnType<typeof overlayReducer>;
+  event: ReturnType<typeof eventReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;

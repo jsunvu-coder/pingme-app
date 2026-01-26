@@ -14,12 +14,14 @@ import { RecordService } from 'business/services/RecordService';
 import { Utils } from 'business/Utils';
 import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
-import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
+import { useAppDispatch, useCurrentAccountStablecoinBalance, useAppSelector } from 'store/hooks';
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
+import { selectShouldShowHongBaoPopup, markHongBaoPopupShown } from 'store/eventSlice';
 import { useFocusEffect } from '@react-navigation/native';
 import { showFlashMessage } from 'utils/flashMessage';
 import { push } from 'navigation/Navigation';
 import { shareFlowService } from 'business/services/ShareFlowService';
+import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -29,8 +31,20 @@ export default function HomeScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
   const [loading, setLoading] = useState(false);
-  const [showHongBaoPopup, setShowHongBaoPopup] = useState(false); // Show popup on first load
-
+  
+  const shouldShow = useAppSelector(selectShouldShowHongBaoPopup);
+  const [hasPendingClaim, setHasPendingClaim] = useState<boolean | null>(null);
+  const [hasPendingURL, setHasPendingURL] = useState<boolean | null>(null);
+  
+  useFocusEffect(useCallback(() => {
+    const pending = shareFlowService.consumePendingClaim();
+    setHasPendingClaim(!!pending);
+    setHasPendingURL(!!deepLinkHandler.getPendingLink());
+  }, []));
+  
+  const showHongBaoPopup =
+    shouldShow && hasPendingClaim === false && hasPendingURL === false;
+  
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
       return showLocalizedAlert({ message });
@@ -45,12 +59,6 @@ export default function HomeScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    const pending = shareFlowService.consumePendingClaim();
-    if (!pending) {
-      setShowHongBaoPopup(true);
-    }
-  }, []);
 
   /**
    * Update balance following the flow from update_balance.md:
@@ -189,7 +197,7 @@ export default function HomeScreen() {
       {/* HongBao Popup */}
       <HongBaoPopup
         visible={showHongBaoPopup}
-        onClose={() => setShowHongBaoPopup(false)}
+        onClose={() => dispatch(markHongBaoPopupShown())}
         onSendHongBao={handleSendHongBao}
       />
     </View>
