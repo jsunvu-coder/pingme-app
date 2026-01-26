@@ -119,6 +119,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
             placeholder="How much in total?"
             maxLength={6}
             editable={!loading}
+            integerOnly
             helperText={amountError}
           />
         </View>

@@ -144,6 +144,7 @@ export default function CounterInput({
             minWidth: 80,
           }}
           selectTextOnFocus
+          maxLength={max.toString().length}
         />
 
         {/* Increment Button */}
