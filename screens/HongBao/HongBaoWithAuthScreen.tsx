@@ -1,18 +1,16 @@
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
 import { useRoute } from '@react-navigation/native';
-import { push } from 'navigation/Navigation';
-import PrimaryButton from 'components/PrimaryButton';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import AddUserIcon from 'assets/AddUserIcon';
 import LoginIcon from 'assets/LoginIcon';
-import AuthFormFields from './AuthFormFields';
-import { RedPocketService } from 'business/services/RedPocketService';
-import LoginView, { LoginViewRef } from 'screens/Onboarding/Auth/LoginView';
-import { AuthService } from 'business/services/AuthService';
-import CreateAccountView, { CreateAccountViewRef } from 'screens/Onboarding/Auth/CreateAccountView';
+import { BundleStatusResponse, RedPocketService } from 'business/services/RedPocketService';
+import PrimaryButton from 'components/PrimaryButton';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
+import { setRootScreen } from 'navigation/Navigation';
+import { useRef, useState } from 'react';
+import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { getTimestamp } from 'utils/time';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import CreateAccountView, { CreateAccountViewRef } from 'screens/Onboarding/Auth/CreateAccountView';
+import LoginView, { LoginViewRef } from 'screens/Onboarding/Auth/LoginView';
 
 type HongBaoWithAuthParams = {
   bundle_uuid?: string;
@@ -26,10 +24,37 @@ const SignUpIcon = ({ isActive }: { isActive: boolean }) => <AddUserIcon isActiv
 
 const LogInIcon = ({ isActive }: { isActive: boolean }) => <LoginIcon isActive={isActive} />;
 
+const navigateToHongBaoVerification = (
+  bundle_uuid: string,
+  mode: 'signup' | 'login',
+  message: string
+) => {
+  setRootScreen([
+    {
+      name: 'HongBaoVerificationScreen',
+      params: {
+        bundle_uuid,
+        from: mode,
+        message: message,
+      },
+    },
+  ]);
+};
+
+const navigateToHongBaoError = (isLoggedIn: boolean, invalidBundle?: boolean) => {
+  setRootScreen([
+    {
+      name: 'HongBaoErrorScreen',
+      params: { isLoggedIn, invalidBundle },
+    },
+  ]);
+};
+
 export default function HongBaoWithAuthScreen() {
   const route = useRoute();
   const { bundle_uuid } = (route.params as HongBaoWithAuthParams) || {};
-
+  
+  usePreventBackFuncAndroid();
   const [mode, setMode] = useState<'signup' | 'login'>('login');
   const [loading, setLoading] = useState(false);
   const loginViewRef = useRef<LoginViewRef>(null);
@@ -39,35 +64,35 @@ export default function HongBaoWithAuthScreen() {
     setLoading(true);
     try {
       const redPocketService = RedPocketService.getInstance();
-      const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid || '');
+      let bundleStatus: BundleStatusResponse;
+      try {
+        bundleStatus = await redPocketService.getBundleStatus(bundle_uuid || '');
+      } catch (error) {
+        navigateToHongBaoError(false, true);
+        return;
+      }
       if (mode === 'signup') {
         if (redPocketService.verifyBundleInfo(bundleStatus)) {
           await createAccountViewRef.current?.register();
         } else {
-          push('HongBaoErrorScreen', {
-            isLoggedIn: false,
-          });
+          navigateToHongBaoError(false);
           return;
         }
       } else {
         await loginViewRef.current?.login();
       }
 
-      push('HongBaoVerificationScreen', {
-        bundle_uuid,
-        from: mode,
-        message: bundleStatus.message,
-      });
+      navigateToHongBaoVerification(bundle_uuid || '', mode, bundleStatus.message || '');
       return;
     } catch (err) {
       console.error('Error signing in', err);
+      return;
     } finally {
-      setLoading(false);
-    }
-    setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-  };
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
+    };
+  }
 
   return (
     <View className="flex flex-1 bg-[#F5E9E1]">
