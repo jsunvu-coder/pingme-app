@@ -65,11 +65,11 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     }, [isFocused]);
 
     const continueProgress = () => {
-      progress.value = withTiming(4.75, { duration: 4200 });
+      progress.value = withTiming(4.5, { duration: 4200 });
     };
 
     const resetProgress = () => {
-      progress.value = 0;
+      progress.value = 3.5;
       progress.value = withTiming(1, { duration: 2500 });
     };
 
@@ -166,17 +166,15 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
       const rotate = interpolate(progress.value, [0, 2, 3.5, 4], [0, 0, 36, 36]);
       const translateY = interpolate(
         progress.value,
-        [0, 2, 2.5, 3.5, 3.7, 4, 4.25, 4.5, 4.75],
+        [0, 2, 2.5, 3.5, 3.7, 4, 4.25, 4.5],
         [
           0,
           0,
           0,
           0.32 * windowHeight,
-          0.32 * windowHeight + 5,
           0.32 * windowHeight - 5,
           0.32 * windowHeight + 5,
           0.32 * windowHeight - 5,
-          0.32 * windowHeight + 5,
           0.32 * windowHeight,
         ]
       );

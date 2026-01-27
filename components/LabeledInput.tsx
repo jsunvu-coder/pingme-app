@@ -49,14 +49,56 @@ export default function LabeledInput({
   // Render icon - either Ionicons or custom component
   const renderIcon = () => {
     if (!icon) return null;
-    
+
     // If icon is a string (Ionicons name)
     if (typeof icon === 'string') {
       return <Ionicons name={icon as IconName} size={iconSize} color={iconColor} />;
     }
-    
+
     // If icon is a React component
     return <>{icon}</>;
+  };
+
+  const handleChangeText = (text: string) => {
+    let processedText = text;
+    // Handle integerOnly: only allow digits (0-9)
+    if (integerOnly) {
+      try {
+        const digitsOnly = text.replace(/[^0-9]/g, '');
+
+        // If user only typed non-digit (e.g. "."), keep input as empty
+        if (digitsOnly.length === 0) {
+          onChangeText('');
+          return;
+        }
+
+        let processedInt = parseInt(digitsOnly, 10);
+
+        if (isNaN(processedInt)) {
+          processedInt = minValue;
+        }
+        if (processedInt < minValue) {
+          processedInt = minValue;
+        }
+        const maxValue = parseInt(
+          parseFloat(showMaxInfo?.replace(/[^0-9]/g, '') ?? '0').toString(),
+          10
+        );
+        if (!isNaN(maxValue) && maxValue > 0 && processedInt > maxValue) {
+          processedInt = maxValue;
+        }
+        processedText = processedInt.toString();
+      } catch (error) {
+        processedText = minValue.toString();
+      }
+    }
+
+    // Apply maxLength if specified
+    if (maxLength && processedText.length <= maxLength) {
+      onChangeText(processedText);
+    } else if (!maxLength) {
+      onChangeText(processedText);
+    }
   };
 
   return (
@@ -83,54 +125,18 @@ export default function LabeledInput({
       {/* Input */}
       <TextInput
         value={value}
-        onChangeText={(text) => {
-          let processedText = text;
-          
-          // Handle integerOnly: only allow digits (0-9)
-          if (integerOnly) {
-            try {
-              if (text.length === 0) {
-                onChangeText(text);
-                return;
-              }
-              let processedInt = parseInt(text.replace(/[^0-9]/g, ''), 10);
-              
-              if (isNaN(processedInt)) {
-                processedInt = minValue;
-              }
-              if (processedInt < minValue) {
-                processedInt = minValue;
-              }
-              const maxValue = parseInt(parseFloat(showMaxInfo?.replace(/[^0-9]/g, '') ?? '0').toString(), 10);
-              if (processedInt > maxValue) {
-                processedInt = maxValue;
-              }
-              processedText = processedInt.toString();
-            } catch (error) {
-              processedText = minValue.toString();
-            }
-          }
-          
-          // Apply maxLength if specified
-          if (maxLength && processedText.length <= maxLength) {
-            onChangeText(processedText);
-          } else if (!maxLength) {
-            onChangeText(processedText);
-          }
-        }}
+        onChangeText={handleChangeText}
         placeholder={placeholder}
         placeholderTextColor={placeholderTextColor}
         editable={editable}
         multiline={multiline}
         keyboardType={keyboardType}
-        style={{ padding: 8, fontSize: 16, marginVertical: 8}}
+        style={{ padding: 8, fontSize: 16, marginVertical: 8 }}
         maxLength={maxLength}
       />
 
       {/* Divider */}
-      <View
-        style={{ backgroundColor: helperText ? helperTextColor : '#3B3A3A', height: 2 }}
-      />
+      <View style={{ backgroundColor: helperText ? helperTextColor : '#3B3A3A', height: 2 }} />
 
       {/* Helper Text */}
       {helperText && (

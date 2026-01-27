@@ -10,11 +10,13 @@ const CONFIG = {
     API_URL: 'https://api.staging.pingme.xyz',
     APP_URL: 'https://app.staging.pingme.xyz',
     RED_POCKET_API_URL: 'https://redpocket.staging.pingme.xyz/',
+    SIGNUP_URL: 'https://signup.staging.pingme.xyz/',
   },
   production: {
     API_URL: 'https://api.pingme.xyz',
     APP_URL: 'https://app.pingme.xyz',
     RED_POCKET_API_URL: 'https://redpocket.pingme.xyz/',
+    SIGNUP_URL: 'https://signup.pingme.xyz/',
   },
 };
 
@@ -38,6 +40,7 @@ export let ENV: EnvName = getBuildTimeEnv();
 export let API_URL = CONFIG[ENV].API_URL;
 export let APP_URL = CONFIG[ENV].APP_URL;
 export let RED_POCKET_API_URL = CONFIG[ENV].RED_POCKET_API_URL;
+export let SIGNUP_URL = CONFIG[ENV].SIGNUP_URL;
 
 const applyEnv = (env: EnvName) => {
   ENV = env;

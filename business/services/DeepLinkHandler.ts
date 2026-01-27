@@ -8,7 +8,7 @@ import {
 import { AuthService } from 'business/services/AuthService';
 import { Linking } from 'react-native';
 import { computeLockboxProof, getLockbox, getLockboxInfo } from 'utils/claim';
-import { RedPocketService } from './RedPocketService';
+import { BundleStatusResponse, RedPocketService } from './RedPocketService';
 import { HongBaoVerificationParams } from 'screens/HongBao/HongBaoVerificationScreen';
 import { HongBaoErrorParams } from 'screens/HongBao/HongBaoErrorScreen';
 
@@ -118,17 +118,31 @@ class DeepLinkHandler {
         // REDPOCKET (HongBao) → check login status
         if (path === 'redPocket' || path === 'redpocket') {
           const params = Object.fromEntries(u.searchParams);
-
           if (isLoggedIn) {
-            setRootScreen(['MainTab']);
             setTimeout(
               () =>
-                this.navigateHongBaoVerification({
-                  ...params,
-                }),
+                this.navigateHongBaoVerification(
+                  {
+                    ...params,
+                  },
+                  true
+                ),
               400
             );
           } else {
+            try {
+              const redPocketService = RedPocketService.getInstance();
+              await redPocketService.getBundleStatus(params.bundle_uuid || '');
+            } catch (error) {
+              this.navigateHongBaoError(
+                {
+                  isLoggedIn: isLoggedIn,
+                  invalidBundle: true,
+                },
+                true
+              );
+              return;
+            }
             this.navigateHongBao(params, true);
           }
 
@@ -204,9 +218,22 @@ class DeepLinkHandler {
       case 'redpocket': {
         // Check if logged in to decide which screen to show
         if (isLoggedIn) {
-          this.navigateHongBaoVerification(params);
+          this.navigateHongBaoVerification(params, true);
         } else {
-          this.navigateHongBao(params);
+          try {
+            const redPocketService = RedPocketService.getInstance();
+            await redPocketService.getBundleStatus(params.bundle_uuid || '');
+          } catch (error) {
+            this.navigateHongBaoError(
+              {
+                isLoggedIn: isLoggedIn,
+                invalidBundle: true,
+              },
+              true
+            );
+            return;
+          }
+          this.navigateHongBao(params, true);
         }
 
         return;
@@ -386,16 +413,25 @@ class DeepLinkHandler {
     }
   }
 
-  private navigateHongBaoVerification(params: HongBaoVerificationParams) {
+  private navigateHongBaoVerification(params: HongBaoVerificationParams, resetStack = false) {
     this.clearPendingURL();
-
-    const isVerificationOnTop =
-      navigationRef.isReady() &&
-      navigationRef.getCurrentRoute()?.name === 'HongBaoVerificationScreen';
-    if (isVerificationOnTop) {
-      replace('HongBaoVerificationScreen', params);
+    const route = {
+      name: 'HongBaoVerificationScreen',
+      params: {
+        ...params,
+      },
+    };
+    if (resetStack) {
+      setRootScreen([route]);
     } else {
-      push('HongBaoVerificationScreen', params);
+      const isVerificationOnTop =
+        navigationRef.isReady() &&
+        navigationRef.getCurrentRoute()?.name === 'HongBaoVerificationScreen';
+      if (isVerificationOnTop) {
+        replace('HongBaoVerificationScreen', params);
+      } else {
+        push('HongBaoVerificationScreen', params);
+      }
     }
   }
 

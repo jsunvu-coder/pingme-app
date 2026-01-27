@@ -3,16 +3,39 @@ import { RedPocketService } from 'business/services/RedPocketService';
 import { Utils } from 'business/Utils';
 import PrimaryButton from 'components/PrimaryButton';
 import LottieView from 'lottie-react-native';
-import { push } from 'navigation/Navigation';
+import { setRootScreen } from 'navigation/Navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getCurrentUserCrypto } from 'utils/claim';
+import { HongBaoErrorParams } from './HongBaoErrorScreen';
+import { HongBaoSuccessParams } from './HongBaoSuccessScreen';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 export type HongBaoVerificationParams = {
   bundle_uuid?: string;
   from?: 'signin' | 'signup';
   message?: string;
+};
+
+const navigateToHongBaoSuccess = (
+  params: HongBaoSuccessParams = {}
+) => {
+  setRootScreen([
+    {
+      name: 'HongBaoSuccessScreen',
+      params,
+    },
+  ]);
+};
+
+const navigateToHongBaoError = (params: HongBaoErrorParams) => {
+  setRootScreen([
+    {
+      name: 'HongBaoErrorScreen',
+      params,
+    },
+  ]);
 };
 
 export default function HongBaoVerificationScreen() {
@@ -24,6 +47,8 @@ export default function HongBaoVerificationScreen() {
   const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [readyToClaim, setReadyToClaim] = useState(false);
+  const [showError, setShowError] = useState(false);
+
   const [displayMessage, setDisplayMessage] = useState(
     message || 'May your wallet and your days stay full ❤️'
   );
@@ -31,12 +56,19 @@ export default function HongBaoVerificationScreen() {
   const isFocused = useIsFocused();
   const redPocketService = RedPocketService.getInstance();
 
+  usePreventBackFuncAndroid();
+
   useEffect(() => {
     const getBundleStatus = async () => {
       if (bundle_uuid && !message) {
-        const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
-        setDisplayMessage(bundleStatus.message || 'May your wallet and your days stay full ❤️');
-        setReadyToClaim(true);
+        try {
+          const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
+          setDisplayMessage(bundleStatus.message || 'May your wallet and your days stay full ❤️');
+          setReadyToClaim(true);
+        } catch (error) {
+          setShowError(true);
+          setReadyToClaim(true);
+        }
       } else if (message) {
         setDisplayMessage(message);
         setReadyToClaim(true);
@@ -49,7 +81,6 @@ export default function HongBaoVerificationScreen() {
     if (isFocused) {
       return () => {
         setReadyToClaim(false);
-        setDisplayMessage('May your wallet and your days stay full ❤️');
       };
     }
   }, [isFocused]);
@@ -98,8 +129,8 @@ export default function HongBaoVerificationScreen() {
           //verify bundle is claimed
           const bundleStatus = await redPocketService.verifyBundleUuid(bundle_uuid);
           if (!bundleStatus) {
-            push('HongBaoErrorScreen', {
-              isLoggedIn: false,
+            navigateToHongBaoError({
+              isLoggedIn: from !== 'signup',
             });
             return;
           }
@@ -136,26 +167,26 @@ export default function HongBaoVerificationScreen() {
             tokenDecimals
           );
 
-          push('HongBaoSuccessScreen', {
-            amount,
+          navigateToHongBaoSuccess({
+            amount: Number(amount),
             amountUsdStr: amountUsdStr,
             ranking,
             remainingCount: bundleStatus.quantity - bundleStatus.claimed.length,
             isClaimed: claimResult.status !== 1,
           });
         } else {
-          push('HongBaoErrorScreen', {
+          navigateToHongBaoError({
             isLoggedIn: true,
           });
         }
       } else {
-        push('HongBaoErrorScreen', {
+        navigateToHongBaoError({
           isLoggedIn: false,
         });
       }
     } catch (error) {
-      push('HongBaoErrorScreen', {
-        isLoggedIn: from === 'signup',
+      navigateToHongBaoError({
+        isLoggedIn: from !== 'signup',
       });
     } finally {
       setTimeout(() => setIsLoading(false), 2000);
@@ -191,18 +222,43 @@ export default function HongBaoVerificationScreen() {
               width: '100%',
               paddingHorizontal: 40,
             }}>
-            <View className="mb-4 rounded-2xl bg-white p-6">
-              <Text className="text-center text-xl font-bold text-[#FD4912]">
-                {displayMessage || 'May your wallet and your days stay full ❤️'}
-              </Text>
-            </View>
-            <PrimaryButton
-              title="Claim Hongbao"
-              onPress={verifyHongBao}
-              disabled={isLoading}
-              loading={isLoading}
-              loadingText="Claiming..."
-            />
+            {showError ? (
+              <>
+              <View className="mb-4 rounded-2xl bg-white p-6">
+                  <Text className="text-center text-xl font-bold text-[#FD4912]">
+                    {'Invalid Hongbao 🧧'}
+                  </Text>
+                </View>
+              <PrimaryButton
+                  title="Go Back"
+                  onPress={()=>{
+                    if(from === 'signup') {
+                      setRootScreen(['AuthScreen']);
+                    } else {
+                      setRootScreen(['MainTab']);
+                    }
+                  }}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  loadingText="Claiming..."
+                />
+              </>
+            ) : (
+              <>
+                <View className="mb-4 rounded-2xl bg-white p-6">
+                  <Text className="text-center text-xl font-bold text-[#FD4912]">
+                    {displayMessage || 'May your wallet and your days stay full ❤️'}
+                  </Text>
+                </View>
+                <PrimaryButton
+                  title="Claim Hongbao"
+                  onPress={verifyHongBao}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  loadingText="Claiming..."
+                />
+              </>
+            )}
           </Animated.View>
         )}
       </View>

@@ -120,7 +120,6 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
             editable={!loading}
             maxLength={MAX_AMOUNT.toString().length}
             integerOnly
-            minValue={0}
             helperText={amountError}
           />
         </View>

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 import AniCover from './AniCover';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 type RankingItem = {
   rank: number;
@@ -15,7 +16,7 @@ type RankingItem = {
   isCurrentUser?: boolean;
 };
 
-type HongBaoSuccessParams = {
+export type HongBaoSuccessParams = {
   amount?: number;
   amountUsdStr?: string;
   ranking?: RankingItem[];
@@ -60,6 +61,8 @@ export default function HongBaoSuccessScreen() {
     isClaimed = false,
   } = (route.params as HongBaoSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
+
+  usePreventBackFuncAndroid();
 
   // Refresh history in Redux when success screen mounts
   useEffect(() => {

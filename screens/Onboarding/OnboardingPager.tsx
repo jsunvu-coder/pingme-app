@@ -1,13 +1,14 @@
+import ArrowUpRightIcon from 'assets/ArrowUpRightIcon';
+import { SIGNUP_URL } from 'business/Config';
+import AniPageIndicator from 'components/AniPageIndicator';
 import OutlineButton from 'components/OutlineButton';
 import PrimaryButton from 'components/PrimaryButton';
 import { push } from 'navigation/Navigation';
-import { Dimensions, Text, View } from 'react-native';
+import { Dimensions, Linking, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import OnboardingSlide from './OnboardingSlide';
-import ArrowUpRightIcon from 'assets/ArrowUpRightIcon';
-import AniPageIndicator from 'components/AniPageIndicator';
-import AniTitles from './AniTitles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AniTitles from './AniTitles';
+import OnboardingSlide from './OnboardingSlide';
 
 const Page1 = require('../../assets/intro_1.png');
 const Page2 = require('../../assets/intro_2.png');
@@ -39,6 +40,10 @@ export default function OnboardingPager() {
     },
   });
 
+  const handleSignUp = () => {
+    Linking.openURL(SIGNUP_URL);
+  };
+
   return (
     <View className="flex-1 bg-white">
       <Animated.ScrollView
@@ -62,14 +67,14 @@ export default function OnboardingPager() {
           className="mx-8 mt-8"
         />
         {/* TODO: Add sign up flow */}
-        {/* <OutlineButton
+        <OutlineButton
           title="Sign Up"
-          onPress={() => true}
+          onPress={handleSignUp}
           className="mx-8 mt-6"
           borderColor="#FD4912"
           textColor="white"
           icon={<ArrowUpRightIcon size={32} color={'white'} />}
-        /> */}
+        />
       </View>
     </View>
   );

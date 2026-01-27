@@ -68,6 +68,8 @@ export default function HongBaoScreen() {
       // Reset animation when triggered from overlay
       aniCoverRef.current?.resetProgress();
       createHongBaoFormRef.current?.clearForm();
+      dispatch(setPreventTouch(false));
+      createHongBaoFormRef.current?.setEditable(true);
       // Clear the action
       dispatch(clearAction());
       hide();
@@ -196,6 +198,8 @@ export default function HongBaoScreen() {
           message: 'Failed to create HongBao',
           type: 'danger',
         });
+        dispatch(setPreventTouch(false));
+        createHongBaoFormRef.current?.setEditable(true);
         hide();
       }
     } catch (error) {
@@ -204,15 +208,21 @@ export default function HongBaoScreen() {
         title: 'Error',
         message: 'Failed to create HongBao',
         type: 'danger',
-      });
+      });1
+      dispatch(setPreventTouch(false));
+      createHongBaoFormRef.current?.setEditable(true);
       hide();
     } finally {
       setTimeout(() => {
         setLoading(false);
-        dispatch(setPreventTouch(false));
-        createHongBaoFormRef.current?.setEditable(true);
       }, 1500);
     }
+    // setTimeout(() => {
+    //   aniCoverRef.current?.continueProgress();
+    //   setTimeout(() => {
+    //     showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=123`);
+    //   }, 2000);
+    // }, 3000);
   };
 
   return (
