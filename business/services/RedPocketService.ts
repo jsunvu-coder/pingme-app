@@ -28,6 +28,7 @@ import { RED_POCKET_API_URL } from 'business/Config';
 import { COMMITED_BY_ANOTHER_PARTY, SESSION_EXPIRED } from 'business/Constants';
 import { ApiClient } from '../../api/ApiClient';
 import { logger } from '../../utils/logger';
+import { getTimestamp } from 'utils/time';
 
 // ============================================================================
 // Type Definitions
@@ -116,7 +117,7 @@ export interface ReclaimRequest {
 }
 
 export interface ReclaimResponse {
-  status: number; // 1=success, -1=already claimed, -2=already reclaimed, -3=not expired
+  status: number; // 1=success, -1=already claimed, -2=already reclaimed, -3=not expired, -4=transaction failed
   reclaimTx?: string;
   depositTx?: string;
   token?: string;
@@ -565,6 +566,36 @@ export class RedPocketService {
     }
   }
 
+  verifyBundleInfo(data: BundleStatusResponse): boolean {
+    if (
+      data.state === 'A' &&
+      data.unlock_time > getTimestamp() &&
+      data.claimed.length < data.quantity
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  async verifyBundleUuid(bundleUuid: string): Promise<boolean> {
+    try {
+      const data = await this.apiClient.post<BundleStatusResponse>('/pm_get_bundle_status', {
+        bundle_uuid: bundleUuid,
+      });
+      if (
+        data.state === 'A' &&
+        data.unlock_time > getTimestamp() &&
+        data.claimed.length < data.quantity
+      ) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      this.scopedLogger.error('Failed to verify bundle uuid', error);
+      return false;
+    }
+  }
+
   // ============================================================================
   // Reclaim API
   // ============================================================================
@@ -572,7 +603,12 @@ export class RedPocketService {
   /**
    * Reclaim an expired, unclaimed Red Pocket and deposit it back to balance
    *
-   * @param request - Reclaim request
+   * Follows the API specification from RED_POCKET_RECLAIM.md:
+   * - HTTP 200 with status=1: Success
+   * - HTTP 409 with status=-1/-2/-3: Expected errors (already claimed/reclaimed/not expired)
+   * - HTTP 500 with error field: Transaction failures
+   *
+   * @param request - Reclaim request with commitment and lockbox_salt
    * @returns Reclaim result with transaction hashes
    *
    * @example
@@ -585,6 +621,12 @@ export class RedPocketService {
    *   console.log('Reclaimed:', result.amount);
    *   console.log('Reclaim TX:', result.reclaimTx);
    *   console.log('Deposit TX:', result.depositTx);
+   * } else if (result.status === -1) {
+   *   console.log('Already claimed:', result.message);
+   * } else if (result.status === -2) {
+   *   console.log('Already reclaimed:', result.message);
+   * } else if (result.status === -3) {
+   *   console.log('Not expired yet:', result.message);
    * }
    * ```
    */
@@ -605,21 +647,88 @@ export class RedPocketService {
         request
       );
 
+      // Handle success (HTTP 200, status=1)
       if (data.status === 1) {
-        this.scopedLogger.info('Reclaimed successfully', { amount: data.amount });
+        this.scopedLogger.info('Reclaimed successfully', {
+          amount: data.amount,
+          token: data.token,
+          reclaimTx: data.reclaimTx,
+          depositTx: data.depositTx,
+        });
         // Refresh balance after successful reclaim
         await refreshAfterClaim();
-      } else if (data.status === -1) {
-        this.scopedLogger.warn('Already claimed by someone');
-      } else if (data.status === -2) {
-        this.scopedLogger.warn('Already reclaimed');
-      } else if (data.status === -3) {
-        this.scopedLogger.warn('Not expired yet');
+        return data;
       }
 
+      // Handle expected errors (HTTP 409, status=-1/-2/-3)
+      if (data.status === -1) {
+        this.scopedLogger.warn('Already claimed', { message: data.message });
+        return data;
+      }
+      if (data.status === -2) {
+        this.scopedLogger.warn('Already reclaimed', { message: data.message });
+        return data;
+      }
+      if (data.status === -3) {
+        this.scopedLogger.warn('Not expired yet', { message: data.message });
+        return data;
+      }
+
+      // Unexpected status code
+      this.scopedLogger.error('Unexpected status code', { status: data.status });
       return data;
-    } catch (error) {
-      this.scopedLogger.error('Failed to reclaim and deposit', error);
+    } catch (error: any) {
+      // Handle HTTP errors (400, 500, etc.)
+      const response = error?.response;
+      const statusCode = response?.status;
+      const responseData = response?.data;
+
+      // HTTP 409 responses are expected errors, not exceptions
+      // They should have been handled above, but if axios throws them, handle here
+      if (statusCode === 409 && responseData) {
+        const errorResponse = responseData as ReclaimResponse;
+        if (
+          errorResponse.status === -1 ||
+          errorResponse.status === -2 ||
+          errorResponse.status === -3
+        ) {
+          this.scopedLogger.warn('Expected error response', {
+            status: errorResponse.status,
+            message: errorResponse.message,
+          });
+          return errorResponse;
+        }
+      }
+
+      // HTTP 500 or other errors with error field (transaction failures)
+      if (responseData?.error) {
+        const errorResponse: ReclaimResponse = {
+          status: -4, // Custom error status
+          message: responseData.error,
+          reclaimTx: responseData.reclaimTx,
+          depositTx: responseData.depositTx,
+        };
+        this.scopedLogger.error('Transaction failed', {
+          error: responseData.error,
+          reclaimTx: responseData.reclaimTx,
+          depositTx: responseData.depositTx,
+        });
+        return errorResponse;
+      }
+
+      // HTTP 400 (invalid parameters)
+      if (statusCode === 400) {
+        const errorMessage = responseData?.error || responseData?.message || 'Invalid parameters';
+        this.scopedLogger.error('Invalid request', { error: errorMessage });
+        throw new Error(errorMessage);
+      }
+
+      // Other errors
+      this.scopedLogger.error('Failed to reclaim and deposit', {
+        status: statusCode,
+        error: error?.message,
+        responseData,
+      });
       throw error;
     }
   }
@@ -767,6 +876,6 @@ export class RedPocketService {
    */
   formatShareLink(bundleUuid: string, baseUrl?: string): string {
     const url = baseUrl || this.baseUrl;
-    return `${url}/?bundle_uuid=${bundleUuid}`;
+    return `${url}/redPocket?bundle_uuid=${bundleUuid}`;
   }
 }

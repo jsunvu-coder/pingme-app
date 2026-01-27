@@ -210,6 +210,7 @@ export default function PingHistoryScreen() {
               { label: 'Deposit', value: 'deposit' },
               { label: 'Withdraw', value: 'withdraw' },
               { label: 'Reclaim', value: 'reclaim' },
+              { label: 'HongBao', value: 'hongbao' },
             ]}
           />
         </View>

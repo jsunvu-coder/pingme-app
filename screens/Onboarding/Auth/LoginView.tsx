@@ -26,6 +26,7 @@ interface LoginViewProps {
   disableSuccessScreen?: boolean;
   removeButtonLogin?: boolean;
   disableSuccessCallback?: boolean;
+  altHandleLogin?: () => Promise<void>;
 }
 
 const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
@@ -37,6 +38,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
   disableSuccessScreen,
   removeButtonLogin,
   disableSuccessCallback,
+  altHandleLogin
 }, ref) => {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
@@ -132,6 +134,9 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         message: t('AUTH_LOGIN_ERROR_MISSING_FIELDS'),
         type: 'warning',
       });
+      if(disableSuccessCallback) {
+        throw new Error(t('AUTH_LOGIN_ERROR_MISSING_FIELDS'));
+      }
       return;
     }
 
@@ -171,6 +176,9 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         setUseBiometric(result.biometricEnabled);
       } else {
         setLoading(false);
+        if(disableSuccessCallback) {
+          throw new Error(t('AUTH_LOGIN_INVALID_CREDENTIALS'));
+        }
       }
     } catch (err: any) {
       showFlashMessage({
@@ -180,7 +188,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
       });
       setLoading(false);
       if(disableSuccessCallback) {
-        throw err;
+        throw new Error(err?.message || t('AUTH_LOGIN_INVALID_CREDENTIALS'));
       }
     }
   }, [email, password, useBiometric, biometricType, lockboxProof, routeLockboxProof, from, amountUsdStr, tokenName, disableSuccessScreen, route, vm]);
@@ -221,7 +229,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
             secureTextEntry
             returnKeyType="done"
             onSubmitEditing={() => {
-              handleLogin();
+              altHandleLogin ? altHandleLogin() : handleLogin();
             }}
           />
           <TouchableOpacity

@@ -49,11 +49,8 @@ function getServices() {
 export async function getLockbox(lockboxCommitment: string): Promise<LockboxData> {
   const { contractService } = getServices();
 
-  console.log('📦 [ClaimAPI] Getting lockbox:', lockboxCommitment);
-
   try {
     const result = await contractService.getLockbox(lockboxCommitment);
-    console.log('✅ [ClaimAPI] Lockbox retrieved:', result);
     return result;
   } catch (error) {
     console.error('❌ [ClaimAPI] Failed to get lockbox:', error);
@@ -116,15 +113,12 @@ export async function getCommitState(
 
   const commitData = computeCommitHashes(lockboxProof, userSalt, userCommitment);
 
-  console.log('🔍 [ClaimAPI] Getting commit state');
-
   try {
     const result = await contractService.getCommitState(
       commitData.lockboxProofHash,
       commitData.saltHash,
       commitData.commitmentHash
     );
-    console.log('✅ [ClaimAPI] Commit state:', result.commit_state);
     return result;
   } catch (error) {
     console.error('❌ [ClaimAPI] Failed to get commit state:', error);
@@ -155,15 +149,12 @@ export async function submitCommit(
 
   const commitData = computeCommitHashes(lockboxProof, userSalt, userCommitment);
 
-  console.log('📤 [ClaimAPI] Submitting commit');
-
   try {
     const result = await contractService.commit(
       commitData.lockboxProofHash,
       commitData.saltHash,
       commitData.commitmentHash
     );
-    console.log('✅ [ClaimAPI] Commit submitted');
     return result;
   } catch (error) {
     console.error('❌ [ClaimAPI] Failed to submit commit:', error);
@@ -232,11 +223,8 @@ export async function ensureCommitReady(
 export async function claimWithCurrentUser(lockboxProof: string): Promise<void> {
   const { authService } = getServices();
 
-  console.log('💰 [ClaimAPI] Claiming with current user');
-
   try {
     await authService.claimWithCurrentCrypto(lockboxProof);
-    console.log('✅ [ClaimAPI] Claim successful');
   } catch (error) {
     console.error('❌ [ClaimAPI] Claim failed:', error);
     throw error;
@@ -270,21 +258,17 @@ export async function executeFullClaimFlow(lockboxProof: string): Promise<boolea
     }
 
     // Step 1: Ensure commit is ready
-    console.log('🔐 [ClaimAPI] Step 1: Ensuring commit ready');
     const ready = await ensureCommitReady(lockboxProof, crypto.salt, crypto.commitment);
     if (!ready) {
       throw new Error('Commit blocked or failed');
     }
 
     // Step 2: Execute claim
-    console.log('💰 [ClaimAPI] Step 2: Executing claim');
     await claimWithCurrentUser(lockboxProof);
 
     // Step 3: Refresh balance and records
-    console.log('🔄 [ClaimAPI] Step 3: Refreshing balance and records');
     await refreshAfterClaim();
 
-    console.log('🎉 [ClaimAPI] Full claim flow completed successfully');
     return true;
   } catch (error) {
     console.error('❌ [ClaimAPI] Full claim flow failed:', error);
@@ -308,12 +292,9 @@ export async function executeFullClaimFlow(lockboxProof: string): Promise<boolea
 export async function refreshAfterClaim(): Promise<void> {
   const { balanceService, recordService } = getServices();
 
-  console.log('🔄 [ClaimAPI] Refreshing balance and records');
-
   try {
     // Refresh balance first
     await balanceService.getBalance();
-    console.log('✅ [ClaimAPI] Balance refreshed');
 
     // Then refresh transaction history (fire and forget)
     recordService.updateRecord().catch((err) => {

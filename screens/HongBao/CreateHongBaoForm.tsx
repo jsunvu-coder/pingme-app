@@ -115,11 +115,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
             showMaxInfo={`Max $${MAX_AMOUNT}`}
             showCharCount={false}
             multiline={false}
-            keyboardType="decimal-pad"
+            keyboardType="number-pad"
             placeholder="How much in total?"
-            maxLength={6}
             editable={!loading}
+            maxLength={MAX_AMOUNT.toString().length}
             integerOnly
+            minValue={0}
             helperText={amountError}
           />
         </View>

@@ -57,6 +57,7 @@ export default function HongBaoSuccessScreen() {
     amountUsdStr,
     ranking = [],
     remainingCount = 0,
+    isClaimed = false,
   } = (route.params as HongBaoSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
 
@@ -88,7 +89,7 @@ export default function HongBaoSuccessScreen() {
       <AniCover offsetAdjustment={80} containerHeightAdjustment={80}>
         {/* Amount */}
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
-          You claimed
+          {isClaimed? "You are already claimed": "You claimed"}
         </Text>
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
           ${displayAmount}
@@ -132,17 +133,12 @@ export default function HongBaoSuccessScreen() {
           <PrimaryButton title="Send a Hongbao" onPress={handleSendHongbao} />
         </View>
 
-
-      </AniCover>
-      {/* Go to Homepage */}
-      <View className="mt-auto pt-20 absolute bottom-0 left-0 right-0">
-        <TouchableOpacity onPress={handleGoHome} className='mb-6'>
-          <Text className="text-center text-base  text-white underline">
+        <TouchableOpacity onPress={handleGoHome} className='mx-auto mt-6'>
+          <Text className="text-center text-base  text-[#FD4912] underline">
             Go to Homepage
           </Text>
         </TouchableOpacity>
-        <SafeAreaView edges={['bottom']} />
-      </View>
+      </AniCover>
     </View>
 
   );

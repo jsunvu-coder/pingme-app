@@ -63,7 +63,6 @@ export class ApiClient {
         return response;
       },
       (error) => {
-        this.logHttpError(error);
         return Promise.reject(error);
       }
     );

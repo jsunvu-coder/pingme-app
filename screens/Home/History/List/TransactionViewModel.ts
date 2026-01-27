@@ -16,7 +16,8 @@ export type TransactionAction =
   | 'QR Receive'
   | 'Payment'
   | 'Security Update'
-  | 'Unknown';
+  | 'Unknown'
+  | '🧧 HongBao Purchase';
 
 export interface TransactionViewModel {
   /** Raw blockchain fields */
@@ -42,4 +43,5 @@ export interface TransactionViewModel {
   dateLabel: string;
   displayLabel: string;
   shortHash: string;
+  bundleUuid?: string;
 }

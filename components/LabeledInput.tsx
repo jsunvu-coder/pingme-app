@@ -23,6 +23,7 @@ type LabeledInputProps = {
   helperTextColor?: string;
   placeholderTextColor?: string;
   integerOnly?: boolean;
+  minValue?: number;
 };
 
 export default function LabeledInput({
@@ -37,6 +38,7 @@ export default function LabeledInput({
   iconColor = '#1D1D1D',
   showCharCount = true,
   showMaxInfo,
+  minValue = 1,
   multiline = true,
   keyboardType = 'default',
   helperText,
@@ -86,20 +88,26 @@ export default function LabeledInput({
           
           // Handle integerOnly: only allow digits (0-9)
           if (integerOnly) {
-            processedText = text.replace(/[^0-9]/g, '');
-          }
-          // Handle decimal-pad keyboard: convert comma to period and validate
-          else if (keyboardType === 'decimal-pad') {
-            // Allow numbers, comma, and period
-            processedText = text.replace(/[^0-9.,]/g, '');
-            // Convert comma to period for consistency (iOS may use comma)
-            processedText = processedText.replace(/,/g, '.');
-            
-            // Only allow one decimal point
-            const parts = processedText.split('.');
-            if (parts.length > 2) {
-              // If more than one decimal point, keep only the first one
-              processedText = parts[0] + '.' + parts.slice(1).join('');
+            try {
+              if (text.length === 0) {
+                onChangeText(text);
+                return;
+              }
+              let processedInt = parseInt(text.replace(/[^0-9]/g, ''), 10);
+              
+              if (isNaN(processedInt)) {
+                processedInt = minValue;
+              }
+              if (processedInt < minValue) {
+                processedInt = minValue;
+              }
+              const maxValue = parseInt(parseFloat(showMaxInfo?.replace(/[^0-9]/g, '') ?? '0').toString(), 10);
+              if (processedInt > maxValue) {
+                processedInt = maxValue;
+              }
+              processedText = processedInt.toString();
+            } catch (error) {
+              processedText = minValue.toString();
             }
           }
           

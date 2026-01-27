@@ -10,6 +10,7 @@ import { Linking } from 'react-native';
 import { computeLockboxProof, getLockbox, getLockboxInfo } from 'utils/claim';
 import { RedPocketService } from './RedPocketService';
 import { HongBaoVerificationParams } from 'screens/HongBao/HongBaoVerificationScreen';
+import { HongBaoErrorParams } from 'screens/HongBao/HongBaoErrorScreen';
 
 class DeepLinkHandler {
   private pendingURL: string | null = null;
@@ -45,7 +46,6 @@ class DeepLinkHandler {
       await new Promise((res) => setTimeout(res, 1000));
 
       const auth = AuthService.getInstance();
-      const redPocketService = RedPocketService.getInstance();
       const isLoggedIn = await auth.isLoggedIn();
 
       if (this.initialURLHandled) {
@@ -313,20 +313,17 @@ class DeepLinkHandler {
     } catch (error) {
       console.error('[DeepLinkHandler] Verify failed for signup flow:', error);
       // Fallback to normal claim flow on error
-      console.log('[DeepLinkHandler] Falling back to normal claim flow');
       this.navigateClaim(params, true);
     }
   }
 
   private navigateClaim(params: Record<string, string>, resetStack = false) {
-    console.log('[DeepLinkHandler] Navigating to ClaimPaymentScreen', params);
     this.clearPendingURL();
     const route = {
       name: 'ClaimPaymentScreen',
       params: {
         ...params,
         onClaimSuccess: () => {
-          console.log('[DeepLinkHandler] Claim finished → returning to MainTab');
           setRootScreen(['MainTab']);
         },
       },
@@ -341,6 +338,27 @@ class DeepLinkHandler {
         replace('ClaimPaymentScreen', route.params);
       } else {
         push('ClaimPaymentScreen', route.params);
+      }
+    }
+  }
+
+  private navigateHongBaoError(params: HongBaoErrorParams, resetStack = false) {
+    this.clearPendingURL();
+    const route = {
+      name: 'HongBaoErrorScreen',
+      params: {
+        ...params,
+      },
+    };
+    if (resetStack) {
+      setRootScreen([route]);
+    } else {
+      const isHongBaoErrorOnTop =
+        navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoErrorScreen';
+      if (isHongBaoErrorOnTop) {
+        replace('HongBaoErrorScreen', route.params);
+      } else {
+        push('HongBaoErrorScreen', route.params);
       }
     }
   }
@@ -369,7 +387,6 @@ class DeepLinkHandler {
   }
 
   private navigateHongBaoVerification(params: HongBaoVerificationParams) {
-    console.log('[DeepLinkHandler] Navigating to HongBaoVerificationScreen', params);
     this.clearPendingURL();
 
     const isVerificationOnTop =

@@ -12,6 +12,7 @@ import LoginView, { LoginViewRef } from 'screens/Onboarding/Auth/LoginView';
 import { AuthService } from 'business/services/AuthService';
 import CreateAccountView, { CreateAccountViewRef } from 'screens/Onboarding/Auth/CreateAccountView';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { getTimestamp } from 'utils/time';
 
 type HongBaoWithAuthParams = {
   bundle_uuid?: string;
@@ -37,15 +38,27 @@ export default function HongBaoWithAuthScreen() {
   const handleCreateAccount = async () => {
     setLoading(true);
     try {
+      const redPocketService = RedPocketService.getInstance();
+      const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid || '');
       if (mode === 'signup') {
-        await createAccountViewRef.current?.register();
+        if (redPocketService.verifyBundleInfo(bundleStatus)) {
+          await createAccountViewRef.current?.register();
+        } else {
+          push('HongBaoErrorScreen', {
+            isLoggedIn: false,
+          });
+          return;
+        }
       } else {
         await loginViewRef.current?.login();
       }
+
       push('HongBaoVerificationScreen', {
         bundle_uuid,
-        verified: true,
+        from: mode,
+        message: bundleStatus.message,
       });
+      return;
     } catch (err) {
       console.error('Error signing in', err);
     } finally {
@@ -70,7 +83,7 @@ export default function HongBaoWithAuthScreen() {
       {/* Main Content */}
       <View className="mx-4 mt-4 flex-1 rounded-3xl bg-white">
         {/* Tabs */}
-        <View className="flex-row rounded-full border border-[#E9E9E9] bg-white p-1 m-4">
+        <View className="m-4 flex-row rounded-full border border-[#E9E9E9] bg-white p-1">
           <TouchableOpacity
             onPress={() => setMode('signup')}
             className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'signup' ? 'bg-black' : 'bg-transparent'}`}>
@@ -96,8 +109,22 @@ export default function HongBaoWithAuthScreen() {
           bottomOffset={100}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}>
-          {mode === 'login' && <LoginView ref={loginViewRef} removeButtonLogin={true} disableSuccessCallback={true} />}
-          {mode === 'signup' && <CreateAccountView ref={createAccountViewRef} removeButtonCreateAccount={true} disableSuccessCallback={true} setIsFormValid={setIsSignupFormValid} />}
+          {mode === 'login' && (
+            <LoginView
+              ref={loginViewRef}
+              removeButtonLogin
+              disableSuccessCallback
+              altHandleLogin={handleCreateAccount}
+            />
+          )}
+          {mode === 'signup' && (
+            <CreateAccountView
+              ref={createAccountViewRef}
+              removeButtonCreateAccount
+              disableSuccessCallback
+              setIsFormValid={setIsSignupFormValid}
+            />
+          )}
         </KeyboardAwareScrollView>
       </View>
       <View className="my-6 px-6">

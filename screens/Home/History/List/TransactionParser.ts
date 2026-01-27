@@ -2,6 +2,10 @@
 
 import { TransactionAction, TransactionViewModel } from './TransactionViewModel';
 import { Utils } from 'business/Utils';
+import { store } from 'store';
+import { AccountDataService } from 'business/services/AccountDataService';
+import { selectBundleByTxHash } from 'store/bundleSlice';
+import { normalizeTxHash } from 'utils/txHash';
 
 const ACTION_MAP: Record<number, TransactionAction> = {
   0: 'Claim',
@@ -25,6 +29,8 @@ export function parseTransaction(
   const action = Number(raw.action ?? -1);
   let type: TransactionAction = ACTION_MAP[action] ?? 'Unknown';
 
+  let bundleUuid: string | undefined = undefined;
+
   if (HIDDEN_ACTIONS.has(action)) {
     // Skip non-monetary events entirely from the history UI.
     return null;
@@ -44,6 +50,24 @@ export function parseTransaction(
   const normalizedCommitment = (currentCommitment ?? '').toLowerCase();
 
   // 🧩 refine dynamic types
+  if (action === 7) {
+    const hash = raw.txHash?.toLowerCase();
+    if (hash) {
+      // Check Redux for bundle_uuid associated with this txHash using selector
+      try {
+        const accountEmail = AccountDataService.getInstance().email;
+        const state = store.getState();
+        const bundleInfo = selectBundleByTxHash(state, accountEmail, normalizeTxHash(hash) || '');
+        if (bundleInfo?.bundle_uuid) {
+          type = '🧧 HongBao Purchase';
+          bundleUuid = bundleInfo.bundle_uuid;
+        }
+      } catch (error) {
+        // Store might not be initialized yet, ignore error
+        console.warn('[parseTransaction] Failed to access Redux store:', error);
+      }
+    }
+  }
   if (action === 8) {
     if (fromCommitment) type = 'QR Pay';
     if (toCommitment) type = 'QR Receive';
@@ -142,5 +166,6 @@ export function parseTransaction(
     shortHash,
     blockNumber: Number(raw.blockNumber ?? 0),
     duration: Number(raw.duration ?? 0),
+    bundleUuid,
   };
 }
