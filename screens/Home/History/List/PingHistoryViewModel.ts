@@ -5,7 +5,14 @@ import { parseTransaction } from './TransactionParser';
 import { TransactionViewModel } from './TransactionViewModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type HistoryFilter = 'all' | 'sent' | 'received' | 'deposit' | 'withdraw' | 'reclaim';
+export type HistoryFilter =
+  | 'all'
+  | 'sent'
+  | 'received'
+  | 'deposit'
+  | 'withdraw'
+  | 'reclaim'
+  | 'hongbao';
 
 const PING_HISTORY_CACHE_KEY = '@ping_history_cache';
 
@@ -307,6 +314,7 @@ export class PingHistoryViewModel {
       tx.type === 'Deposit' || tx.type === 'Wallet Deposit';
     const isWithdraw = (tx: TransactionViewModel) => tx.type === 'Withdrawal';
     const isReclaim = (tx: TransactionViewModel) => tx.type === 'Reclaim';
+    const isHongBao = (tx: TransactionViewModel) => tx.type === '🧧 HongBao Purchase';
 
     switch (filter) {
       case 'sent':
@@ -321,6 +329,8 @@ export class PingHistoryViewModel {
         return events.filter(isWithdraw);
       case 'reclaim':
         return events.filter(isReclaim);
+      case 'hongbao':
+        return events.filter(isHongBao);
       default:
         return events;
     }

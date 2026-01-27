@@ -25,6 +25,7 @@ export default function FilterDropdown({
     { label: 'Deposit', value: 'deposit' },
     { label: 'Withdraw', value: 'withdraw' },
     { label: 'Reclaim', value: 'reclaim' },
+    { label: 'HongBao', value: 'hongbao' },
   ],
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -64,6 +65,8 @@ export default function FilterDropdown({
         return <Ionicons name="arrow-up-circle-outline" size={20} color="#FD4912" />;
       case 'reclaim':
         return <Ionicons name="refresh-outline" size={20} color="#FD4912" />;
+      case 'hongbao':
+        return <Text>🧧</Text>;
       default:
         return <WalletAddIcon size={20} color="#FD4912" />;
     }

@@ -5,6 +5,7 @@ import balanceReducer from './balanceSlice';
 import overlayReducer from './overlaySlice';
 import eventReducer from './eventSlice';
 import mainTabReducer from './mainTabSlice';
+import bundleReducer from './bundleSlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -23,13 +24,15 @@ export async function createStore() {
       overlay: overlayReducer,
       event: eventReducer,
       mainTab: mainTabReducer,
+      bundle: bundleReducer,
     },
     preloadedState: persistedState
       ? ({
           history: persistedState.history,
           balance: persistedState.balance,
+          bundle: persistedState.bundle,
           // Don't persist overlay, event, and mainTab state (reset on app restart)
-        } as Partial<{ history: any; balance: any }>)
+        } as Partial<{ history: any; balance: any; bundle: any }>)
       : undefined,
   });
 
@@ -84,6 +87,7 @@ const reducer = {
   overlay: overlayReducer,
   event: eventReducer,
   mainTab: mainTabReducer,
+  bundle: bundleReducer,
 };
 
 // Export types - define directly from reducer structure
@@ -93,5 +97,6 @@ export type RootState = {
   overlay: ReturnType<typeof overlayReducer>;
   event: ReturnType<typeof eventReducer>;
   mainTab: ReturnType<typeof mainTabReducer>;
+  bundle: ReturnType<typeof bundleReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;

@@ -1,20 +1,26 @@
+import { useRoute } from '@react-navigation/native';
 import { setRootScreen } from 'navigation/Navigation';
 import { Dimensions, Image, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type HongBaoErrorParams = {
+export type HongBaoErrorParams = {
   isLoggedIn?: boolean;
 };
 
 const ratio = 375 / 449;
 const imageHeight = Dimensions.get('window').width / ratio;
 export default function HongBaoErrorScreen() {
-  
+  const route = useRoute();
+  const { isLoggedIn } = (route.params as HongBaoErrorParams) || {};
+
 
   const handleGoHome = () => {
-    setRootScreen(['MainTab']);
+    if(!isLoggedIn){
+      setRootScreen(['AuthScreen']);
+    } else {
+      setRootScreen(['MainTab']);
+    }
   };
-
   return (
     <View className="flex-1 bg-[#F5E9E1]">
       <SafeAreaView edges={['top']} />
@@ -34,7 +40,7 @@ export default function HongBaoErrorScreen() {
       {/* Go Home Button */}
       <View className="mx-auto mt-4">
         <TouchableOpacity onPress={handleGoHome} className="">
-          <Text className="text-center text-base text-[#FD4912]">Go to Homepage</Text>
+          <Text className="text-center text-base text-[#FD4912]">{isLoggedIn ? 'Go to Homepage' : 'Log In'}</Text>
         </TouchableOpacity>
       </View>
     </View>

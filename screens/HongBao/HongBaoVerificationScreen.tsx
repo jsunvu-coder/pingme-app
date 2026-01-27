@@ -11,38 +11,45 @@ import { getCurrentUserCrypto } from 'utils/claim';
 
 export type HongBaoVerificationParams = {
   bundle_uuid?: string;
+  from?: 'signin' | 'signup';
+  message?: string;
 };
 
 export default function HongBaoVerificationScreen() {
   const route = useRoute();
-  const { bundle_uuid } = (route.params as HongBaoVerificationParams) || {};
+  const { bundle_uuid, from, message } = (route.params as HongBaoVerificationParams) || {};
   const lottieRef = useRef<LottieView>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [readyToClaim, setReadyToClaim] = useState(false);
-  const [message, setMessage] = useState('');
+  const [displayMessage, setDisplayMessage] = useState(
+    message || 'May your wallet and your days stay full ❤️'
+  );
 
   const isFocused = useIsFocused();
   const redPocketService = RedPocketService.getInstance();
 
   useEffect(() => {
     const getBundleStatus = async () => {
-      if (bundle_uuid) {
+      if (bundle_uuid && !message) {
         const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
-          setMessage(bundleStatus.message || 'May your wallet and your days stay full ❤️');
-          setReadyToClaim(true);
+        setDisplayMessage(bundleStatus.message || 'May your wallet and your days stay full ❤️');
+        setReadyToClaim(true);
+      } else if (message) {
+        setDisplayMessage(message);
+        setReadyToClaim(true);
       }
     };
     getBundleStatus();
-  }, [bundle_uuid]);
+  }, [bundle_uuid, message]);
 
   useEffect(() => {
     if (isFocused) {
       return () => {
-        setMessage('');
         setReadyToClaim(false);
+        setDisplayMessage('May your wallet and your days stay full ❤️');
       };
     }
   }, [isFocused]);
@@ -87,16 +94,26 @@ export default function HongBaoVerificationScreen() {
     setIsLoading(true);
     try {
       if (bundle_uuid) {
+        if (from === 'signup') {
+          //verify bundle is claimed
+          const bundleStatus = await redPocketService.verifyBundleUuid(bundle_uuid);
+          if (!bundleStatus) {
+            push('HongBaoErrorScreen', {
+              isLoggedIn: false,
+            });
+            return;
+          }
+        }
         const claimResult = await redPocketService.claimBundle(bundle_uuid);
-        if (claimResult.status === 1 ||claimResult.status === -1) {
+        if (claimResult.status === 1 || claimResult.status === -1) {
           const username = getCurrentUserCrypto()?.username;
           let amount = claimResult.amount || 0;
-          
+
           const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
           const ranking = bundleStatus.claimed.map((claimed, index) => {
             const isCurrentUser = claimed.username === username;
-            if(isCurrentUser){
-                amount = claimed.amount;
+            if (isCurrentUser) {
+              amount = claimed.amount;
             }
             return {
               rank: index + 1,
@@ -127,11 +144,19 @@ export default function HongBaoVerificationScreen() {
             isClaimed: claimResult.status !== 1,
           });
         } else {
-          push('HongBaoErrorScreen');
+          push('HongBaoErrorScreen', {
+            isLoggedIn: true,
+          });
         }
+      } else {
+        push('HongBaoErrorScreen', {
+          isLoggedIn: false,
+        });
       }
     } catch (error) {
-      push('HongBaoErrorScreen');
+      push('HongBaoErrorScreen', {
+        isLoggedIn: from === 'signup',
+      });
     } finally {
       setTimeout(() => setIsLoading(false), 2000);
     }
@@ -168,7 +193,7 @@ export default function HongBaoVerificationScreen() {
             }}>
             <View className="mb-4 rounded-2xl bg-white p-6">
               <Text className="text-center text-xl font-bold text-[#FD4912]">
-                {message}
+                {displayMessage || 'May your wallet and your days stay full ❤️'}
               </Text>
             </View>
             <PrimaryButton

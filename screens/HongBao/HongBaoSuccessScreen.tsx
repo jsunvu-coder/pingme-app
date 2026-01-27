@@ -57,6 +57,7 @@ export default function HongBaoSuccessScreen() {
     amountUsdStr,
     ranking = [],
     remainingCount = 0,
+    isClaimed = false,
   } = (route.params as HongBaoSuccessParams) || {};
   const displayAmount = amountUsdStr ?? amount.toFixed(2);
 
@@ -88,7 +89,7 @@ export default function HongBaoSuccessScreen() {
       <AniCover offsetAdjustment={80} containerHeightAdjustment={80}>
         {/* Amount */}
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
-          You claimed
+          {isClaimed? "You are already claimed": "You claimed"}
         </Text>
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
           ${displayAmount}

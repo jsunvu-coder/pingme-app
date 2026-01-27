@@ -20,6 +20,12 @@ import CopyIcon from 'assets/CopyIcon';
 import * as Clipboard from 'expo-clipboard';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
+import { useSelector } from 'react-redux';
+import { RootState } from 'store';
+import { ZERO_BYTES32 } from 'business/Constants';
+import { BundleStatusResponse, RedPocketService } from 'business/services/RedPocketService';
+import { APP_URL } from 'business/Config';
+import { getTimestamp } from 'utils/time';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -33,7 +39,15 @@ type LockboxDetail = {
   amount?: string;
 };
 
-type LockboxStatus = 'OPEN' | 'EXPIRED' | 'CLAIMED' | 'RECLAIMED' | 'UNKNOWN';
+type LockboxStatus =
+  | 'OPEN'
+  | 'EXPIRED'
+  | 'CLAIMED'
+  | 'RECLAIMED'
+  | 'UNKNOWN'
+  | 'BUNDLE_ACTIVE'
+  | 'BUNDLE_EXPIRED'
+  | 'BUNDLE_CLAIMED';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -71,6 +85,24 @@ const STATUS_META: Record<
     icon: 'help-circle-outline',
     iconColor: '#6B7280',
   },
+  BUNDLE_ACTIVE: {
+    label: 'Red Pocket Active',
+    textClass: 'text-green-600',
+    icon: 'checkmark-circle-outline',
+    iconColor: '#059669',
+  },
+  BUNDLE_EXPIRED: {
+    label: 'Red Pocket Expired',
+    textClass: 'text-orange-600',
+    icon: 'alert-circle-outline',
+    iconColor: '#EA580C',
+  },
+  BUNDLE_CLAIMED: {
+    label: 'Red Pocket Fully Claimed',
+    textClass: 'text-blue-600',
+    icon: 'checkmark-circle-outline',
+    iconColor: '#2563EB',
+  },
 };
 
 export default function TransactionDetailsScreen() {
@@ -83,6 +115,7 @@ export default function TransactionDetailsScreen() {
   const [reclaiming, setReclaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localMeta, setLocalMeta] = useState<LockboxMetadata | null>(null);
+  const [bundleInfo, setBundleInfo] = useState<BundleStatusResponse | null>(null);
 
   const dispatch = useAppDispatch();
   const balanceService = useMemo(() => BalanceService.getInstance(), []);
@@ -92,6 +125,10 @@ export default function TransactionDetailsScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (lockboxCommitment === ZERO_BYTES32) {
+        setLocalMeta(null);
+        return;
+      }
       try {
         if (!lockboxCommitment) {
           if (!cancelled) setLocalMeta(null);
@@ -110,8 +147,27 @@ export default function TransactionDetailsScreen() {
     };
   }, [lockboxCommitment]);
 
+  console.log('🔍 [TransactionDetailsScreen] bundleInfo', bundleInfo);
+
   const fetchLockboxDetail = useCallback(async () => {
-    if (!lockboxCommitment) {
+    if (lockboxCommitment && lockboxCommitment === ZERO_BYTES32 && transaction?.bundleUuid) {
+      try {
+        console.log('🔍 [TransactionDetailsScreen] fetching bundle info', transaction.bundleUuid);
+        const redPocketService = RedPocketService.getInstance();
+        const bundleInfo = await redPocketService.getBundleStatus(transaction.bundleUuid);
+        setBundleInfo(bundleInfo);
+      } catch (err: any) {
+        console.error('❌ Failed to load bundle info:', err);
+        setBundleInfo(null);
+      } finally {
+        setTimeout(() => {
+          setFetchingDetail(false);
+          setInitialLoadComplete(true);
+        }, 500);
+        return;
+      }
+    }
+    if (!lockboxCommitment || lockboxCommitment === ZERO_BYTES32) {
       setLockboxDetail(null);
       setInitialLoadComplete(true);
       return;
@@ -133,13 +189,32 @@ export default function TransactionDetailsScreen() {
       setFetchingDetail(false);
       setInitialLoadComplete(true);
     }
-  }, [contractService, lockboxCommitment]);
+  }, [contractService, lockboxCommitment, transaction?.bundleUuid]);
 
   useEffect(() => {
     fetchLockboxDetail();
   }, [fetchLockboxDetail]);
 
   const lockboxStatus = useMemo<LockboxStatus>(() => {
+    if (bundleInfo) {
+      if (
+        bundleInfo.state === 'A' &&
+        bundleInfo.unlock_time > getTimestamp() &&
+        bundleInfo.claimed.length < bundleInfo.quantity
+      ) {
+        return 'BUNDLE_ACTIVE';
+      }
+      if (
+        bundleInfo.state === 'A' &&
+        bundleInfo.unlock_time > getTimestamp() &&
+        bundleInfo.claimed.length == bundleInfo.quantity
+      ) {
+        return 'BUNDLE_CLAIMED';
+      }
+      if (bundleInfo.state === 'T' || bundleInfo.unlock_time < Date.now().valueOf() / 1000) {
+        return 'BUNDLE_EXPIRED';
+      }
+    }
     if (!lockboxDetail) return 'UNKNOWN';
 
     const rawStatus = Number(lockboxDetail.status ?? -1);
@@ -151,10 +226,10 @@ export default function TransactionDetailsScreen() {
       return unlock > current ? 'OPEN' : 'EXPIRED';
     }
     return 'UNKNOWN';
-  }, [lockboxDetail]);
+  }, [lockboxDetail, bundleInfo]);
 
   const statusMeta = STATUS_META[lockboxStatus];
-  const showStatusRow = !!lockboxDetail && !error;
+  const showStatusRow = (!!lockboxDetail && !error) || !!bundleInfo;
   const localPayLink = localMeta
     ? buildPayLink(localMeta.lockboxSalt, localMeta.recipient_email)
     : null;
@@ -222,6 +297,32 @@ export default function TransactionDetailsScreen() {
     }
   }, [contractService, fetchLockboxDetail, lockboxCommitment]);
 
+  const shareBundleLink = useMemo(() => {
+    if (!bundleInfo) return null;
+    if (
+      bundleInfo.state === 'A' &&
+      bundleInfo.unlock_time > Date.now().valueOf() / 1000 &&
+      bundleInfo.claimed.length < bundleInfo.quantity
+    ) {
+      const redPocketService = RedPocketService.getInstance();
+      const shareLink =  redPocketService.formatShareLink(transaction?.bundleUuid ?? '', APP_URL);
+      return shareLink;
+    }
+    return null;
+  }, [bundleInfo, transaction?.bundleUuid]);
+  console.log('🔍 [TransactionDetailsScreen] shareBundleLink', shareBundleLink);
+
+  const handleCopyShareBundleLink = useCallback(async () => {
+    if (!shareBundleLink) return;
+    try {
+      await Clipboard.setStringAsync(shareBundleLink);
+      showFlashMessage({ message: 'Copied' });
+    } catch (e) {
+      console.warn('Failed to copy share bundle link:', e);
+      showFlashMessage({ message: 'Copy failed', type: 'warning' });
+    }
+  }, [shareBundleLink]);
+
   if (!transaction) {
     return (
       <View className="flex-1 bg-[#FAFAFA]">
@@ -243,7 +344,7 @@ export default function TransactionDetailsScreen() {
           paddingBottom: 40,
         }}>
         {!initialLoadComplete ? (
-          <View className="mt-6 p-5 rounded-2xl bg-white">
+          <View className="mt-6 rounded-2xl bg-white p-5">
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />
@@ -253,12 +354,28 @@ export default function TransactionDetailsScreen() {
           </View>
         ) : (
           <>
-            <View className="mt-6 p-5 rounded-2xl bg-white">
+            <View className="mt-6 rounded-2xl bg-white p-5">
               <DetailRow label="Amount" value={amountDisplay} />
-              <DetailRow label="Recipient" value={transaction.addr || '-'} />
-              <DetailRow label="Created" value={formatTimestamp(createdSeconds)} autoAdjustFontSize />
-              {expirySeconds ? (
-                <DetailRow label="Expiry" value={formatTimestamp(expirySeconds)} autoAdjustFontSize />
+              {!bundleInfo ? <DetailRow label="Recipient" value={transaction.addr || '-'} /> : null}
+              <DetailRow
+                label="Created"
+                value={formatTimestamp(createdSeconds)}
+                autoAdjustFontSize
+              />
+              {expirySeconds || bundleInfo?.unlock_time ? (
+                <DetailRow
+                  label="Expiry"
+                  value={formatTimestamp(expirySeconds || bundleInfo?.unlock_time)}
+                  autoAdjustFontSize
+                />
+              ) : null}
+              {bundleInfo ? (
+                <DetailRow
+                  label="Claimed"
+                  value={`${bundleInfo.claimed.length} / ${bundleInfo.quantity}`}
+                  valueClassName="text-blue-600"
+                  autoAdjustFontSize
+                />
               ) : null}
               {showStatusRow ? (
                 <DetailRow
@@ -267,10 +384,37 @@ export default function TransactionDetailsScreen() {
                   valueClassName="flex-row items-center"
                   valueTextClassName={statusMeta.textClass}
                   icon={
-                    <Ionicons name={statusMeta.icon as any} size={16} color={statusMeta.iconColor} />
+                    <Ionicons
+                      name={statusMeta.icon as any}
+                      size={16}
+                      color={statusMeta.iconColor}
+                    />
                   }
                 />
               ) : null}
+              {shareBundleLink ? (
+                <View className="mb-6 flex-row items-center justify-between">
+                  <Text className="mb-1 text-[15px] text-[#909090]">Red Pocket link</Text>
+                  <View className="min-w-0 flex-1 flex-row items-center justify-end">
+                    <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
+                      <Text
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                        className="min-w-0 text-right text-[16px]">
+                        {shareBundleLink}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className="ml-3 active:opacity-80"
+                      onPress={handleCopyShareBundleLink}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <CopyIcon />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+
               {localPayLink ? (
                 <View className="mb-6 flex-row items-center justify-between">
                   <Text className="mb-1 text-[15px] text-[#909090]">Pay link</Text>
@@ -367,14 +511,14 @@ function DetailRow({
   return (
     <View className="mb-6 flex-row justify-between">
       <Text className="mb-1 text-[15px] text-[#909090]">{label}</Text>
-      <View className={`flex-row items-center ${valueClassName}`}>
+      <View className={`ml-10 flex-1 flex-row items-center justify-end ${valueClassName}`}>
         {icon && <View className="mr-1">{icon}</View>}
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
           adjustsFontSizeToFit={autoAdjustFontSize}
           minimumFontScale={0.8}
-          className={`max-w-50 text-[16px] text-[#0F0F0F] ${valueTextClassName}`}>
+          className={`mr-2 text-right text-[16px] text-[#0F0F0F] ${valueTextClassName}`}>
           {value}
         </Text>
       </View>

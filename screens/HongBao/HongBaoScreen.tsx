@@ -11,6 +11,7 @@ import { Utils } from 'business/Utils';
 import { showFlashMessage } from 'utils/flashMessage';
 import { APP_URL } from 'business/Config';
 import { BalanceService } from 'business/services/BalanceService';
+import { AccountDataService } from 'business/services/AccountDataService';
 import { fetchRecentHistoryToRedux } from 'store/historyThunks';
 import { useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { t } from 'i18n';
@@ -18,8 +19,10 @@ import enUS from 'i18n/en-US.json';
 import { showLocalizedAlert } from 'components/LocalizedAlert';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { setPreventTouch } from 'store/mainTabSlice';
+import { addBundle } from 'store/bundleSlice';
+import { normalizeTxHash } from 'utils/txHash';
 
-const DEFAULT_DURATION = 7 * 60 * 60 * 24;
+const DEFAULT_DURATION = 60 * 60 * 24;
 
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
@@ -71,11 +74,13 @@ export default function HongBaoScreen() {
 
   const isFocused = useIsFocused();
 
-  useFocusEffect(useCallback(() => {
-    return () => {
-      hide();
-    };
-  }, [hide]));
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        hide();
+      };
+    }, [hide])
+  );
 
   useEffect(() => {
     // Clear form when screen is not on top of the stack (becomes unfocused)
@@ -85,8 +90,6 @@ export default function HongBaoScreen() {
   }, [isFocused]);
 
   const handleCreateHongBao = async (data: HongBaoFormData) => {
-    // console.log('Creating HongBao:', data);
-
     if (!data.totalAmount) {
       showFlashMessage({
         title: 'Error',
@@ -156,24 +159,43 @@ export default function HongBaoScreen() {
       duration: DEFAULT_DURATION,
       message: data.message,
     };
-    console.log('createBundleRequest', createBundleRequest);
 
     // Call create bundle
     setLoading(true);
-    dispatch(setPreventTouch(true))
+    dispatch(setPreventTouch(true));
     createHongBaoFormRef.current?.setEditable(false);
     try {
       const result = await redPocketService.createBundle(createBundleRequest);
       await balanceService.getBalance();
+      if (result.status === 1) {
+        // Save bundle info to Redux with persist
+        const accountEmail = AccountDataService.getInstance().email;
+        if (accountEmail && result.txHash && result.uuid) {
+          dispatch(
+            addBundle({
+              accountEmail,
+              txHash: normalizeTxHash(result.txHash.toLowerCase()) || '',
+              bundle_uuid: result.uuid,
+            })
+          );
+        }
 
-      setTimeout(() => {
-        void fetchRecentHistoryToRedux(dispatch);
-      }, 3000);
+        setTimeout(() => {
+          void fetchRecentHistoryToRedux(dispatch);
+        }, 3000);
 
-      aniCoverRef.current?.continueProgress();
-      setTimeout(() => {
-        showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=${result.uuid}`);
-      }, 2000);
+        aniCoverRef.current?.continueProgress();
+        setTimeout(() => {
+          showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=${result.uuid}`);
+        }, 2000);
+      } else {
+        showFlashMessage({
+          title: 'Error',
+          message: 'Failed to create HongBao',
+          type: 'danger',
+        });
+        hide();
+      }
     } catch (error) {
       console.error('Error creating HongBao:', error);
       showFlashMessage({
@@ -182,7 +204,6 @@ export default function HongBaoScreen() {
         type: 'danger',
       });
       hide();
-      return;
     } finally {
       setTimeout(() => {
         setLoading(false);

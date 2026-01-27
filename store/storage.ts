@@ -73,6 +73,15 @@ export async function loadStoreState(): Promise<Record<string, any> | undefined>
       }
     }
 
+    // Ensure bundle slice has correct structure
+    if (parsed.bundle) {
+      if (!parsed.bundle.byAccount || typeof parsed.bundle.byAccount !== 'object') {
+        parsed.bundle = {
+          byAccount: {},
+        };
+      }
+    }
+
     return parsed;
   } catch (err) {
     console.warn('[AsyncStorage] Failed to load store state', err);
