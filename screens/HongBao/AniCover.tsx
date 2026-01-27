@@ -144,11 +144,11 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
         [1, 1, 0, 0, 0, 0, 1, 1, 0, 0]
       );
       const scale = interpolate(progress.value, [0, 2, 3.5], [1, 1, 0.2]);
-      const rotate = interpolate(progress.value, [0, 2, 3.5], [0, 0, 36]);
+      const rotate = interpolate(progress.value, [0, 2, 3.5, 4], [0, 0, 36, 36]);
       const translateY = interpolate(
         progress.value,
         [0, 2, 2.5, 3.5, 4],
-        [0, 0, 0, 0.32 * windowHeight, 0]
+        [0, 0, 0, 0.32 * windowHeight, 0.32 * windowHeight]
       );
 
       return {
@@ -161,7 +161,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     });
 
     const coverClosedNonShadowAnimatedStyle = useAnimatedStyle(() => {
-      const opacity = interpolate(progress.value, [0, 2.5, 3.5], [0, 1, 1]);
+      const opacity = interpolate(progress.value, [0, 2, 2.5, 3.5], [0, 0, 1, 1]);
       const scale = interpolate(progress.value, [0, 2, 3.5, 4], [1, 1, 0.2, 0.2]);
       const rotate = interpolate(progress.value, [0, 2, 3.5, 4], [0, 0, 36, 36]);
       const translateY = interpolate(
