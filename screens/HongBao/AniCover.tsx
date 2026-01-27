@@ -51,7 +51,7 @@ interface AniCoverProps {
 
 const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
   ({ children, offsetAdjustment = 0, containerHeightAdjustment = 0 }, ref) => {
-    const BOTTOM_OFFSET = -0.57 * COVER_HEIGHT + offsetAdjustment;
+    const BOTTOM_OFFSET = -0.4 * COVER_HEIGHT + offsetAdjustment;
     const CONTAINER_HEIGHT =
       (Platform.OS === 'ios' ? 0.82 * windowHeight : 0.9 * windowHeight) +
       containerHeightAdjustment;
