@@ -8,7 +8,7 @@ type Props = {
   onSendHongBao: () => void;
 };
 
-const ratio = 375 / 290
+const ratio = 375 / 292
 
 const imageHeight = Dimensions.get('window').width / ratio;
 
