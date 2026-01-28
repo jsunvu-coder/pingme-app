@@ -1,6 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import ArrowLeftIcon from 'assets/ArrowLeftIcon';
 import QuestionCircleIcon from 'assets/QuestionCircleIcon';
+import { push, setRootScreen } from 'navigation/Navigation';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import {
   Dimensions,
@@ -76,6 +77,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     const backButtonPress = () => {
       dispatch(hideOverlay());
       dispatch(triggerAction('hongbao:reset'));
+      push('Home');
     };
 
     // Expose methods to parent component via ref

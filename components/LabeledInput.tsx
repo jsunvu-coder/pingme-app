@@ -23,7 +23,8 @@ type LabeledInputProps = {
   helperTextColor?: string;
   placeholderTextColor?: string;
   integerOnly?: boolean;
-  minValue?: number;
+  minValue?: number;  
+  textColor?: string;
 };
 
 export default function LabeledInput({
@@ -44,6 +45,7 @@ export default function LabeledInput({
   helperText,
   helperTextColor = '#FB1028',
   placeholderTextColor = '#909090',
+  textColor = '#0F0F0F',
   integerOnly = false,
 }: LabeledInputProps) {
   // Render icon - either Ionicons or custom component
@@ -131,7 +133,7 @@ export default function LabeledInput({
         editable={editable}
         multiline={multiline}
         keyboardType={keyboardType}
-        style={{ padding: 8, fontSize: 16, marginVertical: 8 }}
+        style={{ padding: 8, fontSize: 16, marginVertical: 8, color: textColor }}
         maxLength={maxLength}
       />
 

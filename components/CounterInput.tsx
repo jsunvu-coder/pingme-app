@@ -22,6 +22,7 @@ type CounterInputProps = {
   helperText?: string;
   helperTextColor?: string;
   placeholderTextColor?: string;
+  textColor?: string;
 };
 
 export default function CounterInput({
@@ -40,6 +41,7 @@ export default function CounterInput({
   helperText,
   helperTextColor = '#FB1028',
   placeholderTextColor = '#909090',
+  textColor = '#0F0F0F',
 }: CounterInputProps) {
   const numValue = parseInt(value, 10) || 0;
 
@@ -140,7 +142,7 @@ export default function CounterInput({
             textAlign: 'center',
             fontSize: 16,
             fontWeight: '400',
-            color: '#111827',
+            color: textColor,
             minWidth: 80,
           }}
           selectTextOnFocus
