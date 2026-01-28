@@ -204,7 +204,6 @@ export default function RequestConfirmationScreen() {
           title: 'Error',
           message: 'Failed to send payment request. Please try again.',
         });
-        setLoading(false);
       }
     } finally {
       setTimeout(() => {
@@ -220,7 +219,6 @@ export default function RequestConfirmationScreen() {
       amount: amountString,
       customMessage: note.trim(),
       confirm,
-      setLoading,
       setDisabledInput: setDisabledInput,
       setSent: async (sent) => {
         if (sent) {
@@ -271,7 +269,6 @@ export default function RequestConfirmationScreen() {
       amount: amountString,
       customMessage: note.trim(),
       confirm,
-      setLoading,
       setPayLink: (url) => {
         console.log('✅ Request sent successfully!');
         const durationInDays = Math.ceil(lockboxDuration / 86400);

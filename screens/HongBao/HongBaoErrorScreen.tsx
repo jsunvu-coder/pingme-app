@@ -19,7 +19,7 @@ export default function HongBaoErrorScreen() {
   
   const handleGoHome = () => {
     if(!isLoggedIn){
-      setRootScreen(['AuthScreen']);
+      setRootScreen(['OnboardingPager']);
     } else {
       setRootScreen(['MainTab']);
     }

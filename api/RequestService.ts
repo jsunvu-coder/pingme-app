@@ -104,7 +104,7 @@ export class RequestService {
     amount?: string;
     customMessage?: string;
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
-    setLoading: (loading: boolean) => void;
+    setLoading?: (loading: boolean) => void;
     setDisabledInput: (disabled: boolean) => void;
     setSent: (sent: boolean) => void;
   }) {
@@ -203,7 +203,7 @@ export class RequestService {
     amount?: string;
     customMessage?: string;
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
-    setLoading: (loading: boolean) => void;
+    setLoading?: (loading: boolean) => void;
     setPayLink: (link: string) => void;
   }) {
     try {

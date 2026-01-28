@@ -233,7 +233,7 @@ export default function HongBaoVerificationScreen() {
                   title="Go Back"
                   onPress={()=>{
                     if(from === 'signup') {
-                      setRootScreen(['AuthScreen']);
+                      setRootScreen(['OnboardingPager']);
                     } else {
                       setRootScreen(['MainTab']);
                     }
