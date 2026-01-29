@@ -24,6 +24,7 @@ import LockboxDurationView from '../PingMe/LockboxDurationView';
 import SafeBottomView from 'components/SafeBottomView';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -481,7 +482,7 @@ export default function SendConfirmationScreen() {
         </View>
 
         <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
-          <ScrollView
+          <KeyboardAwareScrollView
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -504,7 +505,9 @@ export default function SendConfirmationScreen() {
               />
 
               {allowLockboxEdit ? (
-                <LockboxDurationView value={lockboxDuration} onChange={handleDurationChange} />
+                <View className="mb-3 w-full">
+                  <LockboxDurationView value={lockboxDuration} onChange={handleDurationChange} />
+                </View>
               ) : null}
 
               <PassphraseSection
@@ -526,7 +529,7 @@ export default function SendConfirmationScreen() {
                 <SafeBottomView />
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </Animated.View>
       </View>
     </ModalContainer>

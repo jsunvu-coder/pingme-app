@@ -22,12 +22,16 @@ export default function ChangePasswordScreen() {
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    setErrors(validatePasswordFields(value, confirm));
+    if (confirm.length > 0) {
+      setErrors(validatePasswordFields(value, confirm));
+    }
   };
 
   const handleConfirmChange = (value: string) => {
     setConfirm(value);
-    setErrors(validatePasswordFields(password, value));
+    if (password.length > 0) {
+      setErrors(validatePasswordFields(password, value));
+    }
   };
 
   const passwordOk = isPasswordValidByPolicy(password);
@@ -95,6 +99,7 @@ export default function ChangePasswordScreen() {
             onChangeText={handleConfirmChange}
             placeholder={t('AUTH_PASSWORD_CONFIRM_PLACEHOLDER')}
             secureTextEntry
+            onBlur={() => setErrors(validatePasswordFields(password, confirm))}
             error={!!errors.confirm}
             errorMessage={errors.confirm}
           />
