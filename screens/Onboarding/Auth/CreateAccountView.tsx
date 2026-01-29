@@ -58,7 +58,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
   // Validation helper
-  const validateField = (field: string, value: string) => {
+  const validateField = (field: string, value: string, checkAll?: boolean) => {
     const newErrors = { ...errors };
 
     switch (field) {
@@ -75,8 +75,10 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
         const validation = sharedValidatePasswords(pwd, conf);
         if (validation.password) newErrors.password = validation.password;
         else delete newErrors.password;
-        if (validation.confirm) newErrors.confirm = validation.confirm;
-        else delete newErrors.confirm;
+        if (conf.length > 0 || checkAll) {
+          if (validation.confirm) newErrors.confirm = validation.confirm;
+          else delete newErrors.confirm;
+        }
         break;
       }
     }
@@ -194,10 +196,11 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
           value={confirm}
           onChangeText={(text) => {
             setConfirm(text);
-            validateField('confirm', text);
+            validateField('confirm', text, true);
           }}
           placeholder="Re-enter password"
           secureTextEntry
+          onBlur={() => validateField('confirm', confirm, true)}
           error={!!errors.confirm}
           errorMessage={errors.confirm}
           returnKeyType="done"
