@@ -7,7 +7,7 @@ import { TOKENS, STABLE_TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { AccountDataService } from './AccountDataService';
 import { getStore, type AppDispatch } from 'store/index';
-import { setStablecoinBalance } from 'store/balanceSlice';
+import { setStablecoinBalance, setOtherTokensBalance } from 'store/balanceSlice';
 
 type BalanceListener = (balances: BalanceEntry[]) => void;
 type UpdateTimeListener = (time: number | null) => void;
@@ -112,6 +112,14 @@ export class BalanceService {
   getStablecoinTotal(): string {
     const stablecoinBalances = this.getStablecoinBalances();
     return this.computeTotal(stablecoinBalances);
+  }
+
+  /**
+   * Get total balance of non-stablecoin tokens (formatted for display)
+   */
+  getNonStablecoinTotal(): string {
+    const otherBalances = this.getNonStablecoinBalances();
+    return this.computeTotal(otherBalances);
   }
 
   // ----------------- ACTIONS -----------------
@@ -292,10 +300,16 @@ export class BalanceService {
 
       const stablecoinBalance = this.getStablecoinTotal();
       const stablecoinEntries = this.getStablecoinBalances();
+      const otherEntries = this.getNonStablecoinBalances();
+      const otherTokensByAddress: Record<string, BalanceEntry> = {};
+      for (const e of otherEntries) {
+        const key = (e.token ?? '').toLowerCase();
+        if (key) otherTokensByAddress[key] = { token: e.token, amount: e.amount };
+      }
       const store = await getStore();
-      // Dispatch action to update Redux store
       const dispatch = store.dispatch as AppDispatch;
       dispatch(setStablecoinBalance({ accountEmail, stablecoinBalance, stablecoinEntries }));
+      dispatch(setOtherTokensBalance({ accountEmail, otherTokensByAddress }));
     } catch (error) {
       console.warn('[BalanceService] Failed to update Redux balance:', error);
       // Don't throw - this is a non-critical update

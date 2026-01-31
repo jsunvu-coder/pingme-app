@@ -2,9 +2,14 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import { BalanceEntry } from 'business/Types';
 
+/** Map token address (lowercase) -> BalanceEntry for non-stablecoin tokens */
+export type OtherTokensByAddress = Record<string, BalanceEntry>;
+
 export interface AccountBalance {
   stablecoinBalance: string; // Total stablecoin balance (e.g., "1234.56")
   stablecoinEntries: BalanceEntry[]; // Individual stablecoin entries (token, amount)
+  /** Non-stablecoin token entries keyed by token address */
+  otherTokensByAddress: OtherTokensByAddress;
   lastUpdated: number | null;
 }
 
@@ -34,6 +39,7 @@ const balanceSlice = createSlice({
         state.byAccount[accountKey] = {
           stablecoinBalance: '0.00',
           stablecoinEntries: [],
+          otherTokensByAddress: {},
           lastUpdated: null,
         };
       }
@@ -54,6 +60,27 @@ const balanceSlice = createSlice({
       });
       accountBalance.lastUpdated = Date.now();
     },
+    setOtherTokensBalance(
+      state: BalanceState,
+      action: PayloadAction<{
+        accountEmail: string;
+        otherTokensByAddress: OtherTokensByAddress;
+      }>
+    ) {
+      const accountKey = action.payload.accountEmail.toLowerCase();
+      if (!state.byAccount[accountKey]) {
+        state.byAccount[accountKey] = {
+          stablecoinBalance: '0.00',
+          stablecoinEntries: [],
+          otherTokensByAddress: {},
+          lastUpdated: null,
+        };
+      }
+
+      const accountBalance = state.byAccount[accountKey];
+      accountBalance.otherTokensByAddress = { ...action.payload.otherTokensByAddress };
+      accountBalance.lastUpdated = Date.now();
+    },
     clearBalance(state: BalanceState, action: PayloadAction<{ accountEmail?: string }>) {
       if (action.payload.accountEmail) {
         // Clear balance for specific account
@@ -67,5 +94,5 @@ const balanceSlice = createSlice({
   },
 });
 
-export const { setStablecoinBalance, clearBalance } = balanceSlice.actions;
+export const { setStablecoinBalance, setOtherTokensBalance, clearBalance } = balanceSlice.actions;
 export default balanceSlice.reducer;

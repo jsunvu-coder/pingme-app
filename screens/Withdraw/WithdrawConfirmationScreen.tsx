@@ -11,7 +11,7 @@ import { RecordService } from 'business/services/RecordService';
 import { AuthService } from 'business/services/AuthService';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { Utils } from 'business/Utils';
-import { GLOBALS, MIN_AMOUNT } from 'business/Constants';
+import { GLOBALS, MIN_AMOUNT, STABLE_TOKENS, TOKEN_NAMES, TOKENS } from 'business/Constants';
 import { goBack, push } from 'navigation/Navigation';
 import { t } from 'i18n';
 import WithdrawlIcon from 'assets/WithdrawlIcon';
@@ -40,7 +40,10 @@ export default function WithdrawConfirmationScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
 
   const numericAmount = useMemo(() => Number(amount), [amount]);
-  const formattedAmount = useMemo(() => `$${Utils.toCurrency(amount) || '0.00'}`, [amount]);
+  const formattedAmount = useMemo(() => {
+    const isStablecoin = STABLE_TOKENS.includes(token);
+    return isStablecoin ? `$${amount}` : `${amount} ${token ?? ''}`;
+  }, [amount, token]);
 
   const getLatestWithdrawTxHash = async (params: {
     token: string;
@@ -110,9 +113,10 @@ export default function WithdrawConfirmationScreen() {
     try {
       setLoading(true);
 
+      const tokenAddress = (TOKENS[token as keyof typeof TOKENS] ?? '').toLowerCase();
       const trimmedAmount = amount.trim();
       const minAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const tokenDecimals = Utils.getTokenDecimals(token);
+      const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
       const microAmount = Utils.toMicro(trimmedAmount, tokenDecimals);
       const available = BigInt(availableAmount);
 
@@ -135,61 +139,55 @@ export default function WithdrawConfirmationScreen() {
       const commitmentHash = CryptoUtils.globalHash(nextCommitment);
       if (!commitmentHash) throw new Error('Failed to generate commitment hash');
 
-      // Pause commitment guard before starting withdraw transaction
-      contractService.pauseCommitmentGuard();
+      const result = await authService.commitProtect(
+        () =>
+          contractService.withdraw(
+            tokenAddress,
+            microAmount.toString(),
+            cr.proof,
+            nextCommitment,
+            walletAddress
+          ),
+        cr.commitment,
+        commitmentHash
+      );
 
-      try {
-        const result = await authService.commitProtect(
-          () =>
-            contractService.withdraw(
-              token,
-              microAmount.toString(),
-              cr.proof,
-              nextCommitment,
-              walletAddress
-            ),
-          cr.commitment,
-          commitmentHash
-        );
+      cr.current_salt = nextCurrentSalt;
+      cr.proof = nextProof;
+      cr.commitment = nextCommitment;
+      contractService.setCrypto(cr);
 
-        cr.current_salt = nextCurrentSalt;
-        cr.proof = nextProof;
-        cr.commitment = nextCommitment;
-        contractService.setCrypto(cr);
+      // Note: balanceService.getBalance() will pause/resume its own commitment guard,
+      // but we keep it paused here to ensure guard stays paused during the entire flow
+      await balanceService.getBalance();
+      await recordService.updateRecordNow();
+      // Refresh history in Redux to show the new withdraw transaction
+      await fetchHistoryToRedux(dispatch);
 
-        // Note: balanceService.getBalance() will pause/resume its own commitment guard,
-        // but we keep it paused here to ensure guard stays paused during the entire flow
-        await balanceService.getBalance();
-        await recordService.updateRecordNow();
-        // Refresh history in Redux to show the new withdraw transaction
-        await fetchHistoryToRedux(dispatch);
-
-        const fallbackTxHash =
-          (result as any)?.txHash ??
-          (result as any)?.tx_hash ??
-          (result as any)?.transactionHash ??
-          '';
-        const txHash =
-          (await getLatestWithdrawTxHash({
-            token,
-            microAmount,
-            walletAddress,
-          })) || fallbackTxHash;
-
-        push('WithdrawSuccessScreen', {
-          amount: numericAmount || 0,
+      const fallbackTxHash =
+        (result as any)?.txHash ??
+        (result as any)?.tx_hash ??
+        (result as any)?.transactionHash ??
+        '';
+      const txHash =
+        (await getLatestWithdrawTxHash({
+          token: tokenAddress,
+          microAmount,
           walletAddress,
-          txHash,
-        });
-      } finally {
-        // Resume commitment guard after withdraw transaction completes
-        contractService.resumeCommitmentGuard();
-      }
+        })) || fallbackTxHash;
+
+      push('WithdrawSuccessScreen', {
+        amount: numericAmount || 0,
+        walletAddress,
+        txHash,
+      });
     } catch (err) {
       console.error('Withdraw confirm failed:', err);
       Alert.alert(t('ERROR', undefined, 'Error'), t('_ALERT_WITHDRAW_FAILED'));
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
     }
   };
 
