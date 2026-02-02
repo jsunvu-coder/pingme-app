@@ -28,7 +28,7 @@ import { showFlashMessage } from 'utils/flashMessage';
 import MonadIcon from 'assets/MonadIcon';
 import { t } from 'i18n';
 import { fetchHistoryToRedux } from 'store/historyThunks';
-import { useAppDispatch } from 'store/hooks';
+import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 
 interface TokenInfo {
   entry: BalanceEntry;
@@ -118,10 +118,16 @@ export default function AirdropScreen() {
   const sheetRef = useRef<BottomSheetModalRef>(null);
   const successSheetRef = useRef<BottomSheetModalRef>(null);
 
+  const { otherTokensByAddress } = useCurrentAccountStablecoinBalance();
+ 
+  useEffect(() => {
+    setBalances([...Object.values(otherTokensByAddress) as BalanceEntry[]]);
+    setInitialLoading(false);
+  }, []);
+
   useEffect(() => {
     const onUpdate = (updated: BalanceEntry[]) => {
       setBalances(updated);
-      setInitialLoading(false);
     };
 
     balanceService.onBalanceChange(onUpdate);
@@ -183,13 +189,6 @@ export default function AirdropScreen() {
       setRefreshing(false);
     }
   }, [balanceService]);
-
-  useFocusEffect(
-    useCallback(() => {
-      // Always refresh balances when the screen becomes focused
-      void handleRefresh();
-    }, [handleRefresh])
-  );
 
   const handleWithdrawClick = useCallback((tokenInfo: TokenInfo) => {
     setSelectedTokenInfo(tokenInfo);

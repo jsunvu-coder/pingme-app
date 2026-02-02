@@ -1,6 +1,8 @@
 import { View, Text } from 'react-native';
 import DollarIcon from 'assets/DollarIcon';
 import AuthInput from 'components/AuthInput';
+import { STABLE_TOKENS, TOKENS } from 'business/Constants';
+import MonadIcon from 'assets/MonadIcon';
 
 type Props = {
   value: string;
@@ -9,6 +11,7 @@ type Props = {
   mode?: 'send' | 'request';
   autoFocus?: boolean;
   isLoading?: boolean;
+  selectedToken: keyof typeof TOKENS;
 };
 
 const normalizeDecimalInput = (text: string): string => {
@@ -39,12 +42,14 @@ export default function PaymentAmountView({
   mode,
   autoFocus = false,
   isLoading,
+  selectedToken = 'USDC',
 }: Props) {
   const balanceLabel = mode === 'request' ? 'Current' : 'Available';
+  const isStablecoin = STABLE_TOKENS.includes(selectedToken);
   return (
     <View className="mt-6">
       <View className="mb-2 flex-row items-center justify-between">
-        <DollarIcon />
+        {isStablecoin ? <DollarIcon /> : <MonadIcon width={24} height={24} />}
         <Text className="text-xl text-gray-900">
           {balanceLabel}: {balance}
         </Text>
