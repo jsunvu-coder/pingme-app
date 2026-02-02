@@ -90,7 +90,7 @@ export default function HongBaoSuccessScreen() {
     <View className="flex-1 bg-[#F5E9E1]">
 
 
-      <AniCover offsetAdjustment={80} containerHeightAdjustment={80}>
+      <AniCover offsetAdjustment={80} containerHeightAdjustment={80} containerBottomAdjustment={100}>
         {/* Amount */}
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
           {isClaimed? "You are already claimed": "You claimed"}

@@ -68,7 +68,7 @@ export default function ClaimantEmailAmountRow({
         <Text
           numberOfLines={1}
           ellipsizeMode="middle"
-          className="min-w-0 text-[16px] text-[#0F0F0F]">
+          className="min-w-0 text-[16px] text-[#0F0F0F] flex-1">
           {displayEmail || '-'}
         </Text>
       </View>

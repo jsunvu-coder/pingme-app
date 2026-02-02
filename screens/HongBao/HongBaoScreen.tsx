@@ -81,6 +81,7 @@ export default function HongBaoScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
+        dispatch(setPreventTouch(false));
         hide();
       };
     }, [hide])
@@ -195,7 +196,9 @@ export default function HongBaoScreen() {
         aniCoverRef.current?.continueProgress();
         setTimeout(() => {
           showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=${result.uuid}`);
+          dispatch(setPreventTouch(false));
         }, 2000);
+
       } else {
         showFlashMessage({
           title: 'Error',
@@ -218,6 +221,7 @@ export default function HongBaoScreen() {
       hide();
     } finally {
       setTimeout(() => {
+        dispatch(setPreventTouch(false));
         setLoading(false);
       }, 1500);
     }
