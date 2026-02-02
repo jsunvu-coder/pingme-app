@@ -47,14 +47,6 @@ Build and upload to App Store
 
 Build and upload to TestFlight
 
-### ios production_firebase
-
-```sh
-[bundle exec] fastlane ios production_firebase
-```
-
-Build iOS IPA for production (Ad-hoc) and upload to Firebase
-
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
