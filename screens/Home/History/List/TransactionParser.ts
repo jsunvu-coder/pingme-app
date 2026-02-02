@@ -4,7 +4,7 @@ import { TransactionAction, TransactionViewModel } from './TransactionViewModel'
 import { Utils } from 'business/Utils';
 import { store } from 'store';
 import { AccountDataService } from 'business/services/AccountDataService';
-import { selectBundleByTxHash } from 'store/bundleSlice';
+import { selectBundleByTxHash, selectClaimedBundleByTxHash } from 'store/bundleSlice';
 import { normalizeTxHash } from 'utils/txHash';
 
 const ACTION_MAP: Record<number, TransactionAction> = {
@@ -30,6 +30,7 @@ export function parseTransaction(
   let type: TransactionAction = ACTION_MAP[action] ?? 'Unknown';
 
   let bundleUuid: string | undefined = undefined;
+  let claimedBundleUuid: string | undefined = undefined;
 
   if (HIDDEN_ACTIONS.has(action)) {
     // Skip non-monetary events entirely from the history UI.
@@ -75,6 +76,18 @@ export function parseTransaction(
     // refine Claim vs Payment based on commitments
     if (toCommitment) type = 'Claim';
     else if (fromCommitment) type = 'Payment';
+    const hash = raw.txHash?.toLowerCase() || '';
+    const accountEmail = AccountDataService.getInstance().email;
+    const state = store.getState();
+    const claimedBundleInfo = selectClaimedBundleByTxHash(
+      state,
+      accountEmail,
+      normalizeTxHash(hash) || ''
+    );
+    if (claimedBundleInfo?.bundle_uuid) {
+      type = '🧧 HongBao Claim';
+      claimedBundleUuid = claimedBundleInfo.bundle_uuid;
+    }
   }
 
   const isSelfDirected =
@@ -167,5 +180,6 @@ export function parseTransaction(
     blockNumber: Number(raw.blockNumber ?? 0),
     duration: Number(raw.duration ?? 0),
     bundleUuid,
+    claimedBundleUuid,
   };
 }

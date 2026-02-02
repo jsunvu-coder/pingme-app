@@ -14,10 +14,12 @@ export interface AccountBundles {
 export interface BundleState {
   // Store bundles per account using email/username as key
   byAccount: Record<string, AccountBundles>;
+  claimedByAccount: Record<string, AccountBundles>;
 }
 
 const initialState: BundleState = {
   byAccount: {},
+  claimedByAccount: {},
 };
 
 const bundleSlice = createSlice({
@@ -42,6 +44,29 @@ const bundleSlice = createSlice({
         bundle_uuid: action.payload.bundle_uuid,
       };
     },
+    addClaimedBundle(
+      state: BundleState,
+      action: PayloadAction<{
+        accountEmail: string;
+        txHash: string;
+        bundle_uuid: string;
+      }>
+    ) {
+      // Backward compatibility: older persisted bundle state may not have claimedByAccount
+      if (!state.claimedByAccount) {
+        state.claimedByAccount = {};
+      }
+
+      const accountKey = action.payload.accountEmail.toLowerCase();
+      if (!state.claimedByAccount[accountKey]) {
+        state.claimedByAccount[accountKey] = {};
+      }
+
+      const accountBundles = state.claimedByAccount[accountKey];
+      accountBundles[action.payload.txHash.toLowerCase()] = {
+        bundle_uuid: action.payload.bundle_uuid,
+      };
+    },
     clearBundles(state: BundleState, action: PayloadAction<{ accountEmail?: string }>) {
       if (action.payload.accountEmail) {
         // Clear bundles for specific account
@@ -52,10 +77,23 @@ const bundleSlice = createSlice({
         state.byAccount = {};
       }
     },
+    clearClaimedBundles(state: BundleState, action: PayloadAction<{ accountEmail?: string }>) {
+      // Backward compatibility: older persisted bundle state may not have claimedByAccount
+      if (!state.claimedByAccount) {
+        state.claimedByAccount = {};
+      }
+
+      if (action.payload.accountEmail) {
+        const accountKey = action.payload.accountEmail.toLowerCase();
+        delete state.claimedByAccount[accountKey];
+      } else {
+        state.claimedByAccount = {};
+      }
+    },
   },
 });
 
-export const { addBundle, clearBundles } = bundleSlice.actions;
+export const { addBundle, addClaimedBundle, clearBundles, clearClaimedBundles } = bundleSlice.actions;
 export default bundleSlice.reducer;
 
 // ============================================================================
@@ -85,6 +123,22 @@ export const selectBundleByTxHash = (
   return accountBundles?.[hashKey];
 };
 
+export const selectClaimedBundleByTxHash = (
+  state: RootState,
+  accountEmail: string | undefined,
+  txHash: string | undefined
+): BundleInfo | undefined => {
+  if (!accountEmail || !txHash) {
+    return undefined;
+  }
+
+  const accountKey = accountEmail.toLowerCase();
+  const hashKey = txHash.toLowerCase();
+  const accountBundles = state.bundle?.claimedByAccount?.[accountKey];
+
+  return accountBundles?.[hashKey];
+};
+
 /**
  * Get all bundles for a specific account
  * @param state - RootState
@@ -101,6 +155,18 @@ export const selectBundlesByAccount = (
 
   const accountKey = accountEmail.toLowerCase();
   return state.bundle?.byAccount?.[accountKey] ?? {};
+};
+
+export const selectClaimedBundlesByAccount = (
+  state: RootState,
+  accountEmail: string | undefined
+): AccountBundles => {
+  if (!accountEmail) {
+    return {};
+  }
+
+  const accountKey = accountEmail.toLowerCase();
+  return state.bundle?.claimedByAccount?.[accountKey] ?? {};
 };
 
 /**

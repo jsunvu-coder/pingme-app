@@ -17,7 +17,8 @@ export type TransactionAction =
   | 'Payment'
   | 'Security Update'
   | 'Unknown'
-  | '🧧 HongBao Purchase';
+  | '🧧 HongBao Purchase'
+  | '🧧 HongBao Claim';
 
 export interface TransactionViewModel {
   /** Raw blockchain fields */
@@ -44,4 +45,5 @@ export interface TransactionViewModel {
   displayLabel: string;
   shortHash: string;
   bundleUuid?: string;
+  claimedBundleUuid?: string;
 }
