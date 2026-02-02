@@ -16,6 +16,14 @@ export async function createStore() {
   // Load persisted state from AsyncStorage BEFORE creating store
   const persistedState = await loadStoreState();
 
+  // Backward compatibility for bundle slice shape
+  const normalizedBundle = persistedState?.bundle
+    ? {
+        byAccount: persistedState.bundle.byAccount ?? {},
+        claimedByAccount: persistedState.bundle.claimedByAccount ?? {},
+      }
+    : undefined;
+
   // Create store with preloadedState (proper Redux pattern)
   const store = configureStore({
     reducer: {
@@ -30,7 +38,7 @@ export async function createStore() {
       ? ({
           history: persistedState.history,
           balance: persistedState.balance,
-          bundle: persistedState.bundle,
+          bundle: normalizedBundle,
           // Don't persist overlay, event, and mainTab state (reset on app restart)
         } as Partial<{ history: any; balance: any; bundle: any }>)
       : undefined,

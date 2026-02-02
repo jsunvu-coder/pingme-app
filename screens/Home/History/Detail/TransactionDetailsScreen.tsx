@@ -18,7 +18,7 @@ import { showFlashMessage } from 'utils/flashMessage';
 import GhostButton from 'components/GhostButton';
 import CopyIcon from 'assets/CopyIcon';
 import * as Clipboard from 'expo-clipboard';
-import { useAppDispatch } from 'store/hooks';
+import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
@@ -26,6 +26,7 @@ import { ZERO_BYTES32 } from 'business/Constants';
 import { BundleStatusResponse, RedPocketService } from 'business/services/RedPocketService';
 import { APP_URL } from 'business/Config';
 import { getTimestamp } from 'utils/time';
+import ClaimantEmailAmountRow from 'components/ClaimantEmailAmountRow';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -122,6 +123,10 @@ export default function TransactionDetailsScreen() {
   const contractService = useMemo(() => ContractService.getInstance(), []);
   const lockboxCommitment = transaction?.lockboxCommitment;
 
+  const isClaimedBundle = useMemo(() => {
+    return !!transaction?.claimedBundleUuid;
+  }, [transaction?.claimedBundleUuid]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -150,11 +155,16 @@ export default function TransactionDetailsScreen() {
   console.log('🔍 [TransactionDetailsScreen] bundleInfo', bundleInfo);
 
   const fetchLockboxDetail = useCallback(async () => {
-    if (lockboxCommitment && lockboxCommitment === ZERO_BYTES32 && transaction?.bundleUuid) {
+    const redPocketService = RedPocketService.getInstance();
+    if (
+      lockboxCommitment &&
+      lockboxCommitment === ZERO_BYTES32 &&
+      (transaction?.bundleUuid || transaction?.claimedBundleUuid)
+    ) {
       try {
-        console.log('🔍 [TransactionDetailsScreen] fetching bundle info', transaction.bundleUuid);
-        const redPocketService = RedPocketService.getInstance();
-        const bundleInfo = await redPocketService.getBundleStatus(transaction.bundleUuid);
+        const bundleInfo = await redPocketService.getBundleStatus(
+          transaction.bundleUuid || transaction.claimedBundleUuid || ''
+        );
         setBundleInfo(bundleInfo);
       } catch (err: any) {
         console.error('❌ Failed to load bundle info:', err);
@@ -165,6 +175,20 @@ export default function TransactionDetailsScreen() {
           setInitialLoadComplete(true);
         }, 500);
         return;
+      }
+    }
+    if (transaction?.claimedBundleUuid) {
+      try {
+        const bundleInfo = await redPocketService.getBundleStatus(transaction.claimedBundleUuid);
+        setBundleInfo(bundleInfo);
+      } catch (err: any) {
+        console.error('❌ Failed to load bundle info:', err);
+        setBundleInfo(null);
+      } finally {
+        setTimeout(() => {
+          setFetchingDetail(false);
+          setInitialLoadComplete(true);
+        }, 500);
       }
     }
     if (!lockboxCommitment || lockboxCommitment === ZERO_BYTES32) {
@@ -189,14 +213,14 @@ export default function TransactionDetailsScreen() {
       setFetchingDetail(false);
       setInitialLoadComplete(true);
     }
-  }, [contractService, lockboxCommitment, transaction?.bundleUuid]);
+  }, [contractService, lockboxCommitment, transaction?.bundleUuid, transaction?.claimedBundleUuid]);
 
   useEffect(() => {
     fetchLockboxDetail();
   }, [fetchLockboxDetail]);
 
   const lockboxStatus = useMemo<LockboxStatus>(() => {
-    if (bundleInfo) {
+    if (bundleInfo && !isClaimedBundle) {
       if (
         bundleInfo.state === 'A' &&
         bundleInfo.unlock_time > getTimestamp() &&
@@ -305,12 +329,11 @@ export default function TransactionDetailsScreen() {
       bundleInfo.claimed.length < bundleInfo.quantity
     ) {
       const redPocketService = RedPocketService.getInstance();
-      const shareLink =  redPocketService.formatShareLink(transaction?.bundleUuid ?? '', APP_URL);
+      const shareLink = redPocketService.formatShareLink(transaction?.bundleUuid ?? '', APP_URL);
       return shareLink;
     }
     return null;
   }, [bundleInfo, transaction?.bundleUuid]);
-  console.log('🔍 [TransactionDetailsScreen] shareBundleLink', shareBundleLink);
 
   const handleCopyShareBundleLink = useCallback(async () => {
     if (!shareBundleLink) return;
@@ -322,6 +345,20 @@ export default function TransactionDetailsScreen() {
       showFlashMessage({ message: 'Copy failed', type: 'warning' });
     }
   }, [shareBundleLink]);
+
+  const remaining = useMemo(() => {
+    if (!bundleInfo) {
+      return '$0.00';
+    }
+    const claimed = Utils.toAmount(
+      bundleInfo.claimed.reduce((r, claimed) => r + Number(claimed.amount), 0),
+      Utils.getTokenDecimals(transaction?.token)
+    );
+    return (
+      formatCurrency(Math.abs(transaction?.amount ?? 0) - Number(claimed), transaction?.token) ??
+      '$0.00'
+    );
+  }, [bundleInfo]);
 
   if (!transaction) {
     return (
@@ -369,13 +406,21 @@ export default function TransactionDetailsScreen() {
                   autoAdjustFontSize
                 />
               ) : null}
-              {bundleInfo ? (
-                <DetailRow
-                  label="Claimed"
-                  value={`${bundleInfo.claimed.length} / ${bundleInfo.quantity}`}
-                  valueClassName="text-blue-600"
-                  autoAdjustFontSize
-                />
+              {(bundleInfo && !isClaimedBundle) ? (
+                <>
+                  <DetailRow
+                    label="Claimed"
+                    value={`${bundleInfo.claimed.length} / ${bundleInfo.quantity}`}
+                    valueClassName="text-blue-600"
+                    autoAdjustFontSize
+                  />
+                  <DetailRow
+                    label="Remaining"
+                    value={remaining ?? '0.00'}
+                    valueClassName="text-blue-600"
+                    autoAdjustFontSize
+                  />
+                </>
               ) : null}
               {showStatusRow ? (
                 <DetailRow
@@ -392,8 +437,8 @@ export default function TransactionDetailsScreen() {
                   }
                 />
               ) : null}
-              {shareBundleLink ? (
-                <View className="mb-6 flex-row items-center justify-between">
+              {(shareBundleLink && !isClaimedBundle) ? (
+                <View className="mb-4 flex-row items-center justify-between">
                   <Text className="mb-1 text-[15px] text-[#909090]">Red Pocket link</Text>
                   <View className="min-w-0 flex-1 flex-row items-center justify-end">
                     <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
@@ -411,6 +456,32 @@ export default function TransactionDetailsScreen() {
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                       <CopyIcon />
                     </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+
+              {(bundleInfo) ? (
+                <View className="">
+                  <Text className="text-lg text-[#909090]">Claimed by</Text>
+                  {bundleInfo.claimed.length === 0 && <Text className="text-sm text-[#90909080]">No one has claimed this yet.</Text>}
+                  <View className="mt-2 w-full">
+                    {bundleInfo.claimed.map((claimed, index) => {
+                      const claimedAmount = Utils.formatMicroToUsd(
+                        claimed.amount,
+                        'dollar',
+                        undefined,
+                        Utils.getTokenDecimals(transaction?.token)
+                      );
+                      return (
+                        <ClaimantEmailAmountRow
+                          key={claimed.username}
+                          email={claimed.username}
+                          isClaimed={isClaimedBundle}
+                          claimedAmountText={`$${claimedAmount}`}
+                          noBorder={bundleInfo.claimed.length - 1 === index}
+                        />
+                      );
+                    })}
                   </View>
                 </View>
               ) : null}
@@ -526,7 +597,7 @@ function DetailRow({
   );
 }
 
-const formatCurrency = (value?: number, token?: string) => {
+const formatCurrency = (value?: number | bigint, token?: string) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
   const tokenDecimals = Utils.getTokenDecimals(token);
   const micro = Utils.toMicro(String(amount), tokenDecimals);

@@ -8,6 +8,7 @@ import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 import AniCover from './AniCover';
 import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
+import { Utils } from 'business/Utils';
 
 type RankingItem = {
   rank: number;
@@ -110,16 +111,19 @@ export default function HongBaoSuccessScreen() {
               key={item.rank}
               className={`flex-row items-center justify-between border-b border-[#982C0B] py-4 px-2 ${item.isCurrentUser ? 'bg-[#fff]' : ''}`}
             >
-              <View className="flex-row items-center">
+              <View className="flex-row items-center flex-1 mr-2">
                 <Text
                   className={`w-12 text-sm font-medium ${item.isCurrentUser ? ' text-[#E85D35]' : 'text-gray-600'}`}
                 >
                   {getOrdinalSuffix(item.rank)}
                 </Text>
                 <Text
-                  className={`text-sm ${item.isCurrentUser ? 'font-bold text-[#E85D35]' : 'text-gray-800'}`}
+                  className={`text-sm flex-1 ${item.isCurrentUser ? 'font-bold text-[#E85D35]' : 'text-gray-800'}`}
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
                 >
-                  {item.username}
+                  {Utils.maskEmail(item.username)}
+                 
                 </Text>
               </View>
               <Text

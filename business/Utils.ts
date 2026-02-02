@@ -144,6 +144,28 @@ export class Utils {
     return regex.test(email);
   }
 
+  /**
+   * Mask email for display.
+   * Example: "abc123@gmail.com" -> "a*****@gmail.com"
+   * - Keeps the first character of local part
+   * - Replaces the rest of local part with asterisks (default: 5)
+   * - Keeps the full domain part
+   */
+  static maskEmail(email: string, starCount?: number): string {
+    const raw = (email ?? '').toString().trim();
+    if (!raw) return '';
+
+    const at = raw.indexOf('@');
+    if (at <= 0 || at === raw.length - 1) return raw; // not an email, return as-is
+
+    const local = raw.slice(0, at);
+    const domain = raw.slice(at + 1);
+    const firstChar = local[0] ?? '';
+    const starCountValue = starCount ?? local.length - 1;
+    const stars = '*'.repeat(Math.max(1, starCountValue | 0));
+    return `${firstChar}${stars}@${domain}`;
+  }
+
   // ------------------------
   // Token Utilities
   // ------------------------
@@ -253,6 +275,17 @@ export class Utils {
     }
 
     return sign * micro;
+  }
+
+  /**
+   * Convert micro to Amount
+   * @param microAmount
+   * @param decimals
+   * @returns Amount in number
+   */
+  static toAmount(microAmount: number, decimals: number = 6): bigint {
+    //
+    return BigInt(microAmount) / 10n ** BigInt(decimals);
   }
 
   /**

@@ -13,6 +13,7 @@
 import { ContractService } from './ContractService';
 import { AuthService } from './AuthService';
 import { BalanceService } from './BalanceService';
+import { AccountDataService } from './AccountDataService';
 import { CryptoUtils } from '../CryptoUtils';
 import {
   computeLockboxProof,
@@ -29,6 +30,9 @@ import { COMMITED_BY_ANOTHER_PARTY, SESSION_EXPIRED } from 'business/Constants';
 import { ApiClient } from '../../api/ApiClient';
 import { logger } from '../../utils/logger';
 import { getTimestamp } from 'utils/time';
+import { getStore, type AppDispatch } from 'store';
+import { addClaimedBundle } from 'store/bundleSlice';
+import { normalizeTxHash } from 'utils/txHash';
 
 // ============================================================================
 // Type Definitions
@@ -484,6 +488,25 @@ export class RedPocketService {
       );
 
       if (data.status === 1) {
+        // Save claim tx_hash to redux and map with bundle_uuid under current user (email/username)
+        const accountEmail = AccountDataService.getInstance().email ?? crypto.username;
+        const normalized = normalizeTxHash(data.txHash) || '';
+        if (accountEmail && normalized) {
+          try {
+            const store = await getStore();
+            const dispatch = store.dispatch as AppDispatch;
+            dispatch(
+              addClaimedBundle({
+                accountEmail,
+                txHash: normalized,
+                bundle_uuid,
+              })
+            );
+          } catch (err) {
+            this.scopedLogger.error('Failed to persist claimed bundle to Redux', err);
+          }
+        }
+
         // Refresh balance after successful claim
         await refreshAfterClaim();
       }
