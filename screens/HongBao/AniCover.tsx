@@ -279,7 +279,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                       style={{ flex: 1 }}
                       contentContainerStyle={{
                         paddingHorizontal: 16,
-                        paddingBottom: 0.25 * CONTAINER_HEIGHT,
+                        paddingBottom: 0.15 * CONTAINER_HEIGHT,
                       }}
                       bottomOffset={50}
                       showsVerticalScrollIndicator={true}

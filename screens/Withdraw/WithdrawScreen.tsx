@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Alert,
@@ -19,7 +19,14 @@ import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 import { BalanceService } from 'business/services/BalanceService';
 import WalletAddIcon from 'assets/WalletAddIcon';
 import { Utils } from 'business/Utils';
-import { GLOBALS, MIN_AMOUNT, TOKEN_NAMES, TOKENS, STABLE_TOKENS } from 'business/Constants';
+import {
+  GLOBALS,
+  MIN_AMOUNT,
+  TOKEN_NAMES,
+  TOKENS,
+  STABLE_TOKENS,
+  ALL_TOKENS,
+} from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as Clipboard from 'expo-clipboard';
@@ -28,17 +35,23 @@ import { push } from 'navigation/Navigation';
 import { showFlashMessage } from 'utils/flashMessage';
 import WithdrawlIcon from 'assets/WithdrawlIcon';
 import WarningIcon from 'assets/WarningIcon';
+import TokenSelectorTabs from 'components/TokenSelectorTabs';
+import { useCurrentAccountStablecoinBalance } from 'store/hooks';
 
 export default function WithdrawScreen() {
   const WALLET_MAX_LENGTH = 42;
   const [amount, setAmount] = useState('');
   const [wallet, setWallet] = useState('');
   const [loading, setLoading] = useState(false);
-  const [entry, setEntry] = useState<any>(null);
+
   const [formY, setFormY] = useState<number | null>(null);
   const [walletInputYInForm, setWalletInputYInForm] = useState<number | null>(null);
   const scrollRef = useRef<any>(null);
   const walletInputRef = useRef<TextInput | null>(null);
+
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKENS>(ALL_TOKENS[0]);
+
+  const { stablecoinEntries, otherTokensByAddress } = useCurrentAccountStablecoinBalance();
 
   const balanceService = BalanceService.getInstance();
 
@@ -49,38 +62,24 @@ export default function WithdrawScreen() {
     [WALLET_MAX_LENGTH]
   );
 
+  const entry = useMemo(() => {
+    const tokenAddress = (TOKENS[selectedToken] ?? '').toLowerCase();
+    const entry = STABLE_TOKENS.includes(selectedToken)
+      ? stablecoinEntries.find((e) => (e.token ?? '').toLowerCase() === tokenAddress)
+      : otherTokensByAddress[tokenAddress];
+    return entry;
+  }, [stablecoinEntries, selectedToken]);
+
+  const balanceFormatted = useMemo(() => {
+    const tokenDecimals = Utils.getTokenDecimals(entry?.token);
+    const isStablecoin = STABLE_TOKENS.includes(selectedToken);
+    const balanceFormatted = Utils.formatMicroToUsd(entry?.amount, undefined, { grouping: true, empty: '0.00' }, tokenDecimals);
+    return isStablecoin ? `$${balanceFormatted}` : `${balanceFormatted}${selectedToken}`;
+  }, [entry]);
+
   useEffect(() => {
     const loadBalance = async () => {
       await balanceService.getBalance();
-      const balances = balanceService.balances;
-      if (!balances?.length) return;
-
-      const getAmount = (b: any) => {
-        try {
-          return BigInt(b?.amount ?? '0');
-        } catch {
-          return 0n;
-        }
-      };
-
-      const stableAddresses = STABLE_TOKENS.map((tokenName) =>
-        TOKENS[tokenName as keyof typeof TOKENS]?.toLowerCase()
-      ).filter(Boolean);
-
-      const isStablecoin = (b: any) => {
-        const tokenAddress = (b?.tokenAddress ?? b?.token ?? '').toString().toLowerCase();
-        const tokenName = (b?.tokenName ?? b?.token ?? '').toString().toUpperCase();
-        return stableAddresses.includes(tokenAddress) || STABLE_TOKENS.includes(tokenName);
-      };
-
-      const bestByAmount = (list: any[]) =>
-        list.reduce((best, cur) => (getAmount(cur) > getAmount(best) ? cur : best), list[0]);
-
-      // Only allow stablecoin balances for withdrawal
-      const stablecoinBalances = balances.filter(isStablecoin).filter((b) => getAmount(b) > 0n);
-      const selected = stablecoinBalances.length ? bestByAmount(stablecoinBalances) : undefined;
-
-      setEntry(selected);
     };
     loadBalance();
   }, [balanceService]);
@@ -178,7 +177,7 @@ export default function WithdrawScreen() {
       }
 
       const k_min_amount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const tokenAddress = entry?.tokenAddress ?? entry?.token;
+      const tokenAddress = entry?.token;
       const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
       const k_amount = Utils.toMicro(trimmedAmount, tokenDecimals);
       const k_entry = BigInt(entry.amount);
@@ -204,7 +203,7 @@ export default function WithdrawScreen() {
       push('WithdrawConfirmationScreen', {
         amount: trimmedAmount,
         walletAddress: wallet,
-        token: entry.tokenAddress ?? entry.token,
+        token: selectedToken,
         availableAmount: entry.amount,
       });
     } catch (err) {
@@ -231,14 +230,20 @@ export default function WithdrawScreen() {
             contentContainerStyle={{ paddingBottom: 140 }}>
             <View className="mt-10 items-center">
               <WithdrawlIcon width={80} height={80} />
-              <Text className="mt-6 text-center text-3xl font-bold text-black">
+              {/* <Text className="mt-6 text-center text-3xl font-bold text-black">
                 {t('WITHDRAW_USDC_TITLE', undefined, 'Withdraw USDC to the\naddress below')}
-              </Text>
+              </Text> */}
             </View>
 
             <View className="mt-10 gap-y-8" onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
+              <TokenSelectorTabs
+                selectedToken={selectedToken}
+                setSelectedToken={setSelectedToken}
+                fontSize={18}
+                iconSize={24}
+              />
               <PaymentAmountView
-                balance={`$${balanceService.getStablecoinTotal()}`}
+                balance={balanceFormatted}
                 value={amount}
                 onChange={setAmount}
                 mode="send"

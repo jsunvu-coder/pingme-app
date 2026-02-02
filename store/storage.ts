@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { BalanceEntry } from 'business/Types';
 
 // Single key for entire Redux store state
 const STORE_KEY = '@pingme_store_v1';
@@ -63,11 +64,27 @@ export async function loadStoreState(): Promise<Record<string, any> | undefined>
           byAccount: {},
         };
       } else {
-        // Migrate old balance entries to include stablecoinEntries
+        // Migrate old balance entries to include stablecoinEntries and otherTokensByAddress
         const byAccount = parsed.balance.byAccount;
         for (const accountKey in byAccount) {
-          if (byAccount[accountKey] && !Array.isArray(byAccount[accountKey].stablecoinEntries)) {
-            byAccount[accountKey].stablecoinEntries = [];
+          const acc = byAccount[accountKey];
+          if (acc) {
+            if (!Array.isArray(acc.stablecoinEntries)) acc.stablecoinEntries = [];
+            if (
+              acc.otherTokensByAddress === undefined ||
+              typeof acc.otherTokensByAddress !== 'object'
+            ) {
+              if (Array.isArray(acc.otherTokensEntries)) {
+                const map: Record<string, BalanceEntry> = {};
+                for (const e of acc.otherTokensEntries) {
+                  const key = (e?.token ?? '').toString().toLowerCase();
+                  if (key && e) map[key] = { token: e.token, amount: e.amount };
+                }
+                acc.otherTokensByAddress = map;
+              } else {
+                acc.otherTokensByAddress = {};
+              }
+            }
           }
         }
       }

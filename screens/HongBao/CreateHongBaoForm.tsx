@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useState, forwardRef, useImperativeHandle } from 'react';
 import PrimaryButton from 'components/PrimaryButton';
 import LabeledInput from 'components/LabeledInput';
@@ -7,6 +7,8 @@ import ChatTextIcon from 'assets/ChatTextIcon';
 import DollarSignIcon from 'assets/DollarSignIcon';
 import EnvelopeIcon from 'assets/HongBaoAni/EnvelopeIcon';
 import { ALL_TOKENS, TOKENS } from 'business/Constants';
+import MonadIcon from 'assets/MonadIcon';
+import TokenSelectorTabs from 'components/TokenSelectorTabs';
 
 type CreateHongBaoFormProps = {
   onSubmit: (data: HongBaoFormData) => void;
@@ -81,17 +83,28 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
       totalAmountNum <= MAX_AMOUNT &&
       recipientCountNum <= MAX_RECIPIENTS;
 
+    const isStablecoin = selectedToken === 'USDC' || selectedToken === 'pUSDC';
+    const maxAmountInfo = isStablecoin ? `Max $${MAX_AMOUNT}` : `Max ${MAX_AMOUNT}${selectedToken}`;
+
     return (
-      <View pointerEvents={editable ? 'auto' : 'none'} className="w-full" >
+      <View pointerEvents={editable ? 'auto' : 'none'} className="w-full gap-y-4">
         {/* Title */}
-        <View className="mb-6 flex-row items-center">
-          <Text className=" flex-1 text-2xl font-bold text-[#982C0B] text-center mb-6">
+        <View className="flex-row items-center">
+          <Text className="flex-1 text-center text-2xl font-bold text-[#982C0B]">
             Gift luck, joy and{'\n'}crypto in one tap.
           </Text>
         </View>
 
+        {/* Token Selector */}
+        <View className="">
+          <TokenSelectorTabs
+            selectedToken={selectedToken}
+            setSelectedToken={setSelectedToken}
+          />
+        </View>
+
         {/* Number of Recipients */}
-        <View className="mb-6">
+        <View className="">
           <CounterInput
             value={recipientCount}
             onValueChange={setRecipientCount}
@@ -107,12 +120,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         </View>
 
         {/* Total Amount */}
-        <View className="mb-6">
+        <View className="">
           <LabeledInput
             value={totalAmount}
             onChangeText={setTotalAmount}
-            icon={<DollarSignIcon width={24} height={24} />}
-            showMaxInfo={`Max $${MAX_AMOUNT}`}
+            icon={ isStablecoin ? <DollarSignIcon width={24} height={24} /> : <MonadIcon width={24} height={24} />}
+            showMaxInfo={maxAmountInfo}
             showCharCount={false}
             multiline={false}
             keyboardType="number-pad"
@@ -125,7 +138,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         </View>
 
         {/* Message */}
-        <View className="mb-6">
+        <View className="">
           <LabeledInput
             value={message}
             onChangeText={setMessage}

@@ -6,7 +6,7 @@ import { useOverlay } from 'screens/Overlay';
 import { clearAction } from 'store/overlaySlice';
 import { RootState } from 'store';
 import { CreateBundleRequest, RedPocketService } from 'business/services/RedPocketService';
-import { GLOBALS, LOCKBOX_DURATION, MIN_AMOUNT, TOKEN_DECIMALS, TOKENS } from 'business/Constants';
+import { GLOBALS, LOCKBOX_DURATION, MIN_AMOUNT, STABLE_TOKENS, TOKEN_DECIMALS, TOKENS } from 'business/Constants';
 import { Utils } from 'business/Utils';
 import { showFlashMessage } from 'utils/flashMessage';
 import { APP_URL } from 'business/Config';
@@ -59,7 +59,7 @@ export default function HongBaoScreen() {
   const [loading, setLoading] = useState(false);
   const redPocketService = RedPocketService.getInstance();
   const balanceService = BalanceService.getInstance();
-  const { stablecoinEntries } = useCurrentAccountStablecoinBalance();
+  const { stablecoinEntries, otherTokensByAddress } = useCurrentAccountStablecoinBalance();
   // Listen to overlay actions
   const actionTriggered = useSelector((state: RootState) => state.overlay.actionTriggered);
 
@@ -112,7 +112,11 @@ export default function HongBaoScreen() {
       return;
     }
 
-    const entry = stablecoinEntries[0];
+    const tokenAddress = (TOKENS[data.token] ?? '').toLowerCase();
+    const entry = STABLE_TOKENS.includes(data.token)
+      ? stablecoinEntries.find((e) => (e.token ?? '').toLowerCase() === tokenAddress)
+      : otherTokensByAddress[tokenAddress];
+
 
     const total_amount = Utils.toMicro(data.totalAmount.toString(), TOKEN_DECIMALS[data.token]);
 
@@ -132,7 +136,7 @@ export default function HongBaoScreen() {
       return;
     }
 
-    if (BigInt(entry?.amount) < total_amount) {
+    if (BigInt(entry?.amount ?? '0') < total_amount) {
       showFlashMessage({
         title: t('_TITLE_ABOVE_AVAILABLE', undefined, 'Amount too high'),
         message: t('_ALERT_ABOVE_AVAILABLE', undefined, 'The amount exceed the available balance.'),
