@@ -48,10 +48,11 @@ interface AniCoverProps {
   children: React.ReactNode;
   offsetAdjustment?: number;
   containerHeightAdjustment?: number;
+  containerBottomAdjustment?: number;
 }
 
 const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
-  ({ children, offsetAdjustment = 0, containerHeightAdjustment = 0 }, ref) => {
+  ({ children, offsetAdjustment = 0, containerHeightAdjustment = 0, containerBottomAdjustment = 0 }, ref) => {
     const BOTTOM_OFFSET = -0.4 * COVER_HEIGHT + offsetAdjustment;
     const CONTAINER_HEIGHT =
       (Platform.OS === 'ios' ? 0.82 * windowHeight : 0.9 * windowHeight) +
@@ -279,7 +280,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                       style={{ flex: 1 }}
                       contentContainerStyle={{
                         paddingHorizontal: 16,
-                        paddingBottom: 0.15 * CONTAINER_HEIGHT,
+                        paddingBottom: 0.15 * CONTAINER_HEIGHT + containerBottomAdjustment,
                       }}
                       bottomOffset={50}
                       showsVerticalScrollIndicator={true}
