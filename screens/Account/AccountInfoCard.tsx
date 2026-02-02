@@ -12,11 +12,11 @@ type Props = {
 export default function AccountInfoCard({ email }: Props) {
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
 
-  useFocusEffect(
-    useCallback(() => {
-      void BalanceService.getInstance().getBalance();
-    }, [])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     void BalanceService.getInstance().getBalance();
+  //   }, [])
+  // );
 
   return (
     <View>

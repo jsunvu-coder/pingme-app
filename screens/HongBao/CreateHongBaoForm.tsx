@@ -96,12 +96,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         </View>
 
         {/* Token Selector */}
-        <View className="">
+        {/* <View className="">
           <TokenSelectorTabs
             selectedToken={selectedToken}
             setSelectedToken={setSelectedToken}
           />
-        </View>
+        </View> */}
 
         {/* Number of Recipients */}
         <View className="">

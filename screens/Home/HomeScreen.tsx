@@ -31,20 +31,21 @@ export default function HomeScreen() {
   const recordService = useMemo(() => RecordService.getInstance(), []);
   const { stablecoinBalance: totalBalance } = useCurrentAccountStablecoinBalance();
   const [loading, setLoading] = useState(false);
-  
+
   const shouldShow = useAppSelector(selectShouldShowHongBaoPopup);
   const [hasPendingClaim, setHasPendingClaim] = useState<boolean | null>(null);
   const [hasPendingURL, setHasPendingURL] = useState<boolean | null>(null);
-  
-  useFocusEffect(useCallback(() => {
-    const pending = shareFlowService.consumePendingClaim();
-    setHasPendingClaim(!!pending);
-    setHasPendingURL(!!deepLinkHandler.getPendingLink());
-  }, []));
-  
-  const showHongBaoPopup =
-    shouldShow && hasPendingClaim === false && hasPendingURL === false;
-  
+
+  useFocusEffect(
+    useCallback(() => {
+      const pending = shareFlowService.consumePendingClaim();
+      setHasPendingClaim(!!pending);
+      setHasPendingURL(!!deepLinkHandler.getPendingLink());
+    }, [])
+  );
+
+  const showHongBaoPopup = shouldShow && hasPendingClaim === false && hasPendingURL === false;
+
   const confirmTopUp = useCallback((message: string, okOnly = false) => {
     if (okOnly) {
       return showLocalizedAlert({ message });
@@ -58,7 +59,6 @@ export default function HomeScreen() {
       ],
     });
   }, []);
-
 
   /**
    * Update balance following the flow from update_balance.md:
@@ -158,12 +158,10 @@ export default function HomeScreen() {
   }, [loading, updateBalance]);
 
   // Auto-refresh when screen is focused (including first mount)
-  useFocusEffect(
-    useCallback(() => {
-      void handleRefresh();
-      void fetchRecentHistoryToRedux(dispatch);
-    }, [])
-  );
+  useEffect(() => {
+    void handleRefresh();
+    void fetchRecentHistoryToRedux(dispatch);
+  }, []);
 
   const handleSendHongBao = useCallback(() => {
     // Navigate to HongBao creation screen

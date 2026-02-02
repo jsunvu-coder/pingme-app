@@ -77,13 +77,6 @@ export default function WithdrawScreen() {
     return isStablecoin ? `$${balanceFormatted}` : `${balanceFormatted}${selectedToken}`;
   }, [entry]);
 
-  useEffect(() => {
-    const loadBalance = async () => {
-      await balanceService.getBalance();
-    };
-    loadBalance();
-  }, [balanceService]);
-
   const confirm = async (
     message: string,
     options: { cancel?: boolean; variant?: 'confirm' | 'error'; titleKey?: string } = {}
@@ -230,23 +223,24 @@ export default function WithdrawScreen() {
             contentContainerStyle={{ paddingBottom: 140 }}>
             <View className="mt-10 items-center">
               <WithdrawlIcon width={80} height={80} />
-              {/* <Text className="mt-6 text-center text-3xl font-bold text-black">
+              <Text className="mt-6 text-center text-3xl font-bold text-black">
                 {t('WITHDRAW_USDC_TITLE', undefined, 'Withdraw USDC to the\naddress below')}
-              </Text> */}
+              </Text>
             </View>
 
             <View className="mt-10 gap-y-8" onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
-              <TokenSelectorTabs
+              {/* <TokenSelectorTabs
                 selectedToken={selectedToken}
                 setSelectedToken={setSelectedToken}
                 fontSize={18}
                 iconSize={24}
-              />
+              /> */}
               <PaymentAmountView
                 balance={balanceFormatted}
                 value={amount}
                 onChange={setAmount}
                 mode="send"
+                selectedToken={selectedToken}
               />
 
               <View onLayout={(e) => setWalletInputYInForm(e.nativeEvent.layout.y)}>

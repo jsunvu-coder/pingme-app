@@ -130,9 +130,6 @@ export class BalanceService {
     const prevBalances = [...this.balances];
     const prevUpdateTime = this.balanceUpdateTime;
 
-    // Pause commitment guard when updating balance
-    this.contractService.pauseCommitmentGuard();
-
     try {
       const cr = this.contractService.getCrypto();
       if (!cr) {
@@ -217,8 +214,6 @@ export class BalanceService {
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
     } finally {
-      // Resume commitment guard sau khi update balance xong
-      this.contractService.resumeCommitmentGuard();
       this._mutex = false;
     }
   }
