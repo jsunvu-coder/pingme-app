@@ -50,7 +50,7 @@ export const ClaimedList = ({
 
   const onlyYouClaimed = useMemo(() => {
     return (
-      claimedList.length === 1 && claimedList[0].username === AccountDataService.getInstance().email
+      claimedList.length === 1 && claimedList[0].username.toLowerCase() === AccountDataService.getInstance().email?.toLowerCase()
     );
   }, [claimedList]);
 
@@ -117,7 +117,7 @@ function ClaimedItem({
   noBorder = false,
 }: ClaimedItemProps) {
   const myEmail = AccountDataService.getInstance().email;
-  const isMyEmail = email === myEmail;
+  const isMyEmail = email.toLowerCase() === myEmail?.toLowerCase();
   const maskedEmail = useMemo(() => Utils.maskEmail(email), [email]);
   const displayEmail = isMyEmail ? 'You' : revealed ? email : maskedEmail;
 

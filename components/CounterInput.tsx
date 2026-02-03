@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import MinusIcon from 'assets/MinusIcon';
 import PlusOutlineIcon from 'assets/PlusOutlineIcon';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -43,6 +43,7 @@ export default function CounterInput({
   placeholderTextColor = '#909090',
   textColor = '#0F0F0F',
 }: CounterInputProps) {
+  const [isFocused, setIsFocused] = useState(false);
   const numValue = parseInt(value, 10) || 0;
 
   const handleDecrement = () => {
@@ -106,63 +107,92 @@ export default function CounterInput({
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 8,
-          }}
-        >
+          }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             {renderIcon()}
-            {label && (
-              <Text style={{ marginLeft: 8, fontSize: 14, color: '#444' }}>{label}</Text>
-            )}
+            {label && <Text style={{ marginLeft: 8, fontSize: 14, color: '#444' }}>{label}</Text>}
           </View>
           {showMaxInfo && <Text style={{ fontSize: 14, color: '#444' }}>{showMaxInfo}</Text>}
         </View>
       )}
 
       {/* Counter */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginVertical: 8,
+        }}>
         {/* Decrement Button */}
         <TouchableOpacity
           onPress={handleDecrement}
           disabled={!canDecrement}
-          style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center' }}
-        >
+          style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center' }}>
           <MinusIcon color={canDecrement ? '#3B3A3A' : '#ccc'} />
         </TouchableOpacity>
 
         {/* Value Input */}
-        <TextInput
-          value={value}
-          onChangeText={handleTextChange}
-          keyboardType="numeric"
-          editable={!disabled}
-          placeholder={placeholder}
-          placeholderTextColor={placeholderTextColor}
-          style={{
-            flex: 1,
-            textAlign: 'center',
-            fontSize: 16,
-            fontWeight: '400',
-            color: textColor,
-            minWidth: 80,
-          }}
-          selectTextOnFocus
-          maxLength={max.toString().length}
-        />
+        <View className="flex-1">
+          <TextInput
+            value={value}
+            editable={false}
+            placeholder={placeholder}
+            placeholderTextColor={placeholderTextColor}
+            style={{
+              opacity: isFocused ? 0 : 1,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              textAlign: 'center',
+              fontSize: 16,
+              fontWeight: '400',
+              color: textColor,
+              minWidth: 80,
+            }}
+            selectTextOnFocus
+            maxLength={max.toString().length}
+          />
+          <TextInput
+            value={value}
+            onChangeText={handleTextChange}
+            keyboardType="numeric"
+            editable={!disabled}
+            onFocus={() => { 
+              setIsFocused(true);
+             }}
+            onBlur={() => {
+              setIsFocused(false);
+            }}
+            // placeholder={placeholder}
+            // placeholderTextColor={placeholderTextColor}
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              fontSize: 16,
+              fontWeight: '400',
+              color: textColor,
+              minWidth: 80,
+            }}
+            selectTextOnFocus
+            maxLength={max.toString().length}
+          />
+        </View>
 
         {/* Increment Button */}
         <TouchableOpacity
           onPress={handleIncrement}
           disabled={!canIncrement}
-          style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center' }}
-        >
+          style={{ height: 48, width: 48, alignItems: 'center', justifyContent: 'center' }}>
           <PlusOutlineIcon width={24} height={24} color={canIncrement ? '#fff' : '#ccc'} />
         </TouchableOpacity>
       </View>
 
       {/* Divider */}
-      <View
-        style={{ backgroundColor: helperText ? helperTextColor : '#3B3A3A', height: 2}}
-      />
+      <View style={{ backgroundColor: helperText ? helperTextColor : '#3B3A3A', height: 2 }} />
 
       {/* Helper Text */}
       {helperText && (
