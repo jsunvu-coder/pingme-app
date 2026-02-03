@@ -119,7 +119,7 @@ function ClaimedItem({
   const myEmail = AccountDataService.getInstance().email;
   const isMyEmail = email.toLowerCase() === myEmail?.toLowerCase();
   const maskedEmail = useMemo(() => Utils.maskEmail(email), [email]);
-  const displayEmail = isMyEmail ? 'You' : revealed ? email : maskedEmail;
+  const displayEmail = isMyEmail ? 'YOU' : revealed ? email : maskedEmail;
 
   return (
     <View
