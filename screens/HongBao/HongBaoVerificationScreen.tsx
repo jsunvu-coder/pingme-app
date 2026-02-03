@@ -137,12 +137,12 @@ export default function HongBaoVerificationScreen() {
         }
         const claimResult = await redPocketService.claimBundle(bundle_uuid);
         if (claimResult.status === 1 || claimResult.status === -1) {
-          const username = getCurrentUserCrypto()?.username;
+          const username = getCurrentUserCrypto()?.username.toLowerCase();
           let amount = claimResult.amount || 0;
 
           const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
           const ranking = bundleStatus.claimed.map((claimed, index) => {
-            const isCurrentUser = claimed.username === username;
+            const isCurrentUser = claimed.username.toLowerCase() === username;
             if (isCurrentUser) {
               amount = claimed.amount;
             }

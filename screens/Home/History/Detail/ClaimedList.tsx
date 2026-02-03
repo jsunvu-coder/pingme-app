@@ -117,7 +117,7 @@ function ClaimedItem({
   noBorder = false,
 }: ClaimedItemProps) {
   const myEmail = AccountDataService.getInstance().email;
-  const isMyEmail = email === myEmail;
+  const isMyEmail = email.toLowerCase() === myEmail?.toLowerCase();
   const maskedEmail = useMemo(() => Utils.maskEmail(email), [email]);
   const displayEmail = isMyEmail ? 'You' : revealed ? email : maskedEmail;
 
