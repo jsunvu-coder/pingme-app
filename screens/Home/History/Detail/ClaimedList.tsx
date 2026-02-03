@@ -50,7 +50,7 @@ export const ClaimedList = ({
 
   const onlyYouClaimed = useMemo(() => {
     return (
-      claimedList.length === 1 && claimedList[0].username === AccountDataService.getInstance().email
+      claimedList.length === 1 && claimedList[0].username.toLowerCase() === AccountDataService.getInstance().email?.toLowerCase()
     );
   }, [claimedList]);
 
