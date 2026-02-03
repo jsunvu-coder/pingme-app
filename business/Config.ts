@@ -11,7 +11,7 @@ const CONFIG = {
     APP_URL: 'https://app.staging.pingme.xyz',
     RED_POCKET_API_URL: 'https://redpocket.staging.pingme.xyz/',
     SIGNUP_URL: 'https://signup.staging.pingme.xyz/',
-    DOCS_URL: 'https://pingmexyz.gitbook.io/docs,
+    DOCS_URL: 'https://pingmexyz.gitbook.io/docs',
   },
   production: {
     API_URL: 'https://api.pingme.xyz',
