@@ -26,7 +26,7 @@ import { ZERO_BYTES32 } from 'business/Constants';
 import { BundleStatusResponse, RedPocketService } from 'business/services/RedPocketService';
 import { APP_URL } from 'business/Config';
 import { getTimestamp } from 'utils/time';
-import ClaimantEmailAmountRow from 'components/ClaimantEmailAmountRow';
+import { ClaimedList } from './ClaimedList';
 
 type TransactionDetailsParams = {
   transaction?: TransactionViewModel;
@@ -347,7 +347,7 @@ export default function TransactionDetailsScreen() {
   }, [shareBundleLink]);
 
   const remaining = useMemo(() => {
-    if (!bundleInfo) {
+    if (!bundleInfo || lockboxStatus === 'BUNDLE_EXPIRED') {
       return '$0.00';
     }
     const claimed = Utils.toAmount(
@@ -375,11 +375,7 @@ export default function TransactionDetailsScreen() {
   return (
     <View className="flex-1 bg-[#FAFAFA]">
       <NavigationBar title="Transaction Details" />
-      <ScrollView
-        className="flex-1 px-6"
-        contentContainerStyle={{
-          paddingBottom: 40,
-        }}>
+      <View className="flex-1 px-6">
         {!initialLoadComplete ? (
           <View className="mt-6 rounded-2xl bg-white p-5">
             <SkeletonRow />
@@ -391,7 +387,7 @@ export default function TransactionDetailsScreen() {
           </View>
         ) : (
           <>
-            <View className="mt-6 rounded-2xl bg-white p-5">
+            <View className="mt-2 flex-col gap-4 rounded-2xl bg-white p-5">
               <DetailRow label="Amount" value={amountDisplay} />
               {!bundleInfo ? <DetailRow label="Recipient" value={transaction.addr || '-'} /> : null}
               <DetailRow
@@ -406,7 +402,7 @@ export default function TransactionDetailsScreen() {
                   autoAdjustFontSize
                 />
               ) : null}
-              {(bundleInfo && !isClaimedBundle) ? (
+              {bundleInfo && !isClaimedBundle ? (
                 <>
                   <DetailRow
                     label="Claimed"
@@ -437,8 +433,8 @@ export default function TransactionDetailsScreen() {
                   }
                 />
               ) : null}
-              {(shareBundleLink && !isClaimedBundle) ? (
-                <View className="mb-4 flex-row items-center justify-between">
+              {shareBundleLink && !isClaimedBundle ? (
+                <View className="flex-row items-center justify-between">
                   <Text className="mb-1 text-[15px] text-[#909090]">Red Pocket link</Text>
                   <View className="min-w-0 flex-1 flex-row items-center justify-end">
                     <TouchableOpacity className="w-2/3 min-w-0" activeOpacity={0.7}>
@@ -456,32 +452,6 @@ export default function TransactionDetailsScreen() {
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                       <CopyIcon />
                     </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
-
-              {(bundleInfo) ? (
-                <View className="">
-                  <Text className="text-lg text-[#909090]">Claimed by</Text>
-                  {bundleInfo.claimed.length === 0 && <Text className="text-sm text-[#90909080]">No one has claimed this yet.</Text>}
-                  <View className="mt-2 w-full">
-                    {bundleInfo.claimed.map((claimed, index) => {
-                      const claimedAmount = Utils.formatMicroToUsd(
-                        claimed.amount,
-                        'dollar',
-                        undefined,
-                        Utils.getTokenDecimals(transaction?.token)
-                      );
-                      return (
-                        <ClaimantEmailAmountRow
-                          key={claimed.username}
-                          email={claimed.username}
-                          isClaimed={isClaimedBundle}
-                          claimedAmountText={`$${claimedAmount}`}
-                          noBorder={bundleInfo.claimed.length - 1 === index}
-                        />
-                      );
-                    })}
                   </View>
                 </View>
               ) : null}
@@ -531,6 +501,14 @@ export default function TransactionDetailsScreen() {
               ) : null}
             </View>
 
+            {bundleInfo ? (
+              <ClaimedList
+                isClaimed={isClaimedBundle}
+                claimedList={bundleInfo.claimed}
+                decimals={Utils.getTokenDecimals(transaction?.token)}
+              />
+            ) : null}
+
             {fetchingDetail && initialLoadComplete ? (
               <View className="mt-6 flex-row items-center justify-center space-x-3">
                 <ActivityIndicator color="#FD4912" />
@@ -550,7 +528,7 @@ export default function TransactionDetailsScreen() {
             ) : null}
           </>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -580,7 +558,7 @@ function DetailRow({
   autoAdjustFontSize?: boolean;
 }) {
   return (
-    <View className="mb-6 flex-row justify-between">
+    <View className="flex-row justify-between">
       <Text className="mb-1 text-[15px] text-[#909090]">{label}</Text>
       <View className={`ml-10 flex-1 flex-row items-center justify-end ${valueClassName}`}>
         {icon && <View className="mr-1">{icon}</View>}

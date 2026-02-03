@@ -6,7 +6,14 @@ import { useOverlay } from 'screens/Overlay';
 import { clearAction } from 'store/overlaySlice';
 import { RootState } from 'store';
 import { CreateBundleRequest, RedPocketService } from 'business/services/RedPocketService';
-import { GLOBALS, LOCKBOX_DURATION, MIN_AMOUNT, STABLE_TOKENS, TOKEN_DECIMALS, TOKENS } from 'business/Constants';
+import {
+  GLOBALS,
+  LOCKBOX_DURATION,
+  MIN_AMOUNT,
+  STABLE_TOKENS,
+  TOKEN_DECIMALS,
+  TOKENS,
+} from 'business/Constants';
 import { Utils } from 'business/Utils';
 import { showFlashMessage } from 'utils/flashMessage';
 import { APP_URL } from 'business/Config';
@@ -79,11 +86,17 @@ export default function HongBaoScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
+        createHongBaoFormRef.current?.setEditable(true);
         dispatch(setPreventTouch(false));
         hide();
       };
-    }, [hide])
+    }, [])
   );
+
+  useEffect(() => {
+    dispatch(setPreventTouch(loading));
+    createHongBaoFormRef.current?.setEditable(!loading);
+  }, [loading]);
 
   useEffect(() => {
     // Clear form when screen is not on top of the stack (becomes unfocused)
@@ -115,7 +128,6 @@ export default function HongBaoScreen() {
     const entry = STABLE_TOKENS.includes(data.token)
       ? stablecoinEntries.find((e) => (e.token ?? '').toLowerCase() === tokenAddress)
       : otherTokensByAddress[tokenAddress];
-
 
     const total_amount = Utils.toMicro(data.totalAmount.toString(), TOKEN_DECIMALS[data.token]);
 
@@ -169,8 +181,6 @@ export default function HongBaoScreen() {
 
     // Call create bundle
     setLoading(true);
-    dispatch(setPreventTouch(true));
-    createHongBaoFormRef.current?.setEditable(false);
     try {
       const result = await redPocketService.createBundle(createBundleRequest);
       await balanceService.getBalance();
@@ -194,17 +204,19 @@ export default function HongBaoScreen() {
         aniCoverRef.current?.continueProgress();
         setTimeout(() => {
           showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=${result.uuid}`);
-          dispatch(setPreventTouch(false));
+          setTimeout(() => {
+            setLoading(false);
+          }, 1500);
         }, 2000);
-
       } else {
         showFlashMessage({
           title: 'Error',
           message: 'Failed to create HongBao',
           type: 'danger',
         });
-        dispatch(setPreventTouch(false));
-        createHongBaoFormRef.current?.setEditable(true);
+        setTimeout(() => {
+          setLoading(false);
+        }, 1500);
         hide();
       }
     } catch (error) {
@@ -213,22 +225,12 @@ export default function HongBaoScreen() {
         title: 'Error',
         message: 'Failed to create HongBao',
         type: 'danger',
-      });1
-      dispatch(setPreventTouch(false));
-      createHongBaoFormRef.current?.setEditable(true);
-      hide();
-    } finally {
+      });
       setTimeout(() => {
-        dispatch(setPreventTouch(false));
         setLoading(false);
       }, 1500);
+      hide();
     }
-    // setTimeout(() => {
-    //   aniCoverRef.current?.continueProgress();
-    //   setTimeout(() => {
-    //     showHongBaoSuccess(`${APP_URL}/redPocket?bundle_uuid=123`);
-    //   }, 2000);
-    // }, 3000);
   };
 
   return (

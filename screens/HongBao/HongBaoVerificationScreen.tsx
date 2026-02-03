@@ -148,7 +148,7 @@ export default function HongBaoVerificationScreen() {
             }
             return {
               rank: index + 1,
-              username: isCurrentUser ? 'YOU' : claimed.username,
+              username: isCurrentUser ? 'YOU' : Utils.maskEmail(claimed.username),
               amount: Utils.formatMicroToUsd(
                 claimed.amount,
                 undefined,
