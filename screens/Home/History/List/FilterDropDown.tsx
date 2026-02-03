@@ -45,7 +45,7 @@ export default function FilterDropdown({
 
   const height = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, options.length * 44],
+    outputRange: [0, options.length * 45 + 8],
   });
 
   const handleSelect = (val: HistoryFilter) => {
