@@ -29,9 +29,7 @@ import { setPreventTouch } from 'store/mainTabSlice';
 import { addBundle } from 'store/bundleSlice';
 import { normalizeTxHash } from 'utils/txHash';
 
-// const DEFAULT_DURATION = 60 * 60 * 24;
-
-const DEFAULT_DURATION = 60 * 60;
+const DEFAULT_DURATION = 60 * 60 * 24;
 
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
