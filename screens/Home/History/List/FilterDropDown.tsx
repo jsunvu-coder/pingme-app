@@ -45,7 +45,7 @@ export default function FilterDropdown({
 
   const height = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, options.length * 52 + 8],
+    outputRange: [0, options.length * 44],
   });
 
   const handleSelect = (val: HistoryFilter) => {
@@ -93,7 +93,7 @@ export default function FilterDropdown({
           opacity: animation,
           marginTop: 8,
         }}>
-        <View className="overflow-hidden rounded-2xl border border-[#FD4912]">
+        <View className="overflow-hidden rounded-2xl border border-[#FD4912] bg-white">
           {options.map((opt, idx) => {
             const isSelected = value === opt.value;
             const isFirst = idx === 0;
