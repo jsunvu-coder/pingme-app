@@ -1,6 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import ArrowLeftIcon from 'assets/ArrowLeftIcon';
 import QuestionCircleIcon from 'assets/QuestionCircleIcon';
+import { DOCS_URL } from 'business/Config';
 import { push, setRootScreen } from 'navigation/Navigation';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import {
@@ -11,7 +12,8 @@ import {
   StatusBar,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Linking,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, {
@@ -239,6 +241,10 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
       };
     });
 
+    const handleDocsPress = () => {
+      Linking.openURL(DOCS_URL);
+    };
+
     return (
       <View style={{ flex: 1, backgroundColor: '#F5E9E1' }}>
         <StatusBar barStyle="dark-content" />
@@ -309,7 +315,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
               <Text className="text-base text-black">
                 Hurry up! The link will be expired in 24 hours!
               </Text>
-              <TouchableOpacity className="ml-2">
+              <TouchableOpacity className="ml-2" onPress={handleDocsPress}>
                 <QuestionCircleIcon />
               </TouchableOpacity>
             </View>
