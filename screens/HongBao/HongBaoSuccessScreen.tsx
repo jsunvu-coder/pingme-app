@@ -24,32 +24,7 @@ export type HongBaoSuccessParams = {
   remainingCount?: number;
   isClaimed?: boolean;
 };
-
-/**
- * Convert number to ordinal string (1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", etc.)
- */
-const getOrdinalSuffix = (num: number): string => {
-  const lastDigit = num % 10;
-  const lastTwoDigits = num % 100;
-
-  // Special cases: 11th, 12th, 13th
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
-    return `${num}th`;
-  }
-
-  // Regular cases
-  switch (lastDigit) {
-    case 1:
-      return `${num}st`;
-    case 2:
-      return `${num}nd`;
-    case 3:
-      return `${num}rd`;
-    default:
-      return `${num}th`;
-  }
-};
-
+  
 export default function HongBaoSuccessScreen() {
   const route = useRoute();
   const dispatch = useAppDispatch();
@@ -115,14 +90,14 @@ export default function HongBaoSuccessScreen() {
                 <Text
                   className={`w-12 text-sm font-medium ${item.isCurrentUser ? ' text-[#E85D35]' : 'text-gray-600'}`}
                 >
-                  {getOrdinalSuffix(item.rank)}
+                  {Utils.getOrdinalSuffix(item.rank)}
                 </Text>
                 <Text
                   className={`text-sm flex-1 ${item.isCurrentUser ? 'font-bold text-[#E85D35]' : 'text-gray-800'}`}
                   numberOfLines={1}
                   ellipsizeMode="middle"
                 >
-                  {Utils.maskEmail(item.username)}
+                  {item.username}
                  
                 </Text>
               </View>

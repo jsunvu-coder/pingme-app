@@ -160,7 +160,7 @@ export class Utils {
 
     const local = raw.slice(0, at);
     const domain = raw.slice(at + 1);
-    const firstChar = local[0] ?? '';
+    const firstChar = local.length <= 1 ? '' : local[0];
     const starCountValue = starCount ?? local.length - 1;
     const stars = '*'.repeat(Math.max(1, starCountValue | 0));
     return `${firstChar}${stars}@${domain}`;
@@ -339,5 +339,30 @@ export class Utils {
       if (idxFromEnd > 1 && idxFromEnd % 3 === 1) out += ',';
     }
     return out;
+  }
+
+  /**
+   * Convert number to ordinal string (1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", etc.)
+   */
+  static getOrdinalSuffix(num: number): string {
+    const lastDigit = num % 10;
+    const lastTwoDigits = num % 100;
+
+    // Special cases: 11th, 12th, 13th
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+      return `${num}th`;
+    }
+
+    // Regular cases
+    switch (lastDigit) {
+      case 1:
+        return `${num}st`;
+      case 2:
+        return `${num}nd`;
+      case 3:
+        return `${num}rd`;
+      default:
+        return `${num}th`;
+    }
   }
 }
