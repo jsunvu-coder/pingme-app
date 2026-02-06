@@ -107,7 +107,7 @@ export default function FilterDropdown({
                 } ${!isFirst ? 'border-t border-gray-100' : ''}`}>
                 {getIcon(opt.value)}
                 <Text
-                  className={`ml-2 text-base font-medium ${
+                  className={`ml-2 text-sm font-medium ${
                     isSelected ? 'text-[#FD4912]' : 'text-gray-800'
                   }`}>
                   {opt.label}

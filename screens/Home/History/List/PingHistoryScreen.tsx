@@ -203,7 +203,7 @@ export default function PingHistoryScreen() {
               elevation: 8,
             }),
           }}>
-          <TokenSelectorTabs selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
+          <TokenSelectorTabs selectedToken={selectedToken} setSelectedToken={setSelectedToken} fontSize={14} iconSize={20}/>
           <FilterDropdown
             value={filterType}
             onChange={setFilterType}
@@ -241,7 +241,7 @@ export default function PingHistoryScreen() {
           const formattedTitle = formatDateWithRelative(title);
           return (
             <View className="px-6 py-1">
-              <Text className="font-medium text-gray-400">{formattedTitle}</Text>
+              <Text className="font-medium text-sm text-gray-400">{formattedTitle}</Text>
             </View>
           );
         }}
