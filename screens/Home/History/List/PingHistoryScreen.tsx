@@ -222,7 +222,7 @@ export default function PingHistoryScreen() {
 
       {/* SectionList with top margin to account for filter dropdown */}
       <SectionList
-        style={{ marginTop: 100 }}
+        style={{ marginTop: 116 }}
         sections={sections}
         keyExtractor={(item, index) => `${item.txHash}-${index}`}
         renderItem={({ item }) => (

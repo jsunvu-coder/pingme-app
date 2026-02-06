@@ -9,12 +9,20 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AniTitles from './AniTitles';
 import OnboardingSlide from './OnboardingSlide';
+import { useRoute } from '@react-navigation/native';
 
 const Page1 = require('../../assets/intro_1.png');
 const Page2 = require('../../assets/intro_2.png');
 const Page3 = require('../../assets/intro_3.png');
 
+type OnboardingPagerParams = {
+  error?: string;
+};
+
 export default function OnboardingPager() {
+  const route = useRoute();
+  const { error } = (route.params as OnboardingPagerParams) || {};
+
   const slides = [
     {
       text: 'No banks, no borders — just fast, simple transfers.',
@@ -50,6 +58,7 @@ export default function OnboardingPager() {
         horizontal
         pagingEnabled
         bounces={false}
+        scrollEnabled={!error}
         showsHorizontalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -59,8 +68,8 @@ export default function OnboardingPager() {
         ))}
       </Animated.ScrollView>
       <View style={{ position: 'absolute', right: 0, bottom: bottom + 48, left: 0 }}>
-        <AniPageIndicator scrollX={scrollX} length={slides.length} />
-        <AniTitles scrollX={scrollX} slides={slides} />
+        {error ? null : <AniPageIndicator scrollX={scrollX} length={slides.length} />}
+        <AniTitles scrollX={scrollX} slides={slides} error={error} />
         <PrimaryButton
           title="Log In to PingMe"
           onPress={() => push('AuthScreen')}

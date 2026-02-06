@@ -75,7 +75,7 @@ export default function FilterDropdown({
   const currentLabel = options.find((opt) => opt.value === value)?.label || 'Show All';
 
   return (
-    <View className="mt-2">
+    <View className="mt-3">
       {/* Header / Selector */}
       <TouchableOpacity
         onPress={toggleExpand}

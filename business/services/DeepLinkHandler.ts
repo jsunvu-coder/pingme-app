@@ -132,7 +132,17 @@ class DeepLinkHandler {
           } else {
             try {
               const redPocketService = RedPocketService.getInstance();
-              await redPocketService.getBundleStatus(params.bundle_uuid || '');
+              const verified = await redPocketService.verifyBundleUuid(params.bundle_uuid || '');
+              if (verified) {
+                this.navigateHongBao(params, true);
+              } else {
+                setRootScreen([
+                  {
+                    name: 'OnboardingPager',
+                    params: { error: 'Oops! This Hongbao is \n fully claimed or expired!' },
+                  },
+                ]);
+              }
             } catch (error) {
               this.navigateHongBaoError(
                 {
@@ -143,7 +153,6 @@ class DeepLinkHandler {
               );
               return;
             }
-            this.navigateHongBao(params, true);
           }
 
           return;
@@ -222,7 +231,17 @@ class DeepLinkHandler {
         } else {
           try {
             const redPocketService = RedPocketService.getInstance();
-            await redPocketService.getBundleStatus(params.bundle_uuid || '');
+            const verified = await redPocketService.verifyBundleUuid(params.bundle_uuid || '');
+            if (verified) {
+              this.navigateHongBao(params, true);
+            } else {
+              setRootScreen([
+                {
+                  name: 'OnboardingPager',
+                  params: { error: 'Oops! This Hongbao is \n fully claimed or expired!' },
+                },
+              ]);
+            }
           } catch (error) {
             this.navigateHongBaoError(
               {
@@ -233,7 +252,6 @@ class DeepLinkHandler {
             );
             return;
           }
-          this.navigateHongBao(params, true);
         }
 
         return;

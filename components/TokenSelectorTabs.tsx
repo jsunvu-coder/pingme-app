@@ -39,7 +39,16 @@ export default function TokenSelectorTabs({
           <TouchableOpacity
             key={token}
             onPress={() => onSelectToken(token)}
-            className={`${selectedToken === token ? 'bg-[#0F0F0F]' : 'bg-transparent'} flex-1 flex-row items-center justify-center rounded-full p-1.5`}>
+            style={{
+              backgroundColor: selectedToken === token ? '#0F0F0F' : 'transparent',
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 10,
+              borderRadius: 9999,
+            }}
+            >
             <Icon color={selectedToken === token ? '#FFFFFF' : '#929393'} size={iconSize} />
             <Text
               style={{

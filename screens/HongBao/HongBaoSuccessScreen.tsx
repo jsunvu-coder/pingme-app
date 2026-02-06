@@ -71,7 +71,7 @@ export default function HongBaoSuccessScreen() {
           {isClaimed? "You are already claimed": "You claimed"}
         </Text>
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
-          ${displayAmount}
+          {displayAmount}
         </Text>
 
         {/* Subtitle */}

@@ -174,7 +174,7 @@ export default function HongBaoVerificationScreen() {
 
           navigateToHongBaoSuccess({
             amount: Number(amount),
-            amountUsdStr: amountUsdStr,
+            amountUsdStr: Utils.formatDisplayAmount(amountUsdStr, tokenName),
             ranking,
             remainingCount: bundleStatus.quantity - bundleStatus.claimed.length,
             isClaimed: claimResult.status !== 1,

@@ -5,14 +5,21 @@ import Animated, { SharedValue, interpolate, useAnimatedStyle } from 'react-nati
 type Props = {
   scrollX: SharedValue<number>;
   slides: any[];
+  error?: string;
 };
 
-export default function AniTitles({ scrollX, slides }: Props) {
+export default function AniTitles({ scrollX, slides, error }: Props) {
   return (
     <View className="mt-4 h-20">
-      {slides.map(({ text }, index) => (
-        <AniTitle key={index} title={text} position={index} scrollX={scrollX} />
-      ))}
+      {error ? (
+        <Text className="px-8 text-center text-3xl font-semibold text-white">{error}</Text>
+      ) : (
+        <>
+          {slides.map(({ text }, index) => (
+            <AniTitle key={index} title={text} position={index} scrollX={scrollX} />
+          ))}
+        </>
+      )}
     </View>
   );
 }
