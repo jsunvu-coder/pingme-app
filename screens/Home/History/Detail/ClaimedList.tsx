@@ -11,11 +11,13 @@ export const ClaimedList = ({
   autoHideMs = 3000,
   isClaimed = false,
   decimals = 6,
+  token,
 }: {
   claimedList: ClaimedPocket[];
   autoHideMs?: number;
   isClaimed?: boolean;
   decimals?: number;
+  token: string;
 }) => {
   const [revealed, setRevealed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,9 +26,9 @@ export const ClaimedList = ({
 
   const formatAmount = useCallback(
     (amount: string) => {
-      return Utils.formatMicroToUsd(amount, 'dollar', undefined, decimals);
+      return Utils.formatDisplayAmount(Utils.formatMicroToUsd(amount, 'dollar', undefined, decimals), Utils.getTokenName(token));
     },
-    [decimals]
+    [decimals, token]
   );
 
   const clearTimer = useCallback(() => {
@@ -77,7 +79,7 @@ export const ClaimedList = ({
             index={index}
             revealed={revealed}
             email={item.username}
-            claimedAmountText={`$${formatAmount(item.amount)}`}
+            claimedAmountText={formatAmount(item.amount)}
             noBorder={claimedList.length - 1 === index}
           />
         )}

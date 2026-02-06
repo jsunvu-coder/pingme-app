@@ -4,6 +4,7 @@ import { ContractService } from 'business/services/ContractService';
 import { parseTransaction } from './TransactionParser';
 import { TransactionViewModel } from './TransactionViewModel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TOKENS } from 'business/Constants';
 
 export type HistoryFilter =
   | 'all'
@@ -305,10 +306,14 @@ export class PingHistoryViewModel {
 
   filterTransactions(
     events: TransactionViewModel[],
-    filter: HistoryFilter
+    filter: HistoryFilter,
+    selectedToken: keyof typeof TOKENS
   ): TransactionViewModel[] {
     if (!Array.isArray(events)) return [];
-    if (filter === 'all') return events;
+    const listTxByToken = events.filter(
+      (tx) => tx.token === TOKENS[selectedToken as keyof typeof TOKENS]
+    );
+    if (filter === 'all') return listTxByToken;
 
     const isDeposit = (tx: TransactionViewModel) =>
       tx.type === 'Deposit' || tx.type === 'Wallet Deposit';
@@ -323,19 +328,19 @@ export class PingHistoryViewModel {
 
     switch (filter) {
       case 'sent':
-        return events.filter(isSend);
+        return listTxByToken.filter(isSend);
       case 'received':
-        return events.filter(isReceive);
+        return listTxByToken.filter(isReceive);
       case 'deposit':
-        return events.filter(isDeposit);
+        return listTxByToken.filter(isDeposit);
       case 'withdraw':
-        return events.filter(isWithdraw);
+        return listTxByToken.filter(isWithdraw);
       case 'reclaim':
-        return events.filter(isReclaim);
+        return listTxByToken.filter(isReclaim);
       case 'hongbao':
-        return events.filter(isHongBao);
+        return listTxByToken.filter(isHongBao);
       default:
-        return events;
+        return listTxByToken;
     }
   }
 

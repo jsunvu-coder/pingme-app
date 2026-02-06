@@ -14,6 +14,8 @@ import { useAppDispatch, useCurrentAccountHistory } from 'store/hooks';
 import FilterDropdown from './FilterDropDown';
 import { HistoryRow } from './HistoryRow';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
+import TokenSelectorTabs from 'components/TokenSelectorTabs';
+import { ALL_TOKENS, TOKENS } from 'business/Constants';
 
 const vm = new PingHistoryViewModel();
 
@@ -82,8 +84,9 @@ export default function PingHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filterType, setFilterType] = useState<HistoryFilter>('all');
-  const insets = useSafeAreaInsets();
   const [navigationBarHeight, setNavigationBarHeight] = useState<number>(56); // Default height estimate
+
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKENS>(ALL_TOKENS[0]);
 
   // Guard to ensure no state updates / follow-up logic after screen is unmounted.
   const isActiveRef = useRef(true);
@@ -153,8 +156,8 @@ export default function PingHistoryScreen() {
 
   // Reuse existing helpers for filtering + grouping
   const filteredTransactions = useMemo(
-    () => vm.filterTransactions(transactions, filterType),
-    [transactions, filterType]
+    () => vm.filterTransactions(transactions, filterType, selectedToken),
+    [transactions, filterType, selectedToken]
   );
   const groupedTransactions = useMemo(
     () => vm.groupByDate(filteredTransactions),
@@ -200,6 +203,7 @@ export default function PingHistoryScreen() {
               elevation: 8,
             }),
           }}>
+          <TokenSelectorTabs selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
           <FilterDropdown
             value={filterType}
             onChange={setFilterType}
@@ -218,7 +222,7 @@ export default function PingHistoryScreen() {
 
       {/* SectionList with top margin to account for filter dropdown */}
       <SectionList
-        style={{ marginTop: 80 }}
+        style={{ marginTop: 100 }}
         sections={sections}
         keyExtractor={(item, index) => `${item.txHash}-${index}`}
         renderItem={({ item }) => (

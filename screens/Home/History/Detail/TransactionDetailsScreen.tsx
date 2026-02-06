@@ -506,6 +506,7 @@ export default function TransactionDetailsScreen() {
                 isClaimed={isClaimedBundle}
                 claimedList={bundleInfo.claimed}
                 decimals={Utils.getTokenDecimals(transaction?.token)}
+                token={transaction?.token || ''}
               />
             ) : null}
 
@@ -579,7 +580,7 @@ const formatCurrency = (value?: number | bigint, token?: string) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
   const tokenDecimals = Utils.getTokenDecimals(token);
   const micro = Utils.toMicro(String(amount), tokenDecimals);
-  return `$${Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' }, tokenDecimals)}`;
+  return Utils.formatDisplayAmount(Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' }, tokenDecimals), Utils.getTokenName(token));
 };
 
 const formatTimestamp = (seconds?: number) => {

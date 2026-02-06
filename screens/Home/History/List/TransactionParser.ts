@@ -134,7 +134,8 @@ export function parseTransaction(
     { grouping: true, empty: '0.00' },
     tokenDecimals
   );
-  const formattedAmount = `${isPositive ? '+' : '-'} $${amountUsd}`;
+  const amountStr = Utils.formatDisplayAmount(amountUsd, Utils.getTokenName(raw.token));
+  const formattedAmount = `${isPositive ? '+' : '-'} ${amountStr}`;
   const amount = (() => {
     const numeric = Number(amountUsd.replace(/,/g, ''));
     return Number.isFinite(numeric) ? numeric : 0;
