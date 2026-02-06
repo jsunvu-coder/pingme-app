@@ -16,21 +16,15 @@ import SafeBottomView from 'components/SafeBottomView';
 import { normalizeTxHash } from 'utils/txHash';
 
 type RouteParams = {
-  amount?: number;
+  amountFormatted?: string;
   walletAddress?: string;
   txHash?: string;
 };
 
 export default function WithdrawSuccessScreen() {
   const route = useRoute<RouteProp<Record<string, RouteParams>, string>>();
-  const { amount = 0, walletAddress = '', txHash = '' } = (route.params || {}) as RouteParams;
+  const { amountFormatted, walletAddress = '', txHash = '' } = (route.params || {}) as RouteParams;
   const hasNavigated = useRef(false);
-
-  const formattedAmount = useMemo(() => {
-    const numeric = Number(amount);
-    if (!Number.isFinite(numeric)) return '$0.00';
-    return `$${Utils.toCurrency(numeric) || numeric.toFixed(2)}`;
-  }, [amount]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,7 +39,7 @@ export default function WithdrawSuccessScreen() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [amount]);
+  }, [amountFormatted]);
 
   const handleViewDetails = async () => {
     if (!txHash) return;
@@ -83,7 +77,7 @@ export default function WithdrawSuccessScreen() {
 
           <View className="mt-6 mb-4 flex-row items-center justify-between">
             <SummaryTitle>{t('TOTAL_AMOUNT', undefined, 'Total Amount')}</SummaryTitle>
-            <SummaryValue>{formattedAmount}</SummaryValue>
+            <SummaryValue>{amountFormatted}</SummaryValue>
           </View>
 
           <View className="mb-3 flex-row items-center justify-between">

@@ -149,8 +149,7 @@ export default function HongBaoScreen() {
         });
         return;
       }
-    }
-    else {
+    } else {
       if (total_amount < kMinAmountWMON) {
         showFlashMessage({
           title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
@@ -174,17 +173,32 @@ export default function HongBaoScreen() {
       return;
     }
 
-    if (data.totalAmount < data.recipientCount) {
-      showFlashMessage({
-        title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
-        message: t(
-          '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY',
-          undefined,
-          'Amount must be greater than or equal to quantity'
-        ),
-        type: 'danger',
-      });
-      return;
+    if (Utils.isStablecoin(data.token)) {
+      if (data.totalAmount < data.recipientCount) {
+        showFlashMessage({
+          title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
+          message: t(
+            '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY',
+            undefined,
+            'Amount must be greater than or equal to quantity'
+          ),
+          type: 'danger',
+        });
+        return;
+      }
+    } else {
+      if (data.totalAmount < data.recipientCount * 50) {
+        showFlashMessage({
+          title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
+          message: t(
+            '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY_WMON',
+            undefined,
+            'Minimum Hongbao amount is 50 $WMON.'
+          ),
+          type: 'danger',
+        });
+        return;
+      }
     }
 
     if (!(await confirm('_CONFIRM_CREATE_HONG_BAO'))) return;
