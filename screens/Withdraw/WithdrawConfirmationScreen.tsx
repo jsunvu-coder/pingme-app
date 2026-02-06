@@ -39,7 +39,6 @@ export default function WithdrawConfirmationScreen() {
   const authService = useMemo(() => AuthService.getInstance(), []);
   const recordService = useMemo(() => RecordService.getInstance(), []);
 
-  const numericAmount = useMemo(() => Number(amount), [amount]);
   const formattedAmount = useMemo(() => {
     return Utils.formatDisplayAmount(amount, token);
   }, [amount, token]);
@@ -176,7 +175,7 @@ export default function WithdrawConfirmationScreen() {
         })) || fallbackTxHash;
 
       push('WithdrawSuccessScreen', {
-        amount: numericAmount || 0,
+        amountFormatted: formattedAmount,
         walletAddress,
         txHash,
       });

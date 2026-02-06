@@ -244,11 +244,7 @@ const AirdropWithdrawSheet = forwardRef<BottomSheetModalRef, AirdropWithdrawShee
                 {t('WARNING', undefined, 'WARNING')}
               </Text>
               <Text className="text-sm leading-5 font-medium text-white">
-                {t(
-                  'WITHDRAW_WARNING_BODY',
-                  undefined,
-                  'Make sure the receiving wallet supports this token and the Monad network. Transfers sent to the wrong network cannot be reversed.'
-                )}
+                {'Make sure the receiving wallet supports this token and the Monad network. Transfers sent to the wrong network cannot be reversed.'}
               </Text>
             </View>
           </View>

@@ -16,6 +16,7 @@ import { HistoryRow } from './HistoryRow';
 import { HistoryFilter, PingHistoryViewModel } from './PingHistoryViewModel';
 import TokenSelectorTabs from 'components/TokenSelectorTabs';
 import { ALL_TOKENS, TOKENS } from 'business/Constants';
+import { Utils } from 'business/Utils';
 
 const vm = new PingHistoryViewModel();
 
@@ -182,6 +183,27 @@ export default function PingHistoryScreen() {
     );
   }, [loadingMore, hasMore]);
 
+  const filterOptions = useMemo(() => {
+    if (Utils.isStablecoin(selectedToken)) {
+      return [
+        { label: 'All', value: 'all' },
+        { label: 'Sent', value: 'sent' },
+        { label: 'Received', value: 'received' },
+        { label: 'Deposit', value: 'deposit' },
+        { label: 'Withdraw', value: 'withdraw' },
+        { label: 'Reclaim', value: 'reclaim' },
+        { label: 'HongBao', value: 'hongbao' },
+      ];
+    }
+    return [
+      { label: 'All', value: 'all' },
+      { label: 'Received', value: 'received' },
+      { label: 'Deposit', value: 'deposit' },
+      { label: 'Withdraw', value: 'withdraw' },
+      { label: 'HongBao', value: 'hongbao' },
+    ];
+  }, [selectedToken]);
+
   return (
     <View className="flex-1 bg-[#FAFAFA]">
       <View
@@ -203,19 +225,16 @@ export default function PingHistoryScreen() {
               elevation: 8,
             }),
           }}>
-          <TokenSelectorTabs selectedToken={selectedToken} setSelectedToken={setSelectedToken} fontSize={14} iconSize={20}/>
+          <TokenSelectorTabs
+            selectedToken={selectedToken}
+            setSelectedToken={setSelectedToken}
+            fontSize={14}
+            iconSize={20}
+          />
           <FilterDropdown
             value={filterType}
             onChange={setFilterType}
-            options={[
-              { label: 'All', value: 'all' },
-              { label: 'Sent', value: 'sent' },
-              { label: 'Received', value: 'received' },
-              { label: 'Deposit', value: 'deposit' },
-              { label: 'Withdraw', value: 'withdraw' },
-              { label: 'Reclaim', value: 'reclaim' },
-              { label: 'HongBao', value: 'hongbao' },
-            ]}
+            options={filterOptions as any}
           />
         </View>
       </View>
@@ -241,7 +260,7 @@ export default function PingHistoryScreen() {
           const formattedTitle = formatDateWithRelative(title);
           return (
             <View className="px-6 py-1">
-              <Text className="font-medium text-sm text-gray-400">{formattedTitle}</Text>
+              <Text className="text-sm font-medium text-gray-400">{formattedTitle}</Text>
             </View>
           );
         }}

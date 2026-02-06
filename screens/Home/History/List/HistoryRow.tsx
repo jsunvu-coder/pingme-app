@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TransactionViewModel } from './TransactionViewModel';
-import { formatTime } from 'utils/time';
+import { formatTime, formatTime12h } from 'utils/time';
 
 type HistoryRowProps = {
   event: TransactionViewModel;
@@ -13,7 +13,7 @@ export const HistoryRow = ({ event, onPress }: HistoryRowProps) => {
   const iconName = isPositive ? 'arrow-down' : 'arrow-up';
   const iconColor = isPositive ? '#fff' : '#EF4444';
   const iconBackground = isPositive ? 'bg-green-500' : 'bg-red-200';
-  const amountColor = isPositive ? 'text-green-500' : 'text-red-500';
+  const amountColor = isPositive ? '#14B957' : '#EF4444';
   const label = event.displayLabel || event.type;
 
   if (onPress) {
@@ -67,12 +67,12 @@ const RowContent = ({
     <View className={`mr-4 h-8 w-8 items-center justify-center rounded-full ${iconBackground}`}>
       <Ionicons name={iconName as any} size={16} color={iconColor} />
     </View>
-    <View className="flex-1">
-      <Text className="text-sm font-semibold text-black" numberOfLines={1} ellipsizeMode="tail">
+    <View className="flex-1 mr-2">
+      <Text style={{ fontSize: 15.5, fontWeight: '500', color: '#0F0F0F' }} numberOfLines={1} ellipsizeMode="tail">
         {label}
       </Text>
-      <Text className="text-sm text-gray-400 mt-1 font-light">{formatTime(event.timestamp)}</Text>
+      <Text style={{ fontSize: 12, color: '#909090', marginTop: 4 }}>{formatTime12h(event.timestamp)}</Text>
     </View>
-    <Text className={`text-sm font-semibold ${amountColor}`}>{event.formattedAmount}</Text>
+    <Text style={{ fontSize: 15, fontWeight: '500', color: amountColor }}>{event.formattedAmount}</Text>
   </View>
 );
