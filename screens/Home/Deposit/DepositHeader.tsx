@@ -20,6 +20,13 @@ export default function DepositHeader({ selectedToken, setSelectedToken }: Depos
     return "$WMON (Wrapped $MON)";
   }, [selectedToken]);
 
+  const tokenSymbol = useMemo(() => {
+    if(Utils.isStablecoin(selectedToken)) {
+      return 'USDC';
+    }
+    return "$WMON";
+  }, [selectedToken]);
+
 
   return (
     <View>
@@ -32,7 +39,7 @@ export default function DepositHeader({ selectedToken, setSelectedToken }: Depos
         </View>
 
         <Text className="mx-6 mt-6 text-center text-3xl font-bold text-[#0F0F0F]">
-          Deposit USDC to the address below
+          Deposit {tokenSymbol} to the address below
         </Text>
         <Text className="mt-1 text-center text-xl leading-6 text-[#606060]">
           Please deposit <Text className="font-semibold">{tokenName}</Text> on the{' '}
