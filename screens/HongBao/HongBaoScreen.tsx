@@ -156,7 +156,7 @@ export default function HongBaoScreen() {
           message: t(
             '_ALERT_HONG_BAO_BELOW_MINIMUM_WMON',
             { tokenName: data.token },
-            'Minimum withdrawal amount is 50 WMON.'
+            'Minimum Hongbao amount is 50 $WMON.'
           ),
           type: 'danger',
         });
