@@ -225,6 +225,17 @@ export class Utils {
     return STABLE_TOKENS.includes(tokenName);
   }
 
+  static formatDisplayAmount(
+    amount: string | null | undefined,
+    tokenName: string | null | undefined
+  ): string {
+    if (!amount) return '';
+    if (Utils.isStablecoin(tokenName)) {
+      return `$${amount}`;
+    }
+    return `${amount} $${tokenName}`;
+  }
+
   // ------------------------
   // Currency & Numbers
   // ------------------------

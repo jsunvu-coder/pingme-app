@@ -1,6 +1,7 @@
 import { useRoute } from '@react-navigation/native';
 import AddUserIcon from 'assets/AddUserIcon';
 import LoginIcon from 'assets/LoginIcon';
+import { AuthService } from 'business/services/AuthService';
 import { BundleStatusResponse, RedPocketService } from 'business/services/RedPocketService';
 import PrimaryButton from 'components/PrimaryButton';
 import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
@@ -53,7 +54,7 @@ const navigateToHongBaoError = (isLoggedIn: boolean, invalidBundle?: boolean) =>
 export default function HongBaoWithAuthScreen() {
   const route = useRoute();
   const { bundle_uuid } = (route.params as HongBaoWithAuthParams) || {};
-  
+
   usePreventBackFuncAndroid();
   const [mode, setMode] = useState<'signup' | 'login'>('login');
   const [loading, setLoading] = useState(false);
@@ -72,18 +73,20 @@ export default function HongBaoWithAuthScreen() {
         return;
       }
       if (mode === 'signup') {
-        if (redPocketService.verifyBundleInfo(bundleStatus)) {
+        if (bundleStatus && redPocketService.verifyBundleInfo(bundleStatus)) {
           await createAccountViewRef.current?.register();
+          navigateToHongBaoVerification(bundle_uuid || '', mode, bundleStatus.message || '');
+          return;
         } else {
+          await AuthService.getInstance().logout();
           navigateToHongBaoError(false);
           return;
         }
       } else {
         await loginViewRef.current?.login();
+        navigateToHongBaoVerification(bundle_uuid || '', mode, bundleStatus.message || '');
+        return;
       }
-
-      navigateToHongBaoVerification(bundle_uuid || '', mode, bundleStatus.message || '');
-      return;
     } catch (err) {
       console.error('Error signing in', err);
       return;
@@ -91,8 +94,8 @@ export default function HongBaoWithAuthScreen() {
       setTimeout(() => {
         setLoading(false);
       }, 1500);
-    };
-  }
+    }
+  };
 
   return (
     <View className="flex flex-1 bg-[#F5E9E1]">

@@ -19,6 +19,7 @@ export const HOME = 'HOME';
 export const INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
 export const LOCKBOX = 'LOCKBOX';
 export const MIN_AMOUNT = 'MIN_AMOUNT';
+export const MIN_AMOUNT_WMON = 'MIN_AMOUNT_WMON';
 export const MIN_PAYMENT_AMOUNT = 1;
 export const MAX_PAYMENT_AMOUNT = 1_000_000;
 export const MAX_BUNDLE_AMOUNT = 100;
@@ -78,6 +79,7 @@ export const ALL_TOKENS: (keyof typeof TOKENS)[] =
 export const STABLE_TOKEN_ADDRESSES = STABLE_TOKENS.map(
   (token) => TOKENS[token as keyof typeof TOKENS]
 );
+export const ALL_TOKEN_ADDRESSES = ALL_TOKENS.map((token) => TOKENS[token as keyof typeof TOKENS]);
 export const EMAIL_KEY = 'lastEmail';
 export const PASSWORD_KEY = 'lastPassword';
 export const USE_BIOMETRIC_KEY = 'useBiometric';

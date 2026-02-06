@@ -589,7 +589,10 @@ export class RedPocketService {
     }
   }
 
-  verifyBundleInfo(data: BundleStatusResponse): boolean {
+  verifyBundleInfo(data?: BundleStatusResponse | null): boolean {
+    if (!data) {
+      return false;
+    }
     if (
       data.state === 'A' &&
       data.unlock_time > getTimestamp() &&

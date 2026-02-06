@@ -1,14 +1,15 @@
 // utils/EncryptSession.ts
 
-import { GLOBALS } from "./Constants";
+import { GLOBALS } from './Constants';
 
 const DEFAULT_SESSION: Record<string, any> = {
   GLOBALS: {
-    GLOBAL_SALT: "0x60a4a6e8499db0df0d8fc1104e2be7de0aec2479a7866735bfe08bbb6aeae9b3",
-    MIN_AMOUNT: 1000000,
+    GLOBAL_SALT: '0x60a4a6e8499db0df0d8fc1104e2be7de0aec2479a7866735bfe08bbb6aeae9b3',
+    MIN_AMOUNT: 1_000_000,
+    MIN_AMOUNT_WMON: 50_000_000_000_000_000_000,
     MIN_DURATION: 60,
-    tokens: ["0x78Cf24370174180738C5B8E352B6D14c83a6c9A9"],
-  }
+    tokens: ['0x78Cf24370174180738C5B8E352B6D14c83a6c9A9'],
+  },
 };
 
 export class EncryptSession {
@@ -19,7 +20,7 @@ export class EncryptSession {
     try {
       EncryptSession.memoryStore[key] = value;
     } catch (e) {
-      console.error("[EncryptSession] setSessionObject error:", e);
+      console.error('[EncryptSession] setSessionObject error:', e);
     }
   }
 
@@ -29,7 +30,7 @@ export class EncryptSession {
       const value = EncryptSession.memoryStore[key];
       return value ?? null;
     } catch (e) {
-      console.error("[EncryptSession] getSessionObject error:", e);
+      console.error('[EncryptSession] getSessionObject error:', e);
       return null;
     }
   }
@@ -39,7 +40,7 @@ export class EncryptSession {
     try {
       delete EncryptSession.memoryStore[key];
     } catch (e) {
-      console.error("[EncryptSession] clearSessionObject error:", e);
+      console.error('[EncryptSession] clearSessionObject error:', e);
     }
   }
 

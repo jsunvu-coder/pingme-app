@@ -1,6 +1,6 @@
 import enUS from './en-US.json';
 
-type TranslationParams = Record<string, string | number>;
+export type TranslationParams = Record<string, string | number>;
 
 const translations = enUS as Record<string, string>;
 

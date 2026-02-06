@@ -10,6 +10,7 @@ import {
   GLOBALS,
   LOCKBOX_DURATION,
   MIN_AMOUNT,
+  MIN_AMOUNT_WMON,
   STABLE_TOKENS,
   TOKEN_DECIMALS,
   TOKENS,
@@ -133,18 +134,35 @@ export default function HongBaoScreen() {
 
     //TODO: current only allow stablecoin bundles, need to add support for other tokens
     const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
+    const kMinAmountWMON = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT_WMON]);
 
-    if (total_amount < kMinAmount) {
-      showFlashMessage({
-        title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
-        message: t(
-          '_ALERT_BELOW_MINIMUM',
-          undefined,
-          'Minimum amount must be greater than the minimum amount'
-        ),
-        type: 'danger',
-      });
-      return;
+    if (Utils.isStablecoin(data.token)) {
+      if (total_amount < kMinAmount) {
+        showFlashMessage({
+          title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
+          message: t(
+            '_ALERT_HONG_BAO_BELOW_MINIMUM',
+            undefined,
+            'Minimum amount must be greater than the minimum amount'
+          ),
+          type: 'danger',
+        });
+        return;
+      }
+    }
+    else {
+      if (total_amount < kMinAmountWMON) {
+        showFlashMessage({
+          title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
+          message: t(
+            '_ALERT_HONG_BAO_BELOW_MINIMUM_WMON',
+            { tokenName: data.token },
+            'Minimum withdrawal amount is 50 WMON.'
+          ),
+          type: 'danger',
+        });
+        return;
+      }
     }
 
     if (BigInt(entry?.amount ?? '0') < total_amount) {

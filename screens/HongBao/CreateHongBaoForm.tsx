@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import PrimaryButton from 'components/PrimaryButton';
 import LabeledInput from 'components/LabeledInput';
 import CounterInput from 'components/CounterInput';
@@ -9,6 +9,7 @@ import EnvelopeIcon from 'assets/HongBaoAni/EnvelopeIcon';
 import { ALL_TOKENS, TOKENS } from 'business/Constants';
 import MonadIcon from 'assets/MonadIcon';
 import TokenSelectorTabs from 'components/TokenSelectorTabs';
+import { Utils } from 'business/Utils';
 
 type CreateHongBaoFormProps = {
   onSubmit: (data: HongBaoFormData) => void;
@@ -29,6 +30,7 @@ export type HongBaoFormData = {
 
 const MAX_RECIPIENTS = 20;
 const MAX_AMOUNT = 100;
+const MAX_AMOUNT_WMON = 5000;
 const MAX_MESSAGE_LENGTH = 80;
 
 const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProps>(
@@ -41,6 +43,13 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
     const tokens = ALL_TOKENS;
 
     const [selectedToken, setSelectedToken] = useState(tokens[0]);
+
+    const maxAmount = useMemo(() => {
+      if (Utils.isStablecoin(selectedToken)) {
+        return MAX_AMOUNT;
+      }
+      return MAX_AMOUNT_WMON;
+    }, [selectedToken]);
 
     // Expose clearForm method via ref
     useImperativeHandle(ref, () => ({
@@ -57,7 +66,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
     const handleSubmit = () => {
       onSubmit({
         recipientCount: parseInt(recipientCount, 10) || 0,
-        totalAmount: parseFloat(totalAmount) || 0,
+        totalAmount: parseInt(totalAmount, 10) || 0,
         message,
         token: selectedToken,
       });
@@ -65,26 +74,31 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
 
     // Validation
     const recipientCountNum = parseInt(recipientCount, 10);
-    const totalAmountNum = parseFloat(totalAmount);
+    const totalAmountNum = parseInt(totalAmount, 10);
 
     const recipientError =
       recipientCount && recipientCountNum > MAX_RECIPIENTS
         ? `Total envelopes cannot exceed ${MAX_RECIPIENTS}`
         : undefined;
 
-    const amountError =
-      totalAmount && totalAmountNum > MAX_AMOUNT
-        ? `Total amount cannot exceed $${MAX_AMOUNT}`
-        : undefined;
+    const amountError = useMemo(() => {
+      if (totalAmount && totalAmountNum > maxAmount){
+        if(Utils.isStablecoin(selectedToken)){
+          return `Total amount cannot exceed $${maxAmount}`;
+        }
+        return `Total amount cannot exceed ${maxAmount}${selectedToken}`;
+      }
+        
+    }, [totalAmount, totalAmountNum, maxAmount]);
 
     const isValid =
       recipientCountNum > 0 &&
       totalAmountNum > 0 &&
-      totalAmountNum <= MAX_AMOUNT &&
+      totalAmountNum <= maxAmount &&
       recipientCountNum <= MAX_RECIPIENTS;
 
     const isStablecoin = selectedToken === 'USDC' || selectedToken === 'pUSDC';
-    const maxAmountInfo = isStablecoin ? `Max $${MAX_AMOUNT}` : `Max ${MAX_AMOUNT}${selectedToken}`;
+    const maxAmountInfo = "Max " + Utils.formatDisplayAmount(maxAmount.toString(), selectedToken);
 
     return (
       <View pointerEvents={editable ? 'auto' : 'none'} className="w-full gap-y-4">
@@ -96,12 +110,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         </View>
 
         {/* Token Selector */}
-        {/* <View className="">
+        <View className="">
           <TokenSelectorTabs
             selectedToken={selectedToken}
             setSelectedToken={setSelectedToken}
           />
-        </View> */}
+        </View>
 
         {/* Number of Recipients */}
         <View className="">
@@ -131,7 +145,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
             keyboardType="number-pad"
             placeholder="How much in total?"
             editable={!loading}
-            maxLength={MAX_AMOUNT.toString().length}
+            maxLength={maxAmount.toString().length}
             integerOnly
             helperText={amountError}
           />

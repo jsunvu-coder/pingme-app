@@ -3,14 +3,15 @@ import TopUpHeader from './DepositHeader';
 import DepositAddressCard from './DepositAddressCard';
 import InfoNote from './InfoNoteView';
 import NavigationBar from 'components/NavigationBar';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { useEffect, useState } from 'react';
+import { ALL_TOKENS, TOKENS } from 'business/Constants';
 
 export default function DepositScreen() {
   const [forwarder, setForwarder] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKENS>(ALL_TOKENS[0]);
 
   useEffect(() => {
     let mounted = true;
@@ -50,8 +51,8 @@ export default function DepositScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View className="py-4">
-          <TopUpHeader />
-          <DepositAddressCard address={forwarder || ''} />
+          <TopUpHeader selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
+          <DepositAddressCard address={forwarder || ''} token={selectedToken} />
           <InfoNote />
         </View>
       </ScrollView>

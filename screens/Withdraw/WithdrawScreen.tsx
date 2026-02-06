@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
 import PrimaryButton from 'components/PrimaryButton';
 import NavigationBar from 'components/NavigationBar';
-import { t } from 'i18n';
+import { t, TranslationParams } from 'i18n';
 import PaymentAmountView from 'screens/Send/PingMe/PaymentAmountView';
 import { BalanceService } from 'business/services/BalanceService';
 import WalletAddIcon from 'assets/WalletAddIcon';
@@ -26,6 +26,7 @@ import {
   TOKENS,
   STABLE_TOKENS,
   ALL_TOKENS,
+  MIN_AMOUNT_WMON,
 } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -71,15 +72,13 @@ export default function WithdrawScreen() {
   }, [stablecoinEntries, selectedToken]);
 
   const balanceFormatted = useMemo(() => {
-    const tokenDecimals = Utils.getTokenDecimals(entry?.token);
-    const isStablecoin = STABLE_TOKENS.includes(selectedToken);
-    const balanceFormatted = Utils.formatMicroToUsd(entry?.amount, undefined, { grouping: true, empty: '0.00' }, tokenDecimals);
-    return isStablecoin ? `$${balanceFormatted}` : `${balanceFormatted}${selectedToken}`;
-  }, [entry]);
+    const amount = Utils.formatMicroToUsd(entry?.amount, undefined, { grouping: true, empty: '0.00' }, Utils.getTokenDecimals(entry?.token));
+    return Utils.formatDisplayAmount(amount, selectedToken);
+  }, [entry, selectedToken]);
 
   const confirm = async (
     message: string,
-    options: { cancel?: boolean; variant?: 'confirm' | 'error'; titleKey?: string } = {}
+    options: { cancel?: boolean; variant?: 'confirm' | 'error'; titleKey?: string, params?: TranslationParams } = {}
   ): Promise<boolean> => {
     const { cancel = true, variant = 'confirm', titleKey } = options;
     const title = titleKey
@@ -92,7 +91,7 @@ export default function WithdrawScreen() {
     if (!cancel) {
       showFlashMessage({
         title,
-        message: t(message),
+        message: t(message, options.params),
         type: variant === 'error' ? 'danger' : 'info',
       });
       return true;
@@ -170,18 +169,31 @@ export default function WithdrawScreen() {
       }
 
       const k_min_amount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
+      const k_min_amount_wmon = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT_WMON]);
       const tokenAddress = entry?.token;
       const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
       const k_amount = Utils.toMicro(trimmedAmount, tokenDecimals);
       const k_entry = BigInt(entry.amount);
 
-      if (k_amount < k_min_amount) {
-        await confirm('_ALERT_BELOW_MINIMUM', {
-          cancel: false,
-          variant: 'error',
-          titleKey: '_TITLE_BELOW_MINIMUM',
-        });
-        return;
+      if (Utils.isStablecoin(selectedToken)) {
+        if (k_amount < k_min_amount) {
+          await confirm('_ALERT_BELOW_MINIMUM', {
+            cancel: false,
+            variant: 'error',
+            titleKey: '_TITLE_BELOW_MINIMUM',
+          });
+          return;
+        }
+      } else {
+        if (k_amount < k_min_amount_wmon) {
+          await confirm('_ALERT_BELOW_MINIMUM_WMON', {
+            cancel: false,
+            variant: 'error',
+            titleKey: '_TITLE_BELOW_MINIMUM',
+            params: { tokenName: selectedToken },
+          });
+          return;
+        }
       }
 
       if (k_amount > k_entry) {
@@ -229,12 +241,12 @@ export default function WithdrawScreen() {
             </View>
 
             <View className="mt-10 gap-y-8" onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
-              {/* <TokenSelectorTabs
+              <TokenSelectorTabs
                 selectedToken={selectedToken}
                 setSelectedToken={setSelectedToken}
                 fontSize={18}
                 iconSize={24}
-              /> */}
+              />
               <PaymentAmountView
                 balance={balanceFormatted}
                 value={amount}

@@ -136,7 +136,7 @@ class DeepLinkHandler {
             } catch (error) {
               this.navigateHongBaoError(
                 {
-                  isLoggedIn: isLoggedIn,
+                  isLoggedIn: false,
                   invalidBundle: true,
                 },
                 true
@@ -226,7 +226,7 @@ class DeepLinkHandler {
           } catch (error) {
             this.navigateHongBaoError(
               {
-                isLoggedIn: isLoggedIn,
+                isLoggedIn: false,
                 invalidBundle: true,
               },
               true

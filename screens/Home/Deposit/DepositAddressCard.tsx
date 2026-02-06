@@ -4,12 +4,14 @@ import WalletAddIcon from 'assets/WalletAddIcon';
 import CopyIcon from 'assets/CopyIcon';
 import WarningBox from './WarningBox';
 import { showFlashMessage } from 'utils/flashMessage';
+import { TOKENS } from 'business/Constants';
 
 interface Props {
   address: string;
+  token: keyof typeof TOKENS;
 }
 
-export default function DepositAddressCard({ address }: Props) {
+export default function DepositAddressCard({ address, token }: Props) {
   const handleCopy = async () => {
     try {
       await Clipboard.setStringAsync(address);
@@ -41,7 +43,7 @@ export default function DepositAddressCard({ address }: Props) {
       {/* Separator */}
       <View className="my-6 h-1 bg-gray-200" />
 
-      <WarningBox />
+      <WarningBox token={token} />
     </View>
   );
 }

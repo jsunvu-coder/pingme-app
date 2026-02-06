@@ -41,8 +41,7 @@ export default function WithdrawConfirmationScreen() {
 
   const numericAmount = useMemo(() => Number(amount), [amount]);
   const formattedAmount = useMemo(() => {
-    const isStablecoin = STABLE_TOKENS.includes(token);
-    return isStablecoin ? `$${amount}` : `${amount} ${token ?? ''}`;
+    return Utils.formatDisplayAmount(amount, token);
   }, [amount, token]);
 
   const getLatestWithdrawTxHash = async (params: {

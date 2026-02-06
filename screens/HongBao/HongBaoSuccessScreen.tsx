@@ -98,7 +98,6 @@ export default function HongBaoSuccessScreen() {
                   ellipsizeMode="middle"
                 >
                   {item.username}
-                 
                 </Text>
               </View>
               <Text

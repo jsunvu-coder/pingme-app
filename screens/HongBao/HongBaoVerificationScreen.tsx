@@ -125,12 +125,15 @@ export default function HongBaoVerificationScreen() {
     setIsLoading(true);
     try {
       if (bundle_uuid) {
+        const bundleStatus = await redPocketService.getBundleStatus(bundle_uuid);
+        const tokenDecimals = Utils.getTokenDecimals(bundleStatus?.token ?? '');
+        const tokenName = Utils.getTokenName(bundleStatus?.token ?? '');
         if (from === 'signup') {
           //verify bundle is claimed
-          const bundleStatus = await redPocketService.verifyBundleUuid(bundle_uuid);
-          if (!bundleStatus) {
+          const bundleVerified = redPocketService.verifyBundleInfo(bundleStatus);
+          if (!bundleVerified) {
             navigateToHongBaoError({
-              isLoggedIn: from !== 'signup',
+              isLoggedIn: false,
             });
             return;
           }
@@ -146,20 +149,22 @@ export default function HongBaoVerificationScreen() {
             if (isCurrentUser) {
               amount = claimed.amount;
             }
+
+            const amountStr =Utils.formatMicroToUsd(
+              claimed.amount,
+              undefined,
+              { grouping: false, empty: '' },
+              tokenDecimals
+            )
+            ;
             return {
               rank: index + 1,
               username: isCurrentUser ? 'YOU' : Utils.maskEmail(claimed.username),
-              amount: Utils.formatMicroToUsd(
-                claimed.amount,
-                undefined,
-                { grouping: false, empty: '' },
-                tokenDecimals
-              ),
+              amount: Utils.formatDisplayAmount(amountStr, tokenName),
               isCurrentUser: claimed.username === username,
             };
           });
 
-          const tokenDecimals = Utils.getTokenDecimals(claimResult.token);
           const amountUsdStr = Utils.formatMicroToUsd(
             amount.toString(),
             undefined,
