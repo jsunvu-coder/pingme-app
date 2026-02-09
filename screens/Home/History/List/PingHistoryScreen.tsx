@@ -108,6 +108,10 @@ export default function PingHistoryScreen() {
     }
   }, [dispatch]);
 
+  useEffect(() => {
+    setFilterType('all');
+  }, [selectedToken]);
+
   // Load initial data only if store is empty
   const loadInitial = useCallback(async () => {
     if (transactions.length === 0) {
