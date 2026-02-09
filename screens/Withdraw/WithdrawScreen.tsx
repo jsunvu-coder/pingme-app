@@ -55,7 +55,10 @@ export default function WithdrawScreen() {
 
   const { stablecoinEntries, otherTokensByAddress } = useCurrentAccountStablecoinBalance();
 
-  const balanceService = BalanceService.getInstance();
+  useEffect(() => {
+    setAmount('');
+    setWallet('');
+  }, [selectedToken]);
 
   const setWalletNormalized = useCallback(
     (next: string) => {
