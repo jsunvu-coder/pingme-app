@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useState, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { View, Text } from 'react-native';
+import { useState, forwardRef, useImperativeHandle, useMemo, useEffect } from 'react';
 import PrimaryButton from 'components/PrimaryButton';
 import LabeledInput from 'components/LabeledInput';
 import CounterInput from 'components/CounterInput';
@@ -63,6 +63,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
       },
     }));
 
+    useEffect(() => {
+      setRecipientCount('');
+      setTotalAmount('');
+      setMessage('恭喜发财🧧');
+    }, [selectedToken]);
+
     const handleSubmit = () => {
       onSubmit({
         recipientCount: parseInt(recipientCount, 10) || 0,
@@ -82,13 +88,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
         : undefined;
 
     const amountError = useMemo(() => {
-      if (totalAmount && totalAmountNum > maxAmount){
-        if(Utils.isStablecoin(selectedToken)){
+      if (totalAmount && totalAmountNum > maxAmount) {
+        if (Utils.isStablecoin(selectedToken)) {
           return `Total amount cannot exceed $${maxAmount}`;
         }
         return `Total amount cannot exceed ${maxAmount}${selectedToken}`;
       }
-        
     }, [totalAmount, totalAmountNum, maxAmount]);
 
     const isValid =
@@ -98,7 +103,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
       recipientCountNum <= MAX_RECIPIENTS;
 
     const isStablecoin = selectedToken === 'USDC' || selectedToken === 'pUSDC';
-    const maxAmountInfo = "Max " + Utils.formatDisplayAmount(maxAmount.toString(), selectedToken);
+    const maxAmountInfo = 'Max ' + Utils.formatDisplayAmount(maxAmount.toString(), selectedToken);
 
     return (
       <View pointerEvents={editable ? 'auto' : 'none'} className="w-full gap-y-4">
@@ -111,10 +116,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
 
         {/* Token Selector */}
         <View className="">
-          <TokenSelectorTabs
-            selectedToken={selectedToken}
-            setSelectedToken={setSelectedToken}
-          />
+          <TokenSelectorTabs selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
         </View>
 
         {/* Number of Recipients */}
@@ -138,7 +140,13 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
           <LabeledInput
             value={totalAmount}
             onChangeText={setTotalAmount}
-            icon={ isStablecoin ? <DollarSignIcon width={24} height={24} /> : <MonadIcon width={24} height={24} />}
+            icon={
+              isStablecoin ? (
+                <DollarSignIcon width={24} height={24} />
+              ) : (
+                <MonadIcon width={24} height={24} />
+              )
+            }
             showMaxInfo={maxAmountInfo}
             showCharCount={false}
             multiline={false}

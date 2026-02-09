@@ -242,5 +242,5 @@
   "_WITHDRAW_WARNING_BODY": "Withdrawing {{tokenName}} to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.",
   "_WITHDRAW_USDC_TITLE": "Withdraw USDC to the address below",
   "_WITHDRAW_WMON_TITLE": "Withdraw $WMON to the address below",
-  "_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY_WMON": "Minimum Hongbao amount is 50 $WMON."
+  "_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY_WMON": "The minimum amount per Hongbao is 50 $WMON."
 }
