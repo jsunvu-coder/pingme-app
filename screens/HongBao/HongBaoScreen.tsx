@@ -194,7 +194,7 @@ export default function HongBaoScreen() {
           message: t(
             '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY_WMON',
             undefined,
-            'Minimum Hongbao amount is 50 $WMON.'
+            'The minimum amount per Hongbao is 50 $WMON.'
           ),
           type: 'danger',
         });
