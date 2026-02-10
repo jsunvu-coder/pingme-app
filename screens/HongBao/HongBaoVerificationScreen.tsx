@@ -186,7 +186,7 @@ export default function HongBaoVerificationScreen() {
         }
       } else {
         navigateToHongBaoError({
-          isLoggedIn: false,
+          isLoggedIn: true,
         });
       }
     } catch (error) {
