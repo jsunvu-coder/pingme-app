@@ -136,12 +136,13 @@ class DeepLinkHandler {
               if (verified) {
                 this.navigateHongBao(params, true);
               } else {
-                setRootScreen([
+                this.navigateHongBaoError(
                   {
-                    name: 'OnboardingPager',
-                    params: { error: 'Oops! This Hongbao is \n fully claimed or expired!' },
+                    isLoggedIn: false,
+                    invalidBundle: false,
                   },
-                ]);
+                  true
+                );
               }
             } catch (error) {
               this.navigateHongBaoError(
@@ -235,12 +236,13 @@ class DeepLinkHandler {
             if (verified) {
               this.navigateHongBao(params, true);
             } else {
-              setRootScreen([
+              this.navigateHongBaoError(
                 {
-                  name: 'OnboardingPager',
-                  params: { error: 'Oops! This Hongbao is \n fully claimed or expired!' },
+                  isLoggedIn: false,
+                  invalidBundle: false,
                 },
-              ]);
+                true
+              );
             }
           } catch (error) {
             this.navigateHongBaoError(
@@ -395,13 +397,18 @@ class DeepLinkHandler {
         ...params,
       },
     };
-    if (resetStack) {
-      setRootScreen([route]);
+    const isHongBaoErrorOnTop =
+      navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoErrorScreen';
+    if (isHongBaoErrorOnTop) {
+      if (
+        JSON.stringify(navigationRef.getCurrentRoute()?.params) === JSON.stringify(route.params)
+      ) {
+        return;
+      }
+      replace('HongBaoErrorScreen', route.params);
     } else {
-      const isHongBaoErrorOnTop =
-        navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'HongBaoErrorScreen';
-      if (isHongBaoErrorOnTop) {
-        replace('HongBaoErrorScreen', route.params);
+      if (resetStack) {
+        setRootScreen([route]);
       } else {
         push('HongBaoErrorScreen', route.params);
       }
