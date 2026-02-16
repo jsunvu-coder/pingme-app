@@ -14,14 +14,18 @@ const LogInIcon = ({ isActive }: { isActive: boolean }) => (
 type Props = {
   activeTab: "signup" | "login";
   onChange: (tab: "signup" | "login") => void;
+  loading: boolean;
 };
 
-export default function AuthTabs({ activeTab, onChange }: Props) {
+export default function AuthTabs({ activeTab, onChange, loading }: Props) {
   return (
     <View className="mx-6 mb-8">
       <AnimatedSegmentedTabs
         activeKey={activeTab}
-        onChange={(key) => onChange(key as "signup" | "login")}
+        onChange={(key) => {
+          if(loading) return;
+          onChange(key as "signup" | "login");
+        }}
         tabs={[
           { key: "signup", label: "Sign Up", icon: SignUpIcon },
           { key: "login", label: "Log In", icon: LogInIcon },

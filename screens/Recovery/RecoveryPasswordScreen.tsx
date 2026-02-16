@@ -58,6 +58,7 @@ export default function RecoveryPasswordScreen() {
           <AuthInput
             icon={<PasswordIcon />}
             value={password}
+            onChangeText={() => {}}
             placeholder="Password"
             editable={false}
           />

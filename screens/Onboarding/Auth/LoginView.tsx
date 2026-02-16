@@ -27,6 +27,7 @@ interface LoginViewProps {
   removeButtonLogin?: boolean;
   disableSuccessCallback?: boolean;
   altHandleLogin?: () => Promise<void>;
+  setLoading?: (loading: boolean) => void;
 }
 
 const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
@@ -38,7 +39,8 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
   disableSuccessScreen,
   removeButtonLogin,
   disableSuccessCallback,
-  altHandleLogin
+  altHandleLogin,
+  setLoading: setLoadingProp = (loading: boolean) => {},
 }, ref) => {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
@@ -140,6 +142,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
       return;
     }
 
+    setLoadingProp(true);
     setLoading(true);
     try {
       const fromParam: 'login' | 'signup' =
@@ -176,6 +179,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         setUseBiometric(result.biometricEnabled);
       } else {
         setLoading(false);
+        setLoadingProp(false);
         if(disableSuccessCallback) {
           throw new Error(t('AUTH_LOGIN_INVALID_CREDENTIALS'));
         }
@@ -187,6 +191,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         type: 'danger',
       });
       setLoading(false);
+      setLoadingProp(false);
       if(disableSuccessCallback) {
         throw new Error(err?.message || t('AUTH_LOGIN_INVALID_CREDENTIALS'));
       }
@@ -207,7 +212,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         : t('AUTH_USE_BIOMETRIC_GENERIC');
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" pointerEvents={loading ? 'none' : 'auto'}>
       <View className="flex-1 gap-y-2 px-6">
         <AuthInput
           icon={<EmailIcon />}
@@ -234,7 +239,9 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
           />
           <TouchableOpacity
             className="absolute top-3 right-0 flex-row items-center justify-center px-4"
-            onPress={() => push('ScanRecoveryScreen')}>
+            onPress={() => {
+              if(loading) return;
+              push('ScanRecoveryScreen')}}>
             <Text className="text-md mr-2 font-semibold text-[#FD4912]">
               {t('FORGOT_PASSWORD')}
             </Text>

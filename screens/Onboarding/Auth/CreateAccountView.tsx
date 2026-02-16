@@ -33,6 +33,7 @@ interface CreateAccountViewProps {
   disableSuccessCallback?: boolean;
   removeButtonCreateAccount?: boolean;
   setIsFormValid?: (valid: boolean) => void;
+  setLoading?: (loading: boolean) => void;
 }
 
 const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(({
@@ -44,6 +45,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
   disableSuccessCallback,
   removeButtonCreateAccount,
   setIsFormValid = (valid: boolean) => valid,
+  setLoading: setLoadingProp = (loading: boolean) => {},
 }, ref) => {
   const route = useRoute<any>();
   const initialEmail =
@@ -98,6 +100,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
   }, [isFormValid, setIsFormValid]);
 
   const handleRegister = useCallback(async () => {
+    setLoadingProp(true);
     setLoading(true);
     const auth = AuthService.getInstance();
 
@@ -150,6 +153,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
         throw err;
       }
     } finally {
+      setLoadingProp(false);
       setLoading(false);
     }
   }, [email, password, lockboxProof, route, disableSuccessCallback, disableSuccessScreen, claimedAmountUsd, tokenName]);

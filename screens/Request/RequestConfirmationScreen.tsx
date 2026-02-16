@@ -38,6 +38,7 @@ import { Utils } from 'business/Utils';
 import SafeBottomView from 'components/SafeBottomView';
 import { useAppDispatch, useCurrentAccountStablecoinBalance } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 type RequestConfirmationParams = {
   amount: number | string;
@@ -99,120 +100,115 @@ export default function RequestConfirmationScreen() {
     });
   };
 
-
   const handleSendingRequest = async () => {
+    const rawAmount: number | string = amount as number | string;
+    const isAmountMissing =
+      rawAmount === undefined ||
+      rawAmount === null ||
+      (typeof rawAmount === 'string' && rawAmount.trim() === '');
+
+    if (isAmountMissing) {
+      await showLocalizedAlert({
+        title: 'Amount required',
+        message: 'Please input an amount.',
+      });
+      return;
+    }
+
+    if (!entry?.token) {
+      await showLocalizedAlert({
+        title: 'You must select a balance',
+        message: 'Please select a balance to proceed.',
+      });
+      return;
+    }
+    const tokenAddress = entry.token;
+    const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
+    const amountMicro = Utils.toMicro(
+      typeof rawAmount === 'number' ? String(rawAmount) : rawAmount,
+      tokenDecimals
+    );
+    if (amountMicro <= 0n) {
+      await showLocalizedAlert({
+        title: 'Invalid amount',
+        message: 'Please enter a valid payment amount.',
+      });
+      return;
+    }
+
+    const factor = 10n ** BigInt(tokenDecimals);
+    const minMicro = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
+    const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * factor;
+    if (amountMicro < minMicro) {
+      await showLocalizedAlert({
+        title: 'Amount too low',
+        message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
+      });
+      return;
+    }
+
+    if (amountMicro > maxMicro) {
+      await showLocalizedAlert({
+        title: 'Amount too high',
+        message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}.`,
+      });
+      return;
+    }
+
+    if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
+      await showLocalizedAlert({
+        title: 'Invalid recipient',
+        message: 'Please provide a valid email address.',
+      });
+      return;
+    }
+
     try {
-      setLoading(true);
-      const rawAmount: number | string = amount as number | string;
-      const isAmountMissing =
-        rawAmount === undefined ||
-        rawAmount === null ||
-        (typeof rawAmount === 'string' && rawAmount.trim() === '');
-
-      if (isAmountMissing) {
-        await showLocalizedAlert({
-          title: 'Amount required',
-          message: 'Please input an amount.',
-        });
+      const state = await NetInfo.fetch();
+      const reachable = state.isConnected && state.isInternetReachable !== false;
+      if (!reachable) {
+        await showLocalizedAlert({ message: '_ALERT_NO_INTERNET' });
         return;
       }
+    } catch {
+      // If NetInfo fails, allow the request attempt to proceed.
+    }
 
-      if (!entry?.token) {
-        await showLocalizedAlert({
-          title: 'You must select a balance',
-          message: 'Please select a balance to proceed.',
-        });
-        return;
-      }
-      const tokenAddress = entry.token;
+    try {
+      const tokenAddress = entry?.token;
       const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
-      const amountMicro = Utils.toMicro(
-        typeof rawAmount === 'number' ? String(rawAmount) : rawAmount,
+      const amountDecimal = Utils.formatMicroToUsd(
+        amountMicro,
+        undefined,
+        {
+          grouping: false,
+          empty: '0.00',
+        },
         tokenDecimals
       );
-      if (amountMicro <= 0n) {
-        await showLocalizedAlert({
-          title: 'Invalid amount',
-          message: 'Please enter a valid payment amount.',
-        });
-        return;
+
+      if (channel === 'Email') {
+        await sendByEmail(amountDecimal);
+      } else {
+        await sendByLink(amountDecimal);
       }
-
-      const factor = 10n ** BigInt(tokenDecimals);
-      const minMicro = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-      const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * factor;
-      if (amountMicro < minMicro) {
-        await showLocalizedAlert({
-          title: 'Amount too low',
-          message: `Minimum payment amount is $${MIN_PAYMENT_AMOUNT.toFixed(2)}.`,
-        });
-        return;
-      }
-
-      if (amountMicro > maxMicro) {
-        await showLocalizedAlert({
-          title: 'Amount too high',
-          message: `Maximum payment amount is $${MAX_PAYMENT_AMOUNT.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}.`,
-        });
-        return;
-      }
-
-      if (channel === 'Email' && (!recipient || !recipient.includes('@'))) {
-        await showLocalizedAlert({
-          title: 'Invalid recipient',
-          message: 'Please provide a valid email address.',
-        });
-        return;
-      }
-
-      try {
-        const state = await NetInfo.fetch();
-        const reachable = state.isConnected && state.isInternetReachable !== false;
-        if (!reachable) {
-          await showLocalizedAlert({ message: '_ALERT_NO_INTERNET' });
-          return;
-        }
-      } catch {
-        // If NetInfo fails, allow the request attempt to proceed.
-      }
-
-      try {
-        console.log('📨 [RequestConfirmationScreen] Starting requestPayment flow...');
-        const tokenAddress = entry?.token;
-        const tokenDecimals = Utils.getTokenDecimals(tokenAddress);
-        const amountDecimal = Utils.formatMicroToUsd(
-          amountMicro,
-          undefined,
-          {
-            grouping: false,
-            empty: '0.00',
-          },
-          tokenDecimals
-        );
-
-        if (channel === 'Email') {
-          await sendByEmail(amountDecimal);
-        } else {
-          await sendByLink(amountDecimal);
-        }
-
-        console.log('🎉 [RequestConfirmationScreen] Request flow completed.');
-      } catch (err) {
-        console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
-        await showLocalizedAlert({
-          title: 'Error',
-          message: 'Failed to send payment request. Please try again.',
-        });
-      }
-    } finally {
       setTimeout(() => {
         setLoading(false);
       }, 3000);
+    } catch (err) {
+      setLoading(false);
+      console.error('❌ [RequestConfirmationScreen] requestPayment failed:', err);
+      await showLocalizedAlert({
+        title: 'Error',
+        message: 'Failed to send payment request. Please try again.',
+      });
     }
   };
+
+  usePreventBackFuncAndroid(loading);
 
   const sendByEmail = async (amountString: string) => {
     await requestService.requestPayment({
@@ -290,7 +286,7 @@ export default function RequestConfirmationScreen() {
   };
 
   return (
-    <ModalContainer>
+    <ModalContainer loading={loading}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
           <View className="absolute top-6 right-6 z-10">

@@ -19,6 +19,7 @@ import { SummaryTitle, SummaryValue } from 'screens/Send/SendConfirmation/Paymen
 import SafeBottomView from 'components/SafeBottomView';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 type WithdrawConfirmationParams = {
   amount: string;
@@ -189,8 +190,10 @@ export default function WithdrawConfirmationScreen() {
     }
   };
 
+  usePreventBackFuncAndroid(loading);
+
   return (
-    <ModalContainer>
+    <ModalContainer loading={loading}>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
         <View className="absolute top-6 right-6 z-10">
           <CloseButton

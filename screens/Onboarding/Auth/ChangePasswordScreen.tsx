@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthInput from 'components/AuthInput';
@@ -13,6 +13,7 @@ import { hasTranslation, t } from 'i18n';
 import { ScrollView } from 'react-native-gesture-handler';
 import { validatePasswordFields } from './passwordValidation';
 import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 export default function ChangePasswordScreen() {
   const [password, setPassword] = useState('');
@@ -34,6 +35,8 @@ export default function ChangePasswordScreen() {
     }
   };
 
+  usePreventBackFuncAndroid(loading);
+
   const passwordOk = isPasswordValidByPolicy(password);
   const doPasswordsMatch = confirm.length > 0 && confirm === password;
   const isFormValid = !!password && !!confirm && passwordOk && doPasswordsMatch;
@@ -54,10 +57,15 @@ export default function ChangePasswordScreen() {
         icon: 'success',
         title: t('AUTH_PASSWORD_UPDATED_TITLE'),
         message: t('AUTH_PASSWORD_UPDATED_MESSAGE'),
-        onHide: () => goBack(),
       });
+
+      goBack();
+
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
     } catch (err: any) {
-      console.error('Change password error:', err);
+      setLoading(false);
       const rawMessage = err?.message;
       const message =
         rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
@@ -71,13 +79,11 @@ export default function ChangePasswordScreen() {
         title: t('AUTH_PASSWORD_UPDATE_FAILED_TITLE'),
         message,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" pointerEvents={loading ? 'none' : 'auto'}>
       <NavigationBar title={t('CHANGE_PASSWORD')} />
 
       <ScrollView className="flex-1 px-6">

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MinusIcon from 'assets/MinusIcon';
 import PlusOutlineIcon from 'assets/PlusOutlineIcon';
 import { ReactNode, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardTypeOptions, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -159,7 +159,7 @@ export default function CounterInput({
           <TextInput
             value={value}
             onChangeText={handleTextChange}
-            keyboardType="numeric"
+            keyboardType="number-pad"
             editable={!disabled}
             onFocus={() => { 
               setIsFocused(true);

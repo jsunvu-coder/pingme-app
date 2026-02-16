@@ -185,9 +185,6 @@ export class AuthService {
       this.log('Starting password change...');
       const cr = this.contractService.getCrypto();
 
-      // Pause commitment guard while changing password to avoid auto-logout during transition.
-      this.contractService.pauseCommitmentGuard();
-
       // Compute new credentials
       const newInputData = CryptoUtils.strToHex2(cr.username, newPassword);
       const newSalt = CryptoUtils.globalHash(newInputData);
@@ -273,9 +270,6 @@ export class AuthService {
       this.log('Password change completed successfully.');
     } catch (err) {
       this.handleError('Password change failed', err);
-    } finally {
-      // Resume commitment guard after password change completes or fails.
-      this.contractService.resumeCommitmentGuard();
     }
   }
 

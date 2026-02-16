@@ -18,6 +18,7 @@ import { GLOBALS, GLOBAL_SALT, ZERO_BYTES32 } from 'business/Constants';
 import { AuthService } from 'business/services/AuthService';
 import NavigationBar from 'components/NavigationBar';
 import * as SecureStore from 'expo-secure-store';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 export default function AccountRecoveryScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
@@ -55,7 +56,6 @@ export default function AccountRecoveryScreen() {
     }
   }, []);
 
-  
   const promptOpenSettingsForPhotos = useCallback(() => {
     Alert.alert(
       'Photo Library Access Required',
@@ -199,13 +199,17 @@ export default function AccountRecoveryScreen() {
 
       setRecoveryPk(recoveryPkHex);
       setRecoveryCode(code);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
     } catch (e: any) {
+      setLoading(false);
       console.error('Recovery initialize failed', e);
       Alert.alert('Error', e?.message || 'Failed to setup recovery');
-    } finally {
-      setLoading(false);
     }
   };
+
+  usePreventBackFuncAndroid(loading);
 
   const handleDownload = () => {
     // Export QR as base64 PNG then save to Photos
@@ -261,7 +265,7 @@ export default function AccountRecoveryScreen() {
 
   if (loading || recoveryPk == null) {
     return (
-      <View className="flex-1 bg-black">
+      <View className="flex-1 bg-black" pointerEvents={loading ? 'none' : 'auto'}>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#ffffff" />
         </View>

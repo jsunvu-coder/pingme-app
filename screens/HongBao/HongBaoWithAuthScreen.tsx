@@ -97,6 +97,15 @@ export default function HongBaoWithAuthScreen() {
     }
   };
 
+  const onLoginModePress = () => {
+    if(loading) return;
+    setMode('login');
+  };
+  const onSignupModePress = () => {
+    if(loading) return;
+    setMode('signup');
+  };
+
   return (
     <View className="flex flex-1 bg-[#F5E9E1]">
       <SafeAreaView edges={['top']} />
@@ -113,7 +122,7 @@ export default function HongBaoWithAuthScreen() {
         {/* Tabs */}
         <View className="m-4 flex-row rounded-full border border-[#E9E9E9] bg-white p-1">
           <TouchableOpacity
-            onPress={() => setMode('signup')}
+            onPress={onSignupModePress}
             className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'signup' ? 'bg-black' : 'bg-transparent'}`}>
             <SignUpIcon isActive={mode === 'signup'} />
             <Text
@@ -122,7 +131,7 @@ export default function HongBaoWithAuthScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => setMode('login')}
+            onPress={onLoginModePress}
             className={`flex-1 flex-row items-center justify-center rounded-full py-3 ${mode === 'login' ? 'bg-black' : 'bg-transparent'}`}>
             <LogInIcon isActive={mode === 'login'} />
             <Text

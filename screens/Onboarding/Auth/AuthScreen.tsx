@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AuthTabs from './AuthTabs';
 import CreateAccountView from './CreateAccountView';
 import LoginView from './LoginView';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 type AuthParams = {
   mode?: 'signup' | 'login';
@@ -35,6 +36,7 @@ export default function AuthScreen() {
   const [headerFull, setHeaderFull] = useState(false);
   const translateY = useRef(new Animated.Value(0)).current;
   const isSmallScreen = Dimensions.get('window').height <= 700;
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (route.params?.mode) setActiveTab(route.params.mode);
@@ -103,8 +105,10 @@ export default function AuthScreen() {
     };
   }, [translateY, headerFull, isSmallScreen]);
 
+  usePreventBackFuncAndroid(loading);
+
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" pointerEvents={loading ? 'none' : 'auto'}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top']} />
 
@@ -116,10 +120,11 @@ export default function AuthScreen() {
           <View className="flex-1 bg-white py-8">
             {headerFull ? <Header /> : <SimpleHeader />}
 
-            {headerFull && <AuthTabs activeTab={activeTab} onChange={setActiveTab} />}
+            {headerFull && <AuthTabs activeTab={activeTab} onChange={setActiveTab} loading={loading} />}
 
             {activeTab === 'login' ? (
               <LoginView
+                setLoading={setLoading}
                 lockboxProof={route.params?.lockboxProof}
                 prefillUsername={route.params?.username}
                 from={route.params?.from}
@@ -129,6 +134,7 @@ export default function AuthScreen() {
               />
             ) : (
               <CreateAccountView
+                setLoading={setLoading}
                 lockboxProof={route.params?.lockboxProof}
                 prefillUsername={route.params?.username}
                 amountUsdStr={route.params?.amountUsdStr}

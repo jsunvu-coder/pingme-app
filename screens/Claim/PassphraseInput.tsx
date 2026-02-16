@@ -8,12 +8,14 @@ export const PassphraseInput = ({
   error,
   errorMessage,
   disabled = false,
+  helperText,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   error?: boolean;
   errorMessage?: string;
   disabled?: boolean;
+  helperText?: string;
 }) => (
   <View className="rounded-2xl bg-white p-6">
     <AuthInput
@@ -25,6 +27,7 @@ export const PassphraseInput = ({
       }}
       placeholder="Enter passphrase"
       error={error}
+      helperText={helperText}
       autoFocus
       errorMessage={errorMessage}
       editable={!disabled}

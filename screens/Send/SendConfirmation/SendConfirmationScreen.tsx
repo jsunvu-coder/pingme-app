@@ -25,6 +25,7 @@ import SafeBottomView from 'components/SafeBottomView';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import usePreventBackFuncAndroid from 'hooks/usePreventBackFuncAndroid';
 
 type SendConfirmationParams = {
   amount?: number | string;
@@ -474,8 +475,11 @@ export default function SendConfirmationScreen() {
     }
   };
 
+
+  usePreventBackFuncAndroid(loading);
+
   return (
-    <ModalContainer>
+    <ModalContainer loading={loading}>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
         <View className="absolute top-0 right-0 left-0 z-10 bg-[#fafafa] pt-4 pr-4">
           <CloseButton isLoading={loading} />

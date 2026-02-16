@@ -1,5 +1,5 @@
 import React, { forwardRef, memo, useCallback, useMemo, useRef, useState } from 'react';
-import { KeyboardTypeOptions, Platform, Text, TextInput, TextInputProps, View } from 'react-native';
+import { KeyboardTypeOptions, NativeSyntheticEvent, Platform, TargetedEvent, Text, TextInput, TextInputProps, View } from 'react-native';
 
 type Props = {
   icon?: React.ReactNode;
@@ -14,6 +14,7 @@ type Props = {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoFocus?: boolean;
   containerClassName?: string;
+  helperText?: string;
 };
 
 const MASK_CHAR = '•';
@@ -32,6 +33,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
     autoFocus = false,
     editable = true,
     containerClassName,
+    helperText,
     onFocus,
     onBlur,
     ...rest
@@ -41,6 +43,7 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
   const isEmpty = !value || value.trim() === '';
   const inputRef = useRef<TextInput | null>(null);
   const savedFirstCharRef = useRef<string | null>(null);
+  const hasResetCapsRef = useRef(false);
 
   const setInputRef = (node: TextInput | null) => {
     inputRef.current = node;
@@ -98,6 +101,33 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
     [secureTextEntry, value, onChangeText]
   );
 
+  const _onFocus = useCallback(
+    (event: NativeSyntheticEvent<TargetedEvent>) => {
+      onFocus?.(event);
+      // Android: many keyboards show caps lock on for password fields. Blur then refocus
+      // so the IME reopens; it often opens in lowercase the second time.
+      if (
+        Platform.OS === 'android' &&
+        inputRef.current &&
+        !hasResetCapsRef.current
+      ) {
+        hasResetCapsRef.current = true;
+        inputRef.current.blur();
+        setTimeout(() => inputRef.current?.focus(), 0);
+        return;
+      }
+    },
+    [onFocus, secureTextEntry]
+  );
+
+  const _onBlur = useCallback(
+    (event: NativeSyntheticEvent<TargetedEvent>) => {
+      hasResetCapsRef.current = false;
+      onBlur?.(event);
+    },
+    [onBlur]
+  );
+
   return (
     <View className={containerClassName ?? 'mb-6'}>
       {icon && <View className="mb-2">{icon}</View>}
@@ -120,8 +150,8 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
         autoComplete="off"
         textContentType="oneTimeCode"
         importantForAutofill="no"
-        onFocus={onFocus}
-        onBlur={onBlur}
+        onFocus={_onFocus}
+        onBlur={_onBlur}
         className="h-13 px-1 text-xl text-[#0F0F0F]"
       />
 
@@ -135,6 +165,10 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
 
       {error && errorMessage && (
         <Text className="mt-2 text-sm font-medium text-[#FB1028]">{errorMessage}</Text>
+      )}
+
+      {!!helperText && (
+        <Text className="mt-2 text-sm text-[#909090]">{helperText}</Text>
       )}
 
       {customView && <View className="mt-4">{customView}</View>}

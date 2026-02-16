@@ -10,6 +10,7 @@ interface ActionButtonsProps {
   onClaim: () => void;
   onBack: () => void;
   hasLockbox: boolean;
+  marginTop?: number;
 }
 
 export const ActionButtons = ({
@@ -19,11 +20,19 @@ export const ActionButtons = ({
   onClaim,
   onBack,
   hasLockbox,
+  marginTop = 40,
 }: ActionButtonsProps) => {
   // Before verification (no lockbox yet): passphrase -> verify.
   if (!hasLockbox) {
     return (
-      <View className="mt-10 flex-1 flex-row items-center justify-between space-x-3">
+      <View
+        style={{
+          marginTop,
+          flex: 1,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
         <View className="mr-3 flex-1">
           <OutlineButton disabled={loading} title="Cancel" onPress={onBack} />
         </View>
