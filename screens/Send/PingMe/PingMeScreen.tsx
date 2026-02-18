@@ -11,7 +11,7 @@ import PaymentAmountView from './PaymentAmountView';
 import PrimaryButton from 'components/PrimaryButton';
 import HeaderView from 'components/HeaderView';
 import { BalanceService } from 'business/services/BalanceService';
-import { LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_PAYMENT_AMOUNT } from 'business/Constants';
+import { GLOBALS, LOCKBOX_DURATION, MAX_PAYMENT_AMOUNT, MIN_AMOUNT, MIN_PAYMENT_AMOUNT } from 'business/Constants';
 import ContactPickerModal from './ContactList';
 import { RecentEmailStorage } from './RecentEmailStorage';
 import LockboxDurationView from './LockboxDurationView';
@@ -210,7 +210,7 @@ export default function PingMeScreen() {
     }
 
     const stablecoinFactor = 10n ** BigInt(stablecoinDecimals);
-    const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * stablecoinFactor;
+    const minMicro = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
     const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * stablecoinFactor;
     if (amountMicro < minMicro) {
       showFlashMessage({

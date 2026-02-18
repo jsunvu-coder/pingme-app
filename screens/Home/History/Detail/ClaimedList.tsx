@@ -26,7 +26,18 @@ export const ClaimedList = ({
 
   const formatAmount = useCallback(
     (amount: string) => {
-      return Utils.formatDisplayAmount(Utils.formatMicroToUsd(amount, 'dollar', undefined, decimals), Utils.getTokenName(token));
+      return Utils.formatDisplayAmount(
+        Utils.formatMicroToUsd(
+          amount,
+          undefined,
+          {
+            grouping: true,
+            empty: '0',
+          },
+          decimals
+        ),
+        Utils.getTokenName(token)
+      );
     },
     [decimals, token]
   );
@@ -52,7 +63,9 @@ export const ClaimedList = ({
 
   const onlyYouClaimed = useMemo(() => {
     return (
-      claimedList.length === 1 && claimedList[0].username.toLowerCase() === AccountDataService.getInstance().email?.toLowerCase()
+      claimedList.length === 1 &&
+      claimedList[0].username.toLowerCase() ===
+        AccountDataService.getInstance().email?.toLowerCase()
     );
   }, [claimedList]);
 

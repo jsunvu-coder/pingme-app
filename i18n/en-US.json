@@ -236,7 +236,7 @@
   "AIRDROP_BACK_TO_REWARDS": "Back to Rewards",
   "AIRDROP_ERROR_UNABLE_TO_OPEN_LINK": "Unable to open link. Transaction hash copied.",
   "_CONFIRM_CREATE_HONG_BAO": "Are you sure you want to create a Hongbao?",
-  "_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY": "Amount must be greater than or equal to quantity",
+  "_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY": "The minimum amount per Hongbao is $0.1.",
   "_ALERT_HONG_BAO_BELOW_MINIMUM": "Minimum Hongbao amount is $0.1.",
   "_ALERT_HONG_BAO_BELOW_MINIMUM_WMON": "Minimum Hongbao amount is {{minAmount}}",
   "_WITHDRAW_WARNING_BODY": "Withdrawing {{tokenName}} to an incorrect address, or one that does not support the Monad Network, may result in irreversible loss of funds.",
