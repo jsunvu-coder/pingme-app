@@ -32,9 +32,6 @@ import { normalizeTxHash } from 'utils/txHash';
 
 const DEFAULT_DURATION = 60 * 60 * 24;
 
-const K_MIN_AMOUNT = 100_000;
-const K_MIN_AMOUNT_WMON = 5_000_000_000_000_000_000;
-
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
     ? (enUS as Record<string, unknown>)[msg]
@@ -136,8 +133,8 @@ export default function HongBaoScreen() {
     const total_amount = Utils.toMicro(data.totalAmount.toString(), TOKEN_DECIMALS[data.token]);
 
     //TODO: current only allow stablecoin bundles, need to add support for other tokens
-    const kMinAmount = BigInt(K_MIN_AMOUNT);
-    const kMinAmountWMON = BigInt(K_MIN_AMOUNT_WMON);
+    const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
+    const kMinAmountWMON = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT_WMON]);
 
     if (Utils.isStablecoin(data.token)) {
       if (total_amount < kMinAmount) {
