@@ -272,10 +272,10 @@ export const useDepositFlow = (payload?: DepositPayload | null) => {
       return;
     }
 
-    if (numericAmount < 1) {
+    if (numericAmount < 0.1) {
       await showLocalizedAlert({
         title: 'Amount too low',
-        message: 'Minimum payment amount is $1.00.',
+        message: 'Minimum payment amount is $0.1.',
         buttons: [{ text: 'OK' }],
       });
       return;

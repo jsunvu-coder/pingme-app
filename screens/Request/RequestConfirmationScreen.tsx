@@ -23,6 +23,8 @@ import {
   TOKEN_NAMES,
   TOKENS,
   STABLE_TOKENS,
+  GLOBALS,
+  MIN_AMOUNT,
 } from 'business/Constants';
 import CloseButton from 'components/CloseButton';
 import PaymentSummaryCard from './PaymentSummaryCard';
@@ -137,7 +139,7 @@ export default function RequestConfirmationScreen() {
       }
 
       const factor = 10n ** BigInt(tokenDecimals);
-      const minMicro = BigInt(MIN_PAYMENT_AMOUNT) * factor;
+      const minMicro = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
       const maxMicro = BigInt(MAX_PAYMENT_AMOUNT) * factor;
       if (amountMicro < minMicro) {
         await showLocalizedAlert({
