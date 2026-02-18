@@ -136,8 +136,8 @@ export default function HongBaoScreen() {
     const total_amount = Utils.toMicro(data.totalAmount.toString(), TOKEN_DECIMALS[data.token]);
 
     //TODO: current only allow stablecoin bundles, need to add support for other tokens
-    const kMinAmount = BigInt(K_MIN_AMOUNT);
-    const kMinAmountWMON = BigInt(K_MIN_AMOUNT_WMON);
+    const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
+    const kMinAmountWMON = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT_WMON]);
 
     if (Utils.isStablecoin(data.token)) {
       if (total_amount < kMinAmount) {
