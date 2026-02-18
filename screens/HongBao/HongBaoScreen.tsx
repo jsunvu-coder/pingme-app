@@ -32,9 +32,6 @@ import { normalizeTxHash } from 'utils/txHash';
 
 const DEFAULT_DURATION = 60 * 60 * 24;
 
-const K_MIN_AMOUNT = 100_000;
-const K_MIN_AMOUNT_WMON = 5_000_000_000_000_000_000;
-
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
     ? (enUS as Record<string, unknown>)[msg]
