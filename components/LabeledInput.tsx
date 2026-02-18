@@ -23,7 +23,7 @@ type LabeledInputProps = {
   helperTextColor?: string;
   placeholderTextColor?: string;
   integerOnly?: boolean;
-  minValue?: number;  
+  minValue?: number;
   textColor?: string;
 };
 
@@ -62,11 +62,52 @@ export default function LabeledInput({
   };
 
   const handleChangeText = (text: string) => {
-    let processedText = text;
-    // Handle integerOnly: only allow digits (0-9)
+    // Normalize decimal separator: treat "," as "."
+    let processedText = text.replace(/,/g, '.');
+
+    // Decimal mode: only digits and ".", at most one ".", at most one digit after "."
+    // and normalize leading zeros (keep single "0" if all zeros).
+    if (!integerOnly && keyboardType === 'decimal-pad') {
+      // Remove all characters except digits and "."
+      processedText = processedText.replace(/[^0-9.]/g, '');
+
+      const firstDotIndex = processedText.indexOf('.');
+
+      if (firstDotIndex === -1) {
+        // No decimal yet: normalize leading zeros, but keep at most one "0"
+        if (processedText.length === 0) {
+          // allow clearing
+          processedText = '';
+        } else if (/^0+$/.test(processedText)) {
+          // all zeros -> single "0"
+          processedText = '0';
+        } else {
+          // strip leading zeros by parsing, but keep as string
+          processedText = String(parseInt(processedText, 10));
+        }
+      } else {
+        // Has decimal separator
+        let beforeDot = processedText.slice(0, firstDotIndex);
+        let afterDotPart = processedText.slice(firstDotIndex + 1).replace(/\./g, '');
+
+        // Normalize integer part before "."
+        if (beforeDot.length === 0 || /^0+$/.test(beforeDot)) {
+          beforeDot = '0';
+        } else {
+          beforeDot = String(parseInt(beforeDot, 10));
+        }
+
+        // Only allow one digit after "."
+        afterDotPart = afterDotPart.slice(0, 1);
+
+        processedText = afterDotPart.length > 0 ? `${beforeDot}.${afterDotPart}` : `${beforeDot}.`;
+      }
+    }
+
+    // Integer-only mode: only allow digits, and if all zeros -> clear input
     if (integerOnly) {
       try {
-        const digitsOnly = text.replace(/[^0-9]/g, '');
+        const digitsOnly = processedText.replace(/[^0-9]/g, '');
 
         // If user only typed non-digit (e.g. "."), keep input as empty
         if (digitsOnly.length === 0) {
@@ -82,17 +123,13 @@ export default function LabeledInput({
         if (processedInt < minValue) {
           processedInt = minValue;
         }
-        const maxValue = parseInt(
-          parseFloat(showMaxInfo?.replace(/[^0-9]/g, '') ?? '0').toString(),
-          10
-        );
-        if (!isNaN(maxValue) && maxValue > 0 && processedInt > maxValue) {
-          processedInt = maxValue;
-        }
         processedText = processedInt.toString();
-      } catch (error) {
-        processedText = minValue.toString();
-      }
+      } catch (error) {}
+    }
+
+    const maxValue = parseFloat(showMaxInfo?.replace(/[^0-9]/g, '') ?? '0');
+    if (!isNaN(maxValue) && maxValue > 0 && parseFloat(processedText) > maxValue) {
+      processedText = maxValue.toString();
     }
 
     // Apply maxLength if specified

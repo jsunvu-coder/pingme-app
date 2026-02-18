@@ -28,9 +28,9 @@ export type HongBaoFormData = {
   token: keyof typeof TOKENS;
 };
 
-const MAX_RECIPIENTS = 20;
-const MAX_AMOUNT = 100;
-const MAX_AMOUNT_WMON = 5000;
+const MAX_RECIPIENTS = 500;
+const MAX_AMOUNT = 2500;
+const MAX_AMOUNT_WMON = 125000;
 const MAX_MESSAGE_LENGTH = 80;
 
 const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProps>(
@@ -72,7 +72,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
     const handleSubmit = () => {
       onSubmit({
         recipientCount: parseInt(recipientCount, 10) || 0,
-        totalAmount: parseInt(totalAmount, 10) || 0,
+        totalAmount: parseFloat(totalAmount) || 0,
         message,
         token: selectedToken,
       });
@@ -80,7 +80,7 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
 
     // Validation
     const recipientCountNum = parseInt(recipientCount, 10);
-    const totalAmountNum = parseInt(totalAmount, 10);
+    const totalAmountNum = parseFloat(totalAmount);
 
     const recipientError =
       recipientCount && recipientCountNum > MAX_RECIPIENTS
@@ -99,11 +99,23 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
     const isValid =
       recipientCountNum > 0 &&
       totalAmountNum > 0 &&
-      totalAmountNum <= maxAmount &&
-      recipientCountNum <= MAX_RECIPIENTS;
+      totalAmountNum <= maxAmount;
 
     const isStablecoin = selectedToken === 'USDC' || selectedToken === 'pUSDC';
     const maxAmountInfo = 'Max ' + Utils.formatDisplayAmount(maxAmount.toString(), selectedToken);
+
+    // Max length for amount input based on current value, not token:
+    // base = digit length of maxAmount, +1 if user actually uses a decimal separator.
+    // Count digits only before "." in maxAmount, then +2 (for "." and 1 decimal digit)
+    const maxAmountStr = maxAmount.toString();
+    const integerPartLength = totalAmount.split('.')[0]?.length ?? 0;
+    const hasDecimalSeparator = totalAmount.includes('.') || totalAmount.includes(',');
+    const isMaxAmountReached = totalAmountNum >= maxAmount;
+    // If user uses decimal separator, allow exactly one "." and one digit after it:
+    // integer part (maxAmountDigitsLength) + "." + 1 decimal digit => +2
+    const totalAmountMaxLength = hasDecimalSeparator
+      ? integerPartLength + 2
+      : isMaxAmountReached? maxAmountStr.length : maxAmountStr.length + 1;
 
     return (
       <View pointerEvents={editable ? 'auto' : 'none'} className="w-full gap-y-4">
@@ -150,11 +162,12 @@ const CreateHongBaoForm = forwardRef<CreateHongBaoFormRef, CreateHongBaoFormProp
             showMaxInfo={maxAmountInfo}
             showCharCount={false}
             multiline={false}
-            keyboardType="number-pad"
+            minValue={isStablecoin ? 0.01 : 5}
+            integerOnly={!isStablecoin}
+            keyboardType={isStablecoin ? 'decimal-pad' : 'number-pad'}
             placeholder="How much in total?"
             editable={!loading}
-            maxLength={maxAmount.toString().length}
-            integerOnly
+            maxLength={totalAmountMaxLength}
             helperText={amountError}
           />
         </View>

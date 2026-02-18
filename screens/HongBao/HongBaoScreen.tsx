@@ -32,6 +32,9 @@ import { normalizeTxHash } from 'utils/txHash';
 
 const DEFAULT_DURATION = 60 * 60 * 24;
 
+const K_MIN_AMOUNT = 100_000;
+const K_MIN_AMOUNT_WMON = 5_000_000_000_000_000_000;
+
 const confirm = async (msg: string) => {
   const resolvedMessage = Object.prototype.hasOwnProperty.call(enUS, msg)
     ? (enUS as Record<string, unknown>)[msg]
@@ -133,8 +136,8 @@ export default function HongBaoScreen() {
     const total_amount = Utils.toMicro(data.totalAmount.toString(), TOKEN_DECIMALS[data.token]);
 
     //TODO: current only allow stablecoin bundles, need to add support for other tokens
-    const kMinAmount = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT]);
-    const kMinAmountWMON = BigInt(Utils.getSessionObject(GLOBALS)[MIN_AMOUNT_WMON]);
+    const kMinAmount = BigInt(K_MIN_AMOUNT);
+    const kMinAmountWMON = BigInt(K_MIN_AMOUNT_WMON);
 
     if (Utils.isStablecoin(data.token)) {
       if (total_amount < kMinAmount) {
@@ -155,8 +158,8 @@ export default function HongBaoScreen() {
           title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
           message: t(
             '_ALERT_HONG_BAO_BELOW_MINIMUM_WMON',
-            { tokenName: data.token },
-            'Minimum Hongbao amount is 50 $WMON.'
+            { minAmount: Utils.formatDisplayAmount(Utils.formatMicroToUsd(kMinAmountWMON, 'dollar', undefined, 18), data.token)},
+            'Minimum Hongbao amount is 5 $WMON.'
           ),
           type: 'danger',
         });
@@ -174,7 +177,7 @@ export default function HongBaoScreen() {
     }
 
     if (Utils.isStablecoin(data.token)) {
-      if (data.totalAmount < data.recipientCount) {
+      if (total_amount < BigInt(data.recipientCount) * kMinAmount) {
         showFlashMessage({
           title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
           message: t(
@@ -187,13 +190,13 @@ export default function HongBaoScreen() {
         return;
       }
     } else {
-      if (data.totalAmount < data.recipientCount * 50) {
+      if (total_amount < BigInt(data.recipientCount) * kMinAmountWMON) {
         showFlashMessage({
           title: t('_TITLE_BELOW_MINIMUM', undefined, 'Amount too low'),
           message: t(
             '_ALERT_AMOUNT_MUST_BE_GREATER_THAN_QUANTITY_WMON',
-            undefined,
-            'The minimum amount per Hongbao is 50 $WMON.'
+            { minAmount: Utils.formatDisplayAmount(Utils.formatMicroToUsd(kMinAmountWMON, 'dollar', undefined, 18), data.token)},
+            'The minimum amount per Hongbao is 5 $WMON.'
           ),
           type: 'danger',
         });

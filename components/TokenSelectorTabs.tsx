@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Keyboard } from 'react-native';
 import { ALL_TOKENS, TOKENS } from 'business/Constants';
 import DollarSignIcon from 'assets/DollarSignIcon';
 import MonadIcon from 'assets/MonadIcon';
@@ -28,6 +28,7 @@ export default function TokenSelectorTabs({
   const tokens = ALL_TOKENS;
 
   const onSelectToken = (token: keyof typeof TOKENS) => {
+    Keyboard.dismiss();
     setSelectedToken(token);
   };
 
