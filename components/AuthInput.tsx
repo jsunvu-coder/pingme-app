@@ -104,25 +104,12 @@ const AuthInput = forwardRef<TextInput, Props & TextInputProps>(function AuthInp
   const _onFocus = useCallback(
     (event: NativeSyntheticEvent<TargetedEvent>) => {
       onFocus?.(event);
-      // Android: many keyboards show caps lock on for password fields. Blur then refocus
-      // so the IME reopens; it often opens in lowercase the second time.
-      if (
-        Platform.OS === 'android' &&
-        inputRef.current &&
-        !hasResetCapsRef.current
-      ) {
-        hasResetCapsRef.current = true;
-        inputRef.current.blur();
-        setTimeout(() => inputRef.current?.focus(), 0);
-        return;
-      }
     },
-    [onFocus, secureTextEntry]
+    [onFocus]
   );
 
   const _onBlur = useCallback(
     (event: NativeSyntheticEvent<TargetedEvent>) => {
-      hasResetCapsRef.current = false;
       onBlur?.(event);
     },
     [onBlur]
