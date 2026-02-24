@@ -323,16 +323,10 @@ export default function TransactionDetailsScreen() {
 
   const shareBundleLink = useMemo(() => {
     if (!bundleInfo) return null;
-    if (
-      bundleInfo.state === 'A' &&
-      bundleInfo.unlock_time > Date.now().valueOf() / 1000 &&
-      bundleInfo.claimed.length < bundleInfo.quantity
-    ) {
-      const redPocketService = RedPocketService.getInstance();
-      const shareLink = redPocketService.formatShareLink(transaction?.bundleUuid ?? '', APP_URL);
-      return shareLink;
-    }
-    return null;
+
+    const redPocketService = RedPocketService.getInstance();
+    const shareLink = redPocketService.formatShareLink(transaction?.bundleUuid ?? '', APP_URL);
+    return shareLink;
   }, [bundleInfo, transaction?.bundleUuid]);
 
   const handleCopyShareBundleLink = useCallback(async () => {
@@ -580,7 +574,10 @@ const formatCurrency = (value?: number | bigint, token?: string) => {
   const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
   const tokenDecimals = Utils.getTokenDecimals(token);
   const micro = Utils.toMicro(String(amount), tokenDecimals);
-  return Utils.formatDisplayAmount(Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' }, tokenDecimals), Utils.getTokenName(token));
+  return Utils.formatDisplayAmount(
+    Utils.formatMicroToUsd(micro, undefined, { grouping: true, empty: '0.00' }, tokenDecimals),
+    Utils.getTokenName(token)
+  );
 };
 
 const formatTimestamp = (seconds?: number) => {

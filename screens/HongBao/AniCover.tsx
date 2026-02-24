@@ -2,6 +2,7 @@ import { useIsFocused } from '@react-navigation/native';
 import ArrowLeftIcon from 'assets/ArrowLeftIcon';
 import QuestionCircleIcon from 'assets/QuestionCircleIcon';
 import { DOCS_URL } from 'business/Config';
+import PrimaryButton from 'components/PrimaryButton';
 import { push, setRootScreen } from 'navigation/Navigation';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import {
@@ -51,10 +52,20 @@ interface AniCoverProps {
   offsetAdjustment?: number;
   containerHeightAdjustment?: number;
   containerBottomAdjustment?: number;
+  showSendHongbaoButton?: boolean;
 }
 
 const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
-  ({ children, offsetAdjustment = 0, containerHeightAdjustment = 0, containerBottomAdjustment = 0 }, ref) => {
+  (
+    {
+      children,
+      offsetAdjustment = 0,
+      containerHeightAdjustment = 0,
+      containerBottomAdjustment = 0,
+      showSendHongbaoButton = false,
+    },
+    ref
+  ) => {
     const BOTTOM_OFFSET = -0.4 * COVER_HEIGHT + offsetAdjustment;
     const CONTAINER_HEIGHT =
       (Platform.OS === 'ios' ? 0.82 * windowHeight : 0.9 * windowHeight) +
@@ -245,6 +256,22 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
       Linking.openURL(DOCS_URL);
     };
 
+    const handleSendHongbao = () => {
+      // Navigate to HongBao tab in MainTab
+      setRootScreen([
+        {
+          name: 'MainTab',
+          params: {
+            screen: 'HongBao',
+          },
+        },
+      ]);
+    };
+
+    const handleGoHome = () => {
+      setRootScreen(['MainTab']);
+    };
+
     return (
       <View style={{ flex: 1, backgroundColor: '#F5E9E1' }}>
         <StatusBar barStyle="dark-content" />
@@ -286,7 +313,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                       style={{ flex: 1 }}
                       contentContainerStyle={{
                         paddingHorizontal: 16,
-                        paddingBottom: 0.15 * CONTAINER_HEIGHT + containerBottomAdjustment,
+                        paddingBottom: !showSendHongbaoButton ? 0.15 * CONTAINER_HEIGHT + containerBottomAdjustment : 0,
                       }}
                       bottomOffset={50}
                       showsVerticalScrollIndicator={true}
@@ -294,6 +321,24 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
                       bounces={false}>
                       {children}
                     </KeyboardAwareScrollView>
+
+                    {showSendHongbaoButton && (
+                      <View
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingBottom: 0.15 * CONTAINER_HEIGHT + containerBottomAdjustment,
+                      }}>
+                      <View className="mt-4">
+                        <PrimaryButton title="Send a Hongbao" onPress={handleSendHongbao} />
+                      </View>
+
+                      <TouchableOpacity onPress={handleGoHome} className="mx-auto mt-6">
+                        <Text className="text-center text-base text-[#FD4912] underline">
+                          Go to Homepage
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    )}
                   </View>
                 </View>
               </ImageBackground>

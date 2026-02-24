@@ -1,9 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { setRootScreen } from 'navigation/Navigation';
-import PrimaryButton from 'components/PrimaryButton';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch } from 'store/hooks';
 import { fetchHistoryToRedux } from 'store/historyThunks';
 import AniCover from './AniCover';
@@ -45,30 +42,12 @@ export default function HongBaoSuccessScreen() {
     void fetchHistoryToRedux(dispatch);
   }, [dispatch]);
 
-  const handleSendHongbao = () => {
-    // Navigate to HongBao tab in MainTab
-    setRootScreen([
-      {
-        name: 'MainTab',
-        params: {
-          screen: 'HongBao',
-        },
-      },
-    ]);
-  };
-
-  const handleGoHome = () => {
-    setRootScreen(['MainTab']);
-  };
-
   return (
     <View className="flex-1 bg-[#F5E9E1]">
-
-
-      <AniCover offsetAdjustment={80} containerHeightAdjustment={80} containerBottomAdjustment={100}>
+      <AniCover offsetAdjustment={80} containerHeightAdjustment={80} containerBottomAdjustment={115} showSendHongbaoButton={true} >
         {/* Amount */}
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
-          {isClaimed? "You are already claimed": "You claimed"}
+          {isClaimed? "You have already claimed": "You claimed"}
         </Text>
         <Text className="text-center text-3xl font-bold text-[#982C0B]">
           {displayAmount}
@@ -108,17 +87,6 @@ export default function HongBaoSuccessScreen() {
             </View>
           ))}
         </View>
-
-        {/* Send Hongbao Button */}
-        <View className="mt-8">
-          <PrimaryButton title="Send a Hongbao" onPress={handleSendHongbao} />
-        </View>
-
-        <TouchableOpacity onPress={handleGoHome} className='mx-auto mt-6'>
-          <Text className="text-center text-base  text-[#FD4912] underline">
-            Go to Homepage
-          </Text>
-        </TouchableOpacity>
       </AniCover>
     </View>
 
