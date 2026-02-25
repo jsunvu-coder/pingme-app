@@ -85,7 +85,8 @@ export const ClaimedList = ({
       <FlatList
         data={claimedList}
         keyExtractor={(item, index) => `${item.username}-${index.toString()}`}
-        contentContainerStyle={{ paddingBottom: 8, flex: 1 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 8 }}
         ListEmptyComponent={ListEmptyComponent}
         renderItem={({ item, index }) => (
           <ClaimedItem
