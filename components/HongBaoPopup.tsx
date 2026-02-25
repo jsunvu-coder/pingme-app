@@ -71,7 +71,7 @@ export default function HongBaoPopup({ visible, onClose, onSendHongBao }: Props)
 
           {/* Description */}
           <Text className="text-[#0F0F0F] text-center text-base font-bold mb-8 px-2">
-            The modern Hongbao: instant, borderless and fun. Share up to 20 Hongbao in one link and let luck decide who gets what.
+            The modern Hongbao: instant, borderless and fun. Share up to 500 Hongbao in one link and let luck decide who gets what.
           </Text>
 
           {/* CTA Button */}
