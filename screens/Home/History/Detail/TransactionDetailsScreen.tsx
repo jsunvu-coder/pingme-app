@@ -152,15 +152,9 @@ export default function TransactionDetailsScreen() {
     };
   }, [lockboxCommitment]);
 
-  console.log('🔍 [TransactionDetailsScreen] bundleInfo', bundleInfo);
-
   const fetchLockboxDetail = useCallback(async () => {
     const redPocketService = RedPocketService.getInstance();
-    if (
-      lockboxCommitment &&
-      lockboxCommitment === ZERO_BYTES32 &&
-      (transaction?.bundleUuid || transaction?.claimedBundleUuid)
-    ) {
+    if (transaction?.bundleUuid || transaction?.claimedBundleUuid) {
       try {
         const bundleInfo = await redPocketService.getBundleStatus(
           transaction.bundleUuid || transaction.claimedBundleUuid || ''
@@ -169,26 +163,6 @@ export default function TransactionDetailsScreen() {
       } catch (err: any) {
         console.error('❌ Failed to load bundle info:', err);
         setBundleInfo(null);
-      } finally {
-        setTimeout(() => {
-          setFetchingDetail(false);
-          setInitialLoadComplete(true);
-        }, 500);
-        return;
-      }
-    }
-    if (transaction?.claimedBundleUuid) {
-      try {
-        const bundleInfo = await redPocketService.getBundleStatus(transaction.claimedBundleUuid);
-        setBundleInfo(bundleInfo);
-      } catch (err: any) {
-        console.error('❌ Failed to load bundle info:', err);
-        setBundleInfo(null);
-      } finally {
-        setTimeout(() => {
-          setFetchingDetail(false);
-          setInitialLoadComplete(true);
-        }, 500);
       }
     }
     if (!lockboxCommitment || lockboxCommitment === ZERO_BYTES32) {
@@ -344,15 +318,31 @@ export default function TransactionDetailsScreen() {
     if (!bundleInfo || lockboxStatus === 'BUNDLE_EXPIRED') {
       return '$0.00';
     }
-    const claimed = Utils.toAmount(
-      bundleInfo.claimed.reduce((r, claimed) => r + Number(claimed.amount), 0),
-      Utils.getTokenDecimals(transaction?.token)
+
+    const tokenDecimals = Utils.getTokenDecimals(transaction?.token);
+    const tokenName = Utils.getTokenName(transaction?.token);
+
+    // Total amount in micro units based on original transaction amount
+    const totalMicro = Utils.toMicro(String(Math.abs(transaction?.amount ?? 0)), tokenDecimals);
+
+    // Sum of claimed amounts in micro units (backend already provides micro)
+    const claimedMicro = bundleInfo.claimed.reduce(
+      (r, claimed) => r + BigInt(claimed.amount),
+      0n
     );
-    return (
-      formatCurrency(Math.abs(transaction?.amount ?? 0) - Number(claimed), transaction?.token) ??
-      '$0.00'
+
+    const remainingMicro = totalMicro - claimedMicro;
+
+    return Utils.formatDisplayAmount(
+      Utils.formatMicroToUsd(
+        remainingMicro < 0n ? 0n : remainingMicro,
+        undefined,
+        { grouping: true, empty: '0.00' },
+        tokenDecimals
+      ),
+      tokenName
     );
-  }, [bundleInfo]);
+  }, [bundleInfo, lockboxStatus, transaction?.amount, transaction?.token]);
 
   if (!transaction) {
     return (

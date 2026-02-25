@@ -289,17 +289,6 @@ export class Utils {
   }
 
   /**
-   * Convert micro to Amount
-   * @param microAmount
-   * @param decimals
-   * @returns Amount in number
-   */
-  static toAmount(microAmount: number, decimals: number = 6): bigint {
-    //
-    return BigInt(microAmount) / 10n ** BigInt(decimals);
-  }
-
-  /**
    * Convert unit format (wei/micro units) to readable USD string
    * @param value Amount in unit format (bigint or string)
    * @param mode Format mode: "dollar" (no cents), "cent" (cents only), or undefined (full)
