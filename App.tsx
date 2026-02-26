@@ -19,6 +19,7 @@ import { View, ActivityIndicator, StatusBar } from 'react-native';
 import LogoWithText from 'assets/LogoWithText';
 import OverlayManager from 'screens/Overlay/OverlayManager';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { FcmService } from 'business/services/FcmService';
 
 export default function App() {
   const [storeReady, setStoreReady] = useStateOriginal(false);
@@ -40,6 +41,30 @@ export default function App() {
   // Install crypto polyfill
   useEffect(() => {
     install();
+  }, []);
+
+  // Initialize FCM and log token / messages for debugging
+  useEffect(() => {
+    const fcm = FcmService.getInstance();
+
+    void (async () => {
+      const token = await fcm.initAndGetToken();
+      if (!token) return;
+      // TODO: send token to backend if needed
+    })();
+
+    const unsubForeground = fcm.subscribeForeground((msg) => {
+      console.log('[FCM] Foreground handler received message', msg);
+    });
+
+    const unsubOpened = fcm.subscribeNotificationOpened((msg) => {
+      console.log('[FCM] Opened handler received message', msg);
+    });
+
+    return () => {
+      unsubForeground();
+      unsubOpened();
+    };
   }, []);
 
   useEffect(() => {

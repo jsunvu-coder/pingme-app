@@ -9,12 +9,14 @@ const iosConfig = isStaging
       bundleIdentifier: 'com.hailstonelab.pingme.demo',
       appleTeamId: '698L9G9LDH',
       associatedDomains: ['applinks:app.staging.pingme.xyz'],
+      googleServicesFile: './GoogleService-Staging-Info.plist',
     }
   : {
       // Production configuration
       bundleIdentifier: 'xyz.pingme.app',
       appleTeamId: 'BMN9N6C39P',
       associatedDomains: ['applinks:app.pingme.xyz', 'applinks:app.staging.pingme.xyz'],
+      googleServicesFile: './GoogleService-Info.plist',
     };
 
 module.exports = {
@@ -91,6 +93,7 @@ module.exports = {
     },
     android: {
       versionCode: 14,
+      googleServicesFile: './google-services.json',
       adaptiveIcon: {
         foregroundImage: './assets/icon.png',
         backgroundColor: '#ffffff',

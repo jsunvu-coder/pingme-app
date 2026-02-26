@@ -1,11 +1,14 @@
 const {
   withGradleProperties,
+  withProjectBuildGradle,
   withAppBuildGradle,
   withDangerousMod,
   withAndroidManifest,
   AndroidConfig,
   withInfoPlist,
   withEntitlementsPlist,
+  withPodfile,
+  withAppDelegate,
 } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -56,6 +59,34 @@ const withAndroidSigning = (config) => {
       }
     );
 
+    return config;
+  });
+
+  // Ensure Google Services Gradle plugin dependency is present on the root project
+  config = withProjectBuildGradle(config, (config) => {
+    let buildGradle = config.modResults.contents;
+
+    const hasGoogleServicesClasspath = buildGradle.includes('com.google.gms:google-services');
+
+    if (!hasGoogleServicesClasspath) {
+      const kotlinClasspathLine = "    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')";
+      if (buildGradle.includes(kotlinClasspathLine)) {
+        buildGradle = buildGradle.replace(
+          kotlinClasspathLine,
+          `${kotlinClasspathLine}
+    classpath('com.google.gms:google-services:4.4.2')`
+        );
+        console.log('  ✓ Added com.google.gms:google-services classpath to android/build.gradle');
+      } else {
+        console.warn(
+          '  ⚠ Could not find Kotlin Gradle plugin line in android/build.gradle, skipping google-services classpath injection'
+        );
+      }
+    } else {
+      console.log('  - google-services classpath already present in android/build.gradle');
+    }
+
+    config.modResults.contents = buildGradle;
     return config;
   });
 
@@ -126,6 +157,17 @@ const withAndroidSigning = (config) => {
           console.warn('  ⚠ Could not find release buildType to modify');
         }
       }
+    }
+
+    // Ensure Google Services Gradle plugin is applied for Firebase (Cloud Messaging)
+    const googleServicesPluginLine = 'apply plugin: "com.google.gms.google-services"';
+    if (!buildGradle.includes('com.google.gms.google-services')) {
+      buildGradle = `${buildGradle.trimEnd()}
+${googleServicesPluginLine}
+`;
+      console.log('  ✓ Applied com.google.gms.google-services plugin in app/build.gradle');
+    } else {
+      console.log('  - com.google.gms.google-services plugin already applied in app/build.gradle');
     }
 
     config.modResults.contents = buildGradle;
@@ -291,6 +333,90 @@ const withAndroidSigning = (config) => {
 const withIOSConfig = (config) => {
   console.log('🍎 Applying iOS configuration plugin...');
 
+  // Ensure AppDelegate configures Firebase (required for React Native Firebase)
+  config = withAppDelegate(config, (config) => {
+    if (!config.modResults || typeof config.modResults.contents !== 'string') {
+      console.warn('  ⚠ AppDelegate modResults is not a string; skipping Firebase injection');
+      return config;
+    }
+
+    let contents = config.modResults.contents;
+
+    // Ensure we import Firebase
+    if (!contents.includes('import Firebase')) {
+      const importMarker = 'import ReactAppDependencyProvider';
+      if (contents.includes(importMarker)) {
+        contents = contents.replace(
+          importMarker,
+          `${importMarker}
+import Firebase`
+        );
+        console.log('  ✓ Injected Firebase import into AppDelegate');
+      } else {
+        console.warn(
+          '  ⚠ Could not find ReactAppDependencyProvider import in AppDelegate; skipping Firebase import injection'
+        );
+      }
+    } else {
+      console.log('  - AppDelegate already imports Firebase');
+    }
+
+    // Ensure we call FirebaseApp.configure() in didFinishLaunchingWithOptions
+    if (!contents.includes('FirebaseApp.configure()')) {
+      const launchMarker =
+        'didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil\n  ) -> Bool {';
+      if (contents.includes(launchMarker)) {
+        contents = contents.replace(
+          launchMarker,
+          `${launchMarker}
+    FirebaseApp.configure()`
+        );
+        console.log('  ✓ Injected FirebaseApp.configure() into AppDelegate');
+      } else {
+        console.warn(
+          '  ⚠ Could not find didFinishLaunchingWithOptions signature in AppDelegate; skipping FirebaseApp.configure injection'
+        );
+      }
+    } else {
+      console.log('  - AppDelegate already calls FirebaseApp.configure()');
+    }
+
+    config.modResults.contents = contents;
+    return config;
+  });
+
+  // Ensure Podfile is configured to use modular headers (needed for some Firebase pods)
+  config = withPodfile(config, (config) => {
+    if (!config.modResults || typeof config.modResults.contents !== 'string') {
+      console.warn('  ⚠ Podfile modResults is not a string; skipping modular headers injection');
+      return config;
+    }
+
+    let contents = config.modResults.contents;
+
+    if (!contents.includes('use_modular_headers!')) {
+      const hook = 'prepare_react_native_project!';
+      if (contents.includes(hook)) {
+        contents = contents.replace(
+          hook,
+          `${hook}
+
+use_modular_headers!`
+        );
+        console.log('  ✓ Injected use_modular_headers! into Podfile');
+      } else {
+        console.warn(
+          '  ⚠ Could not find prepare_react_native_project! in Podfile; skipping modular headers injection'
+        );
+      }
+    } else {
+      console.log('  - Podfile already contains use_modular_headers!');
+    }
+
+    config.modResults.contents = contents;
+    return config;
+  });
+
   // Modify Info.plist
   config = withInfoPlist(config, (config) => {
     const { modResults } = config;
@@ -365,6 +491,22 @@ const withIOSConfig = (config) => {
       console.log('  ✓ Added CADisableMinimumFrameDurationOnPhone: true');
     }
 
+    // Enable remote notifications background mode for Firebase Cloud Messaging
+    if (!modResults.UIBackgroundModes) {
+      modResults.UIBackgroundModes = [];
+      console.log('  ✓ Initialized UIBackgroundModes array');
+    }
+
+    if (!Array.isArray(modResults.UIBackgroundModes)) {
+      modResults.UIBackgroundModes = [modResults.UIBackgroundModes].filter(Boolean);
+      console.log('  ✓ Converted UIBackgroundModes to array');
+    }
+
+    if (!modResults.UIBackgroundModes.includes('remote-notification')) {
+      modResults.UIBackgroundModes.push('remote-notification');
+      console.log('  ✓ Added remote-notification to UIBackgroundModes');
+    }
+
     return config;
   });
 
@@ -386,6 +528,14 @@ const withIOSConfig = (config) => {
 
     console.log(`  📦 Bundle ID: ${bundleId}`);
     console.log(`  🏷️  Environment: ${isStaging ? 'Staging' : 'Production'}`);
+
+    // Configure APS environment for push notifications
+    const apsEnvironmentKey = 'aps-environment';
+    const desiredApsEnv = isStaging ? 'development' : 'production';
+    if (modResults[apsEnvironmentKey] !== desiredApsEnv) {
+      modResults[apsEnvironmentKey] = desiredApsEnv;
+      console.log(`  ✓ Set ${apsEnvironmentKey} to ${desiredApsEnv}`);
+    }
 
     // Add associated domains for Universal Links
     const associatedDomainsKey = 'com.apple.developer.associated-domains';
