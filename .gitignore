@@ -51,3 +51,8 @@ ios/*.xcodeproj/xcuserdata/
 ios/*.xcodeproj/project.xcworkspace/xcuserdata/
 
 docs/
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+GoogleService-Staging-Info.plist
