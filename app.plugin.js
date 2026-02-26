@@ -394,6 +394,7 @@ import Firebase`
 
     let contents = config.modResults.contents;
 
+    // Ensure use_modular_headers! is present
     if (!contents.includes('use_modular_headers!')) {
       const hook = 'prepare_react_native_project!';
       if (contents.includes(hook)) {
@@ -411,6 +412,24 @@ use_modular_headers!`
       }
     } else {
       console.log('  - Podfile already contains use_modular_headers!');
+    }
+
+    // Ensure $RNFirebaseAsStaticFramework = true is present (required by RNFirebase when using frameworks)
+    if (!contents.includes('$RNFirebaseAsStaticFramework')) {
+      if (contents.includes('use_modular_headers!')) {
+        contents = contents.replace(
+          'use_modular_headers!',
+          `use_modular_headers!
+$RNFirebaseAsStaticFramework = true`
+        );
+        console.log('  ✓ Injected $RNFirebaseAsStaticFramework = true into Podfile');
+      } else {
+        console.warn(
+          '  ⚠ Could not find use_modular_headers! in Podfile; skipping RNFirebaseAsStaticFramework injection'
+        );
+      }
+    } else {
+      console.log('  - Podfile already defines $RNFirebaseAsStaticFramework');
     }
 
     config.modResults.contents = contents;

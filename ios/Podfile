@@ -21,6 +21,7 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 prepare_react_native_project!
 
 use_modular_headers!
+$RNFirebaseAsStaticFramework = true
 
 target 'PingMe' do
   use_expo_modules!
