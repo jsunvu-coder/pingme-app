@@ -10,6 +10,7 @@ interface OutlineButtonProps {
   textColor?: string;
   fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
   icon?: ReactNode;
+  fontSize?: number;
 }
 
 export default function OutlineButton({
@@ -19,6 +20,7 @@ export default function OutlineButton({
   className = '',
   borderColor,
   textColor,
+  fontSize = 14,
   fontWeight = 'semibold',
   icon,
 }: OutlineButtonProps) {
@@ -68,6 +70,7 @@ export default function OutlineButton({
                 textAlignVertical: 'center',
               }
             : {}),
+          fontSize: fontSize,
           fontWeight:
             fontWeight === 'bold'
               ? '700'

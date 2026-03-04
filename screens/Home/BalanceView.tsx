@@ -121,7 +121,7 @@ export default function BalanceView({
         </View>
 
         <View className="flex-row items-center space-x-3">
-          <TouchableOpacity className="rounded-full" onPress={() => push('DepositScreen')}>
+          <TouchableOpacity className="rounded-full" onPress={() => push('TopUpScreen')}>
             <PlusIcon color="white" />
           </TouchableOpacity>
         </View>

@@ -41,7 +41,7 @@ export default function DepositScreen() {
 
   return (
     <View className="flex-1 bg-[#fafafa]">
-      <NavigationBar title="Top Up Balance" />
+      <NavigationBar title="Deposit to Address" />
 
       <ScrollView
         className="flex-1 px-4"

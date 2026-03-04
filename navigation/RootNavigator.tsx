@@ -35,6 +35,8 @@ import HongBaoVerificationScreen from 'screens/HongBao/HongBaoVerificationScreen
 import HongBaoSuccessScreen from 'screens/HongBao/HongBaoSuccessScreen';
 import HongBaoErrorScreen from 'screens/HongBao/HongBaoErrorScreen';
 import LeaderBoardScreen from 'screens/Leaderboard/LeaderBoardScreen';
+import TopUpScreen from 'screens/TopUp/TopUpScreen';
+import BridgeFromAnotherWalletScreen from 'screens/TopUp/BridgeFromAnotherWallet';
 
 const Stack = createStackNavigator();
 
@@ -255,7 +257,14 @@ const SCREEN_GROUPS: {
       {
         name: 'LeaderBoardScreen',
         component: LeaderBoardScreen,
-      }
+      },
+        name: 'TopUpScreen',
+        component: TopUpScreen,
+      },
+      {
+        name: 'BridgeFromAnotherWalletScreen',
+        component: BridgeFromAnotherWalletScreen,
+      },
     ],
   },
 ];
