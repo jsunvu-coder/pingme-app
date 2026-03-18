@@ -322,7 +322,7 @@ export class AuthService {
    * Claims a lockbox using the currently cached login-derived crypto (salt + balance commitment).
    * This avoids forcing a re-login when the user is already signed in.
    */
-  async claimWithCurrentCrypto(lockboxProof: string): Promise<void> {
+  async claimWithCurrentCrypto(lockboxProof: string, senderCommitment?: string): Promise<void> {
     const cr = this.contractService.getCrypto();
     if (!cr?.salt || !cr?.commitment) {
       throw new Error('Missing cached credentials for claim.');
@@ -336,7 +336,7 @@ export class AuthService {
     if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
 
     await this.commitProtect(
-      () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment),
+      () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment, senderCommitment),
       lockboxProofHash,
       saltHash,
       commitmentHash

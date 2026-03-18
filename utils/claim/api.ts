@@ -220,11 +220,14 @@ export async function ensureCommitReady(
  * console.log('Claimed! TX:', result.txHash);
  * ```
  */
-export async function claimWithCurrentUser(lockboxProof: string): Promise<void> {
+export async function claimWithCurrentUser(
+  lockboxProof: string,
+  senderCommitment?: string
+): Promise<void> {
   const { authService } = getServices();
 
   try {
-    await authService.claimWithCurrentCrypto(lockboxProof);
+    await authService.claimWithCurrentCrypto(lockboxProof, senderCommitment);
   } catch (error) {
     console.error('❌ [ClaimAPI] Claim failed:', error);
     throw error;

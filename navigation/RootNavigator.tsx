@@ -34,6 +34,7 @@ import HongBaoWithAuthScreen from 'screens/HongBao/HongBaoWithAuthScreen';
 import HongBaoVerificationScreen from 'screens/HongBao/HongBaoVerificationScreen';
 import HongBaoSuccessScreen from 'screens/HongBao/HongBaoSuccessScreen';
 import HongBaoErrorScreen from 'screens/HongBao/HongBaoErrorScreen';
+import LeaderBoardScreen from 'screens/Leaderboard/LeaderBoardScreen';
 
 const Stack = createStackNavigator();
 
@@ -251,6 +252,10 @@ const SCREEN_GROUPS: {
             ? { ...transparentModalOptions, gestureEnabled: false }
             : { gestureEnabled: false },
       },
+      {
+        name: 'LeaderBoardScreen',
+        component: LeaderBoardScreen,
+      }
     ],
   },
 ];

@@ -29,22 +29,24 @@ export interface ClaimPaymentParams extends ClaimDeeplinkParams {
 export const useClaimPayment = () => {
   const route = useRoute<any>();
   const params = useMemo(() => route?.params ?? {}, [route?.params]);
-  const { 
-    username, 
-    lockboxSalt, 
-    code, 
-    paymentId, 
-    onClaimSuccess, 
+  const {
+    username,
+    lockboxSalt,
+    code,
+    paymentId,
+    onClaimSuccess,
     signup,
     // Pre-verified data from DeepLinkHandler (when signup flow with empty passphrase)
     _lockboxData,
     _lockboxProof,
     _derivedStatus,
-    ...restParams 
+    senderCommitment,
+    ...restParams
   } = params as ClaimPaymentParams & {
     _lockboxData?: string;
     _lockboxProof?: string;
     _derivedStatus?: LockboxStatus;
+    senderCommitment?: string;
   };
 
   const [passphrase, setPassphrase] = useState('');
@@ -99,14 +101,11 @@ export const useClaimPayment = () => {
     return lockboxInfo?.formattedAmount;
   }, [lockboxInfo]);
 
-  const amountUsdStrFromLockbox = useCallback(
-    (lb?: LockboxData | null) => {
-      if (!lb) return undefined;
-      const info = getLockboxInfo(lb);
-      return info?.formattedAmount;
-    },
-    []
-  );
+  const amountUsdStrFromLockbox = useCallback((lb?: LockboxData | null) => {
+    if (!lb) return undefined;
+    const info = getLockboxInfo(lb);
+    return info?.formattedAmount;
+  }, []);
 
   const handleClaim = useCallback(async () => {
     const proof = lockboxProof;
@@ -140,8 +139,8 @@ export const useClaimPayment = () => {
       }
 
       // Use utility to claim
-      await claimWithCurrentUser(proof);
-      
+      await claimWithCurrentUser(proof, senderCommitment);
+
       if (typeof onClaimSuccess === 'function') {
         shareFlowService.setPendingClaim({
           amountUsdStr,
@@ -185,13 +184,8 @@ export const useClaimPayment = () => {
       setLockbox(null);
 
       // Use utility to compute lockbox proof
-      const crypto = computeLockboxProof(
-        username || '',
-        normalizedPassphrase,
-        lockboxSalt!,
-        code
-      );
-      
+      const crypto = computeLockboxProof(username || '', normalizedPassphrase, lockboxSalt!, code);
+
       setLockboxProof(crypto.lockboxProof);
 
       // Use utility to get lockbox
@@ -212,10 +206,10 @@ export const useClaimPayment = () => {
       const loggedIn = await isUserLoggedIn();
       if (loggedIn) {
         phase = 'claim';
-        
+
         // Auto-claim if logged in
-        await claimWithCurrentUser(crypto.lockboxProof);
-        
+        await claimWithCurrentUser(crypto.lockboxProof, senderCommitment);
+
         if (typeof onClaimSuccess === 'function') {
           shareFlowService.setPendingClaim({
             amountUsdStr,

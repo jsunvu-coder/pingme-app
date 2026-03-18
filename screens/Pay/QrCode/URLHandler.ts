@@ -55,6 +55,7 @@ export const handleUrl = async (rawData: string, releaseScanLock?: () => void) =
     // ---------- Handle /claim ----------
     if (path === '/claim') {
       const lockboxSalt = url.searchParams.get('lockboxSalt');
+      const senderCommitment = url.searchParams.get('sender_commitment');
       const username =
         url.searchParams.get('username') ?? url.searchParams.get('email') ?? undefined;
       if (!lockboxSalt) {
@@ -67,7 +68,7 @@ export const handleUrl = async (rawData: string, releaseScanLock?: () => void) =
       }
 
       console.log('📦 Navigating to ClaimPaymentScreen:', { lockboxSalt, username });
-      push('ClaimPaymentScreen', { lockboxSalt, username });
+      push('ClaimPaymentScreen', { lockboxSalt, username, senderCommitment });
       return;
     }
 
@@ -89,11 +90,15 @@ export const handleUrl = async (rawData: string, releaseScanLock?: () => void) =
 
       if (isLoggedIn) {
         // Already logged in → skip auth screen, go directly to verification
-        console.log('🧧 User logged in → Navigating to HongBaoVerificationScreen:', { bundle_uuid });
+        console.log('🧧 User logged in → Navigating to HongBaoVerificationScreen:', {
+          bundle_uuid,
+        });
         push('HongBaoVerificationScreen', { bundle_uuid });
       } else {
         // Not logged in → show auth screen first
-        console.log('🧧 User not logged in → Navigating to HongBaoWithAuthScreen:', { bundle_uuid });
+        console.log('🧧 User not logged in → Navigating to HongBaoWithAuthScreen:', {
+          bundle_uuid,
+        });
         push('HongBaoWithAuthScreen', { bundle_uuid });
       }
       return;

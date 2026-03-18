@@ -205,8 +205,8 @@ export class ContractService {
   // ========================================================
   // 🌍 OPEN CALLS (NO GUARD)
   // ========================================================
-  async claim(proof: string, salt: string, commitment: string) {
-    return this.post('/pm_claim', { proof, salt, commitment });
+  async claim(proof: string, salt: string, commitment: string, senderCommitment?: string) {
+    return this.post('/pm_claim', { proof, salt, commitment, sender_commitment: senderCommitment });
   }
 
   async commit(ct1: string, ct2?: string, ct3?: string) {
@@ -256,6 +256,14 @@ export class ContractService {
 
   async getEvents(commitment: string, batch_size?: number) {
     return this.sessionGuard(() => this.post('/pm_get_events', { commitment, batch_size }));
+  }
+
+  async getStats(commitment: string) {
+    return this.sessionGuard(() => this.get(`/pm_get_stats?commitment=${commitment}`));
+  }
+
+  async getLeaders(commitment: string) {
+    return this.sessionGuard(() => this.get(`/pm_get_leaders?commitment=${commitment}`));
   }
 
   async getForwarder(commitment: string) {

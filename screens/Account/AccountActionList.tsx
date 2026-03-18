@@ -218,6 +218,11 @@ export default function AccountActionList() {
 
   const items: ItemProps[] = [
     {
+      label: 'Leaderboard',
+      action: () => push('LeaderBoardScreen'),
+      rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+    },
+    {
       label: 'Withdraw',
       action: () => push('WithdrawScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,

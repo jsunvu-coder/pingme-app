@@ -324,7 +324,9 @@ export class PayService {
       if (txHash.startsWith('0x') === false) {
         txHash = '0x' + txHash;
       }
-      const payLink = !isEmail ? `${APP_URL}/claim?lockboxSalt=${lockboxSalt}` : undefined;
+      const payLink = !isEmail
+        ? `${APP_URL}/claim?lockboxSalt=${lockboxSalt}&sender_commitment=${nextCommitment}`
+        : undefined;
 
       console.log('📦 [PayService] TX Hash:', txHash);
       if (payLink) console.log('🌐 [PayService] Pay Link:', payLink);

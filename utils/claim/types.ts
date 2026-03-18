@@ -36,6 +36,7 @@ export interface ClaimDeeplinkParams {
   paymentId?: string; // Optional: payment ID
   signup?: boolean; // Optional: signup flow
   onClaimSuccess?: () => void; // Callback after claim success
+  senderCommitment?: string; // Optional: sender commitment
 }
 
 export interface ClaimNavigationParams extends ClaimDeeplinkParams {

@@ -6,6 +6,7 @@ import overlayReducer from './overlaySlice';
 import eventReducer from './eventSlice';
 import mainTabReducer from './mainTabSlice';
 import bundleReducer from './bundleSlice';
+import leaderboardReducer from './leaderboardSlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -33,6 +34,7 @@ export async function createStore() {
       event: eventReducer,
       mainTab: mainTabReducer,
       bundle: bundleReducer,
+      leaderboard: leaderboardReducer,
     },
     preloadedState: persistedState
       ? ({
@@ -96,6 +98,7 @@ const reducer = {
   event: eventReducer,
   mainTab: mainTabReducer,
   bundle: bundleReducer,
+  leaderboard: leaderboardReducer,
 };
 
 // Export types - define directly from reducer structure
@@ -106,5 +109,6 @@ export type RootState = {
   event: ReturnType<typeof eventReducer>;
   mainTab: ReturnType<typeof mainTabReducer>;
   bundle: ReturnType<typeof bundleReducer>;
+  leaderboard: ReturnType<typeof leaderboardReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
