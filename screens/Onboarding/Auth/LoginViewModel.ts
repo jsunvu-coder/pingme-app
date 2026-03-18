@@ -99,7 +99,8 @@ export class LoginViewModel {
       tokenName?: string;
       disableSuccessScreen?: boolean;
     },
-    disableSuccessCallback?: boolean
+    disableSuccessCallback?: boolean,
+    senderCommitment?: string
   ): Promise<{ success: boolean; biometricEnabled: boolean }> {
     console.log('🔐 [Biometric] handleLogin START:', {
       useBiometric_param: useBiometric,
@@ -111,7 +112,7 @@ export class LoginViewModel {
     let ok = false;
 
     try {
-      ok = await this.withTimeout(auth.signin(email, password, lockboxProof));
+      ok = await this.withTimeout(auth.signin(email, password, lockboxProof, senderCommitment));
     } catch (err) {
       const fallbackMessage = t('AUTH_LOGIN_INVALID_CREDENTIALS');
       let message = fallbackMessage;

@@ -65,7 +65,7 @@ export function LeaderboardTable({ data, columns, emptyText }: LeaderboardTableP
           const isSelf = item.is_self;
 
           return (
-            <View style={[styles.row, index % 2 === 1 && styles.rowAlt, isSelf && styles.rowSelf]}>
+            <View style={[styles.row, index % 2 === 1 && styles.rowAlt]}>
               <Text style={[styles.cellRank, isSelf && styles.cellRankSelf, { flex: 0.7 }]}>
                 {isSelf ? 'YOU' : ordinal}
               </Text>
@@ -118,11 +118,6 @@ const styles = StyleSheet.create({
   },
   rowAlt: {
     backgroundColor: '#FFF',
-  },
-  rowSelf: {
-    borderColor: '#FD4912',
-    marginVertical: 2,
-    paddingHorizontal: 8,
   },
   cellRank: {
     fontSize: 13,

@@ -274,7 +274,12 @@ export class AuthService {
   }
 
   // ---------- Signin ----------
-  async signin(username: string, password: string, lockboxProof?: string): Promise<boolean> {
+  async signin(
+    username: string,
+    password: string,
+    lockboxProof?: string,
+    senderCommitment?: string
+  ): Promise<boolean> {
     try {
       const cr = await this._authenticate(username, password);
       this.contractService.setCrypto(cr);
@@ -289,7 +294,7 @@ export class AuthService {
 
       try {
         await this.commitProtect(
-          () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment),
+          () => this.contractService.claim(lockboxProof, cr.salt, cr.commitment, senderCommitment),
           lockboxProofHash,
           saltHash,
           commitmentHash
@@ -351,7 +356,12 @@ export class AuthService {
   }
 
   // ---------- Signup ----------
-  async signup(username: string, password: string, lockboxProof?: string): Promise<boolean> {
+  async signup(
+    username: string,
+    password: string,
+    lockboxProof?: string,
+    senderCommitment?: string
+  ): Promise<boolean> {
     try {
       this.log('Starting signup process...');
       const input_data = CryptoUtils.strToHex2(username, password);
@@ -387,7 +397,7 @@ export class AuthService {
         if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
 
         await this.commitProtect(
-          () => this.contractService.claim(_lockboxProof, salt, commitment),
+          () => this.contractService.claim(_lockboxProof, salt, commitment, senderCommitment),
           lockboxProofHash,
           saltHash,
           commitmentHash

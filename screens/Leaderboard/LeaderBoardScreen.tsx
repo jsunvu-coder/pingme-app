@@ -1,5 +1,5 @@
 import NavigationBar from 'components/NavigationBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useAppDispatch, useAppSelector } from 'store/hooks';
 import { AccountDataService } from 'business/services/AccountDataService';
@@ -27,27 +27,17 @@ function LeaderboardSectionHeader({ title, subtitle }: LeaderboardSectionHeaderP
 export default function LeaderBoardScreen() {
   const [selectedType, setSelectedType] = useState<TabKey>('referrals');
   const dispatch = useAppDispatch();
-  const { stats, leaders, loading, error } = useAppSelector((state) => {
+  const accountState = useAppSelector((state) => {
     const accountEmail = AccountDataService.getInstance().email;
-    if (!accountEmail) {
-      return {
-        stats: null,
-        leaders: null,
-        loading: false,
-        error: null,
-      };
-    }
+    if (!accountEmail) return null;
     const accountKey = accountEmail.toLowerCase();
-    const accountState = state.leaderboard.byAccount[accountKey];
-    return (
-      accountState ?? {
-        stats: null,
-        leaders: null,
-        loading: false,
-        error: null,
-      }
-    );
+    return state.leaderboard.byAccount[accountKey] ?? null;
   });
+
+  const stats = accountState?.stats ?? null;
+  const leaders = accountState?.leaders ?? null;
+  const loading = accountState?.loading ?? false;
+  const error = accountState?.error ?? null;
 
   useEffect(() => {
     dispatch(fetchLeaderboardData());
@@ -122,8 +112,6 @@ export default function LeaderBoardScreen() {
 
   const current = config ? config[selectedType] : null;
 
-
-  console.log('current', leaders?.pings);
   return (
     <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
       <StatusBar barStyle="dark-content" />

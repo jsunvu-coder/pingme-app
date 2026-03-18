@@ -28,6 +28,7 @@ type AuthParams = {
   amountUsdStr?: string;
   tokenName?: string;
   disableSuccessScreen?: boolean;
+  senderCommitment?: string;
 };
 
 export default function AuthScreen() {
@@ -131,6 +132,7 @@ export default function AuthScreen() {
                 amountUsdStr={route.params?.amountUsdStr}
                 tokenName={route.params?.tokenName}
                 disableSuccessScreen={route.params?.disableSuccessScreen}
+                senderCommitment={route.params?.senderCommitment}
               />
             ) : (
               <CreateAccountView
@@ -140,6 +142,7 @@ export default function AuthScreen() {
                 amountUsdStr={route.params?.amountUsdStr}
                 tokenName={route.params?.tokenName}
                 disableSuccessScreen={route.params?.disableSuccessScreen}
+                senderCommitment={route.params?.senderCommitment}
               />
             )}
           </View>
