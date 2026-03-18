@@ -28,6 +28,7 @@ interface LoginViewProps {
   disableSuccessCallback?: boolean;
   altHandleLogin?: () => Promise<void>;
   setLoading?: (loading: boolean) => void;
+  senderCommitment?: string;
 }
 
 const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
@@ -41,6 +42,7 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
   disableSuccessCallback,
   altHandleLogin,
   setLoading: setLoadingProp = (loading: boolean) => {},
+  senderCommitment,
 }, ref) => {
   const route = useRoute<any>();
   const vm = useMemo(() => new LoginViewModel(), []);
@@ -162,7 +164,8 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
               disableSuccessScreen: disableSuccessScreen ?? route?.params?.disableSuccessScreen,
             }
           : undefined,
-          disableSuccessCallback
+          disableSuccessCallback,
+          senderCommitment ?? route?.params?.senderCommitment
       );
 
       const result = await Promise.race([

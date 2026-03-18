@@ -34,6 +34,7 @@ interface CreateAccountViewProps {
   removeButtonCreateAccount?: boolean;
   setIsFormValid?: (valid: boolean) => void;
   setLoading?: (loading: boolean) => void;
+  senderCommitment?: string;
 }
 
 const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(({
@@ -46,6 +47,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
   removeButtonCreateAccount,
   setIsFormValid = (valid: boolean) => valid,
   setLoading: setLoadingProp = (loading: boolean) => {},
+  senderCommitment,
 }, ref) => {
   const route = useRoute<any>();
   const initialEmail =
@@ -106,8 +108,9 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
 
     try {
       const lockbox = lockboxProof ?? route?.params?.lockboxProof;
+      const _senderCommitment = senderCommitment ?? route?.params?.senderCommitment;
       const ok = await Promise.race([
-        auth.signup(email, password, lockbox),
+        auth.signup(email, password, lockbox, _senderCommitment),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
         ),

@@ -40,13 +40,13 @@ export const useClaimPayment = () => {
     _lockboxData,
     _lockboxProof,
     _derivedStatus,
-    senderCommitment,
+    sender_commitment: senderCommitment,
     ...restParams
   } = params as ClaimPaymentParams & {
     _lockboxData?: string;
     _lockboxProof?: string;
     _derivedStatus?: LockboxStatus;
-    senderCommitment?: string;
+    sender_commitment?: string;
   };
 
   const [passphrase, setPassphrase] = useState('');
@@ -134,6 +134,7 @@ export const useClaimPayment = () => {
           amountUsdStr,
           from: 'login',
           tokenName: lockboxInfo?.tokenName,
+          senderCommitment,
         });
         return;
       }
@@ -236,6 +237,7 @@ export const useClaimPayment = () => {
           amountUsdStr,
           from: 'signup',
           tokenName: info.tokenName,
+          senderCommitment,
         });
       } else {
         push('AuthScreen', {
@@ -245,6 +247,7 @@ export const useClaimPayment = () => {
           amountUsdStr,
           from: 'login',
           tokenName: info.tokenName,
+          senderCommitment,
         });
       }
     } catch (err: any) {
