@@ -1,5 +1,5 @@
-import { useState, forwardRef, useImperativeHandle, useCallback, useEffect } from 'react';
-import { View, Text, Linking, TouchableWithoutFeedback } from 'react-native';
+import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, Linking, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PasswordRules from 'components/PasswordRules';
 import AuthInput from 'components/AuthInput';
@@ -17,6 +17,7 @@ import { validatePasswordFields as sharedValidatePasswords } from './passwordVal
 import { hasTranslation, t } from 'i18n';
 import { showFlashMessage } from 'utils/flashMessage';
 import { isPasswordValid as isPasswordValidByPolicy } from 'utils/passwordPolicy';
+import { BiometricType, LoginViewModel } from './LoginViewModel';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,222 +38,370 @@ interface CreateAccountViewProps {
   senderCommitment?: string;
 }
 
-const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(({
-  lockboxProof,
-  prefillUsername,
-  amountUsdStr,
-  tokenName,
-  disableSuccessScreen,
-  disableSuccessCallback,
-  removeButtonCreateAccount,
-  setIsFormValid = (valid: boolean) => valid,
-  setLoading: setLoadingProp = (loading: boolean) => {},
-  senderCommitment,
-}, ref) => {
-  const route = useRoute<any>();
-  const initialEmail =
-    prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
-  const claimedAmountUsd = amountUsdStr ?? route?.params?.amountUsdStr;
+const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(
+  (
+    {
+      lockboxProof,
+      prefillUsername,
+      amountUsdStr,
+      tokenName,
+      disableSuccessScreen,
+      disableSuccessCallback,
+      removeButtonCreateAccount,
+      setIsFormValid = (valid: boolean) => valid,
+      setLoading: setLoadingProp = (loading: boolean) => {},
+      senderCommitment,
+    },
+    ref
+  ) => {
+    const route = useRoute<any>();
 
-  const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [agreeToC, setAgreeToC] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
+    const vm = useMemo(() => new LoginViewModel(), []);
+    const initialEmail =
+      prefillUsername ?? route?.params?.prefillUsername ?? route?.params?.username ?? '';
+    const claimedAmountUsd = amountUsdStr ?? route?.params?.amountUsdStr;
 
-  // Validation helper
-  const validateField = (field: string, value: string, checkAll?: boolean) => {
-    const newErrors = { ...errors };
+    const [email, setEmail] = useState(initialEmail);
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [agreeToC, setAgreeToC] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>(
+      {}
+    );
+    const [useBiometric, setUseBiometric] = useState(false);
+    const [biometricType, setBiometricType] = useState<BiometricType>(null);
+    const [initialized, setInitialized] = useState(false);
 
-    switch (field) {
-      case 'email':
-        if (!value) newErrors.email = 'Email is required';
-        else if (!emailRegex.test(value.trim())) newErrors.email = 'Invalid email address';
-        else delete newErrors.email;
-        break;
+    useEffect(() => {
+      let cancelled = false;
 
-      case 'password':
-      case 'confirm': {
-        const pwd = field === 'password' ? value : password;
-        const conf = field === 'confirm' ? value : confirm;
-        const validation = sharedValidatePasswords(pwd, conf);
-        if (validation.password) newErrors.password = validation.password;
-        else delete newErrors.password;
-        if (conf.length > 0 || checkAll) {
-          if (validation.confirm) newErrors.confirm = validation.confirm;
-          else delete newErrors.confirm;
-        }
-        break;
-      }
-    }
+      (async () => {
+        const init = await vm.initialize();
+        if (cancelled) return;
 
-    setErrors(newErrors);
-  };
+        setBiometricType(init.biometricType);
+        setUseBiometric(init.useBiometric);
+        setInitialized(true);
 
-  const hasErrors = Object.keys(errors).length > 0;
-  const isEmailValid = emailRegex.test(email.trim());
-  const passwordOk = isPasswordValidByPolicy(password);
+        // Auto trigger biometric if enabled
+        if (!(init.useBiometric && init.biometricType)) return;
 
-  const isFormValid =
-    !!email && !!password && !!confirm && isEmailValid && passwordOk && !hasErrors && agreeToC;
+        // Add small delay to ensure screen is fully rendered before showing biometric prompt
+        // This fixes the issue where biometric prompt doesn't show on first use
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
-  useEffect(() => {
-    setIsFormValid(isFormValid);
-  }, [isFormValid, setIsFormValid]);
+        if (cancelled) return;
+      })();
 
-  const handleRegister = useCallback(async () => {
-    setLoadingProp(true);
-    setLoading(true);
-    const auth = AuthService.getInstance();
+      return () => {
+        cancelled = true;
+      };
+    }, [vm]);
 
-    try {
-      const lockbox = lockboxProof ?? route?.params?.lockboxProof;
-      const _senderCommitment = senderCommitment ?? route?.params?.senderCommitment;
-      const ok = await Promise.race([
-        auth.signup(email, password, lockbox, _senderCommitment),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
-        ),
-      ]);
+    const handleToggleBiometric = useCallback(
+      async (value: boolean) => {
+        try {
+          setUseBiometric(value);
 
-      if (ok) {
-        AccountDataService.getInstance().email = email;
-        // Only set pending claim if we want to show success screen
-        if (!disableSuccessCallback) {
-          if (lockbox && !disableSuccessScreen) {
-            shareFlowService.setPendingClaim({
-              amountUsdStr: claimedAmountUsd,
-              from: 'signup',
-              tokenName,
-            });
+          if (!value) {
+            // User explicitly disabled biometric - clear both credentials AND preference
+            await LoginViewModel.clearSavedCredentials();
+            await LoginViewModel.setUseBiometricPreference(false);
+            // IMPORTANT: Update ViewModel instance state to keep it in sync with storage
+            vm.useBiometric = false;
+            return;
           }
-          setRootScreen(['MainTab']);
 
-          const pendingLink = deepLinkHandler.getPendingLink();
-          if (pendingLink) deepLinkHandler.resumePendingLink();
+          // Validate capability before enabling
+          const capability = await LoginViewModel.ensureCapability();
+          if (!capability.available) {
+            const message = capability.needsEnrollment
+              ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
+              : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
+            showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
+            setUseBiometric(false);
+            return;
+          }
+
+          // Don't save preference here - let handleLogin manage it during actual login
+          // This prevents the case where biometric is enabled but no credentials are saved
+          // But DO update the instance state so handleLogin knows user wants to enable it
+          vm.useBiometric = false; // Set to false so handleLogin enters Case 1 (enableBiometricLogin)
+        } catch (error) {
+          console.error('Error toggling biometric:', error);
+          setUseBiometric(false);
+          showFlashMessage({
+            title: t('NOTICE'),
+            message: 'Failed to validate biometric capability',
+            type: 'danger',
+          });
+        }
+      },
+      [vm]
+    );
+
+    // Validation helper
+    const validateField = (field: string, value: string, checkAll?: boolean) => {
+      const newErrors = { ...errors };
+
+      switch (field) {
+        case 'email':
+          if (!value) newErrors.email = 'Email is required';
+          else if (!emailRegex.test(value.trim())) newErrors.email = 'Invalid email address';
+          else delete newErrors.email;
+          break;
+
+        case 'password':
+        case 'confirm': {
+          const pwd = field === 'password' ? value : password;
+          const conf = field === 'confirm' ? value : confirm;
+          const validation = sharedValidatePasswords(pwd, conf);
+          if (validation.password) newErrors.password = validation.password;
+          else delete newErrors.password;
+          if (conf.length > 0 || checkAll) {
+            if (validation.confirm) newErrors.confirm = validation.confirm;
+            else delete newErrors.confirm;
+          }
+          break;
         }
       }
-    } catch (err: any) {
-      console.error('Signup error:', err);
-      const rawMessage = err?.message;
 
-      let message =
-        rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
-          ? 'Account already exists'
-          : 'Unable to create account';
+      setErrors(newErrors);
+    };
 
-      if (rawMessage && hasTranslation(rawMessage)) {
-        message = t(rawMessage);
-      }
+    const hasErrors = Object.keys(errors).length > 0;
+    const isEmailValid = emailRegex.test(email.trim());
+    const passwordOk = isPasswordValidByPolicy(password);
 
-      showFlashMessage({
-        title: 'Signup failed',
-        message,
-        type: 'danger',
+    const isFormValid =
+      !!email && !!password && !!confirm && isEmailValid && passwordOk && !hasErrors && agreeToC;
+
+    useEffect(() => {
+      setIsFormValid(isFormValid);
+    }, [isFormValid, setIsFormValid]);
+
+    const handleRegister = useCallback(async () => {
+      setLoadingProp(true);
+      setLoading(true);
+      const auth = AuthService.getInstance();
+      console.log('🔐 [Biometric] handleLogin START:', {
+        useBiometric_param: useBiometric,
+        biometricType,
       });
 
-      if(disableSuccessCallback) {
-        throw err;
-      }
-    } finally {
-      setLoadingProp(false);
-      setLoading(false);
-    }
-  }, [email, password, lockboxProof, route, disableSuccessCallback, disableSuccessScreen, claimedAmountUsd, tokenName]);
+      try {
+        const lockbox = lockboxProof ?? route?.params?.lockboxProof;
+        const _senderCommitment = senderCommitment ?? route?.params?.senderCommitment;
+        const ok = await Promise.race([
+          auth.signup(email, password, lockbox, _senderCommitment),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
+          ),
+        ]);
 
-  useImperativeHandle(ref, () => ({
-    register: handleRegister,
-  }), [handleRegister]);
+        if (ok) {
+          if (useBiometric) {
+            // User wants biometric enabled
+            if (!vm.useBiometric) {
+              // Case 1: User just enabled biometric (toggle switched from OFF to ON)
+              const result = await vm.enableBiometricLogin(email, password, biometricType);
 
-  return (
-    <View className="flex-1 bg-white">
-      <View className="flex-1 gap-y-2 px-6">
-        <AuthInput
-          icon={<EmailIcon />}
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            validateField('email', text);
-          }}
-          placeholder="Email address"
-          keyboardType="email-address"
-          error={!!errors.email}
-          errorMessage={errors.email}
-          editable={!loading}
-        />
-
-        <AuthInput
-          icon={<PasswordIcon />}
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            validateField('password', text);
-          }}
-          placeholder="Password"
-          secureTextEntry
-          customView={<PasswordRules password={password} />}
-          error={!!errors.password}
-          errorMessage={errors.password}
-          autoCapitalize="none"
-          editable={!loading}
-        />
-
-        <AuthInput
-          icon={<PasswordIcon />}
-          value={confirm}
-          onChangeText={(text) => {
-            setConfirm(text);
-            validateField('confirm', text, true);
-          }}
-          placeholder="Re-enter password"
-          secureTextEntry
-          onBlur={() => validateField('confirm', confirm, true)}
-          error={!!errors.confirm}
-          errorMessage={errors.confirm}
-          returnKeyType="done"
-          blurOnSubmit
-          editable={!loading}
-          onSubmitEditing={() => {
-            if (!loading && isFormValid) {
-              void handleRegister();
+              if (!result.success && result.message) {
+                showFlashMessage({
+                  title: 'Face ID',
+                  message: result.message,
+                  type: 'warning',
+                });
+              }
+            } else {
+              // Case 2: Biometric preference was already ON
+              // Always save/update credentials to ensure they persist after logout+login
+              await LoginViewModel.saveCredentials(email, password);
+              await LoginViewModel.setUseBiometricPreference(true);
             }
-          }}
-        />
+          } else {
+            // User wants biometric disabled
+            if (vm.useBiometric) {
+              // Case 3: User just disabled biometric (toggle switched from ON to OFF)
+              await vm.disableBiometricLogin();
+            }
+          }
+          AccountDataService.getInstance().email = email;
+          // Only set pending claim if we want to show success screen
+          if (!disableSuccessCallback) {
+            if (lockbox && !disableSuccessScreen) {
+              shareFlowService.setPendingClaim({
+                amountUsdStr: claimedAmountUsd,
+                from: 'signup',
+                tokenName,
+              });
+            }
+            setRootScreen(['MainTab']);
 
-        <TouchableWithoutFeedback
-          onPress={() => {
-            if (loading) return;
-            setAgreeToC(!agreeToC);
-          }}>
-          <View className="mt-3 flex-row items-center gap-x-2">
-            <CheckSquareIcon isChecked={agreeToC} />
-            <Text>
-              I confirm that I have read and agreed to{' '}
-              <Text
-                onPress={() => {
-                  Linking.openURL(TOC_URL);
-                }}
-                className="text-[#FD4912]">
-                TOS
+            const pendingLink = deepLinkHandler.getPendingLink();
+            if (pendingLink) deepLinkHandler.resumePendingLink();
+          }
+        }
+      } catch (err: any) {
+        console.error('Signup error:', err);
+        const rawMessage = err?.message;
+
+        let message =
+          rawMessage === 'CREDENTIALS_ALREADY_EXISTS'
+            ? 'Account already exists'
+            : 'Unable to create account';
+
+        if (rawMessage && hasTranslation(rawMessage)) {
+          message = t(rawMessage);
+        }
+
+        showFlashMessage({
+          title: 'Signup failed',
+          message,
+          type: 'danger',
+        });
+
+        if (disableSuccessCallback) {
+          throw err;
+        }
+      } finally {
+        setLoadingProp(false);
+        setLoading(false);
+      }
+    }, [
+      email,
+      password,
+      lockboxProof,
+      route,
+      disableSuccessCallback,
+      disableSuccessScreen,
+      claimedAmountUsd,
+      tokenName,
+    ]);
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        register: handleRegister,
+      }),
+      [handleRegister]
+    );
+
+    const biometricLabel =
+      biometricType === 'Face ID'
+        ? t('FACE_ID')
+        : biometricType === 'Touch ID'
+          ? t('TOUCH_ID')
+          : t('AUTH_USE_BIOMETRIC_GENERIC');
+
+    return (
+      <View className="flex-1 bg-white">
+        <View className="flex-1 gap-y-2 px-6">
+          <AuthInput
+            icon={<EmailIcon />}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              validateField('email', text);
+            }}
+            placeholder="Email address"
+            keyboardType="email-address"
+            error={!!errors.email}
+            errorMessage={errors.email}
+            editable={!loading}
+          />
+
+          <AuthInput
+            icon={<PasswordIcon />}
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              validateField('password', text);
+            }}
+            placeholder="Password"
+            secureTextEntry
+            customView={<PasswordRules password={password} />}
+            error={!!errors.password}
+            errorMessage={errors.password}
+            autoCapitalize="none"
+            editable={!loading}
+          />
+
+          <AuthInput
+            icon={<PasswordIcon />}
+            value={confirm}
+            onChangeText={(text) => {
+              setConfirm(text);
+              validateField('confirm', text, true);
+            }}
+            placeholder="Re-enter password"
+            secureTextEntry
+            onBlur={() => validateField('confirm', confirm, true)}
+            error={!!errors.confirm}
+            errorMessage={errors.confirm}
+            returnKeyType="done"
+            blurOnSubmit
+            editable={!loading}
+            onSubmitEditing={() => {
+              if (!loading && isFormValid) {
+                void handleRegister();
+              }
+            }}
+          />
+
+          <TouchableWithoutFeedback
+            onPress={() => {
+              if (loading) return;
+              setAgreeToC(!agreeToC);
+            }}>
+            <View className="mt-3 flex-row items-center gap-x-2">
+              <CheckSquareIcon isChecked={agreeToC} />
+              <Text>
+                I confirm that I have read and agreed to{' '}
+                <Text
+                  onPress={() => {
+                    Linking.openURL(TOC_URL);
+                  }}
+                  className="text-[#FD4912]">
+                  TOS
+                </Text>
               </Text>
+            </View>
+          </TouchableWithoutFeedback>
+          <View className="mt-3 flex-row items-center">
+            <Switch
+              value={useBiometric}
+              onValueChange={(value) => {
+                void handleToggleBiometric(value);
+              }}
+              trackColor={{ false: '#ccc', true: '#FD4912' }}
+              thumbColor={useBiometric ? '#fff' : '#f4f3f4'}
+              disabled={!initialized || loading}
+            />
+            <Text className="ml-3 text-[15px] text-[#1D1D1D]">
+              {t('AUTH_USE_BIOMETRIC', {
+                method: biometricLabel,
+              })}
             </Text>
           </View>
-        </TouchableWithoutFeedback>
-      </View>
+        </View>
 
-      {!removeButtonCreateAccount && <View className="mt-6 px-6 pb-12">
-        <PrimaryButton
-          title="Create Account"
-          disabled={loading || !isFormValid}
-          loading={loading}
-          loadingText="Creating account..."
-          onPress={handleRegister}
-        />
-      </View>}
-    </View>
-  );
-});
+        {!removeButtonCreateAccount && (
+          <View className="mt-6 px-6 pb-12">
+            <PrimaryButton
+              title="Create Account"
+              disabled={loading || !isFormValid}
+              loading={loading}
+              loadingText="Creating account..."
+              onPress={handleRegister}
+            />
+          </View>
+        )}
+      </View>
+    );
+  }
+);
 
 CreateAccountView.displayName = 'CreateAccountView';
 
