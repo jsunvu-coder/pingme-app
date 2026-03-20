@@ -15,8 +15,8 @@ import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetada
 export type BiometricType = 'Face ID' | 'Touch ID' | 'Biometric Authentication' | null;
 
 export class LoginViewModel {
-  biometricType: BiometricType = null;
-  useBiometric = false;
+  public biometricType: BiometricType = null;
+  public useBiometric = false;
 
   async initialize(): Promise<{ biometricType: BiometricType; useBiometric: boolean }> {
     this.useBiometric = await LoginViewModel.isBiometricEnabled();
@@ -234,7 +234,7 @@ export class LoginViewModel {
     }
   }
 
-  private async enableBiometricLogin(
+  public async enableBiometricLogin(
     email: string,
     password: string,
     biometricType: BiometricType
@@ -264,7 +264,7 @@ export class LoginViewModel {
     return { success: true };
   }
 
-  private async disableBiometricLogin() {
+  public async disableBiometricLogin() {
     await LoginViewModel.clearSavedCredentials();
     await LoginViewModel.setUseBiometricPreference(false);
     this.useBiometric = false;

@@ -56,7 +56,7 @@ export const ActionButtons = ({
           <OutlineButton title="Back" disabled={loading} onPress={onBack} />
         </View>
         <View className="ml-3 flex-1">
-          <PrimaryButton title="Claim" onPress={onClaim} loading={loading} loadingText="Claiming" />
+          <PrimaryButton title="Claim" onPress={onClaim} loading={loading} loadingText="Claiming" className="h-16" />
         </View>
       </View>
     );

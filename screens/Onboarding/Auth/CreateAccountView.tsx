@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo } from 'react';
+import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, Linking, TouchableWithoutFeedback, Switch } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PasswordRules from 'components/PasswordRules';
@@ -72,6 +72,8 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
     const [useBiometric, setUseBiometric] = useState(false);
     const [biometricType, setBiometricType] = useState<BiometricType>(null);
     const [initialized, setInitialized] = useState(false);
+    const toggleIdRef = useRef(0);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
       let cancelled = false;
@@ -100,43 +102,60 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
     }, [vm]);
 
     const handleToggleBiometric = useCallback(
-      async (value: boolean) => {
-        try {
-          setUseBiometric(value);
+      (value: boolean) => {
+        // Update UI immediately so the toggle feels responsive
+        setUseBiometric(value);
 
-          if (!value) {
-            // User explicitly disabled biometric - clear both credentials AND preference
-            await LoginViewModel.clearSavedCredentials();
-            await LoginViewModel.setUseBiometricPreference(false);
-            // IMPORTANT: Update ViewModel instance state to keep it in sync with storage
+        // Cancel any pending debounced call
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+        // Capture the latest id — all previous async ops will see their id is stale
+        const id = ++toggleIdRef.current;
+
+        // Debounce: only run async logic after user stops toggling
+        debounceTimerRef.current = setTimeout(async () => {
+          try {
+            // Secondary guard: a newer toggle came in while timer was waiting
+            if (id !== toggleIdRef.current) return;
+
+            if (!value) {
+              await LoginViewModel.clearSavedCredentials();
+              if (id !== toggleIdRef.current) return;
+
+              await LoginViewModel.setUseBiometricPreference(false);
+              if (id !== toggleIdRef.current) return;
+
+              vm.useBiometric = false;
+              return;
+            }
+
+            // Validate capability before enabling
+            const capability = await LoginViewModel.ensureCapability();
+            if (id !== toggleIdRef.current) return;
+
+            if (!capability.available) {
+              const message = capability.needsEnrollment
+                ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
+                : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
+              showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
+              setUseBiometric(false);
+              return;
+            }
+
+            // Don't save preference here - let handleLogin/handleRegister manage it
+            // Set to false so it enters Case 1 (enableBiometricLogin) on next login
             vm.useBiometric = false;
-            return;
-          }
-
-          // Validate capability before enabling
-          const capability = await LoginViewModel.ensureCapability();
-          if (!capability.available) {
-            const message = capability.needsEnrollment
-              ? t('AUTH_BIOMETRIC_NOT_ENROLLED')
-              : t('AUTH_BIOMETRIC_NOT_SUPPORTED');
-            showFlashMessage({ title: t('NOTICE'), message, type: 'warning' });
+          } catch (error) {
+            if (id !== toggleIdRef.current) return;
+            console.error('Error toggling biometric:', error);
             setUseBiometric(false);
-            return;
+            showFlashMessage({
+              title: t('NOTICE'),
+              message: 'Failed to validate biometric capability',
+              type: 'danger',
+            });
           }
-
-          // Don't save preference here - let handleLogin manage it during actual login
-          // This prevents the case where biometric is enabled but no credentials are saved
-          // But DO update the instance state so handleLogin knows user wants to enable it
-          vm.useBiometric = false; // Set to false so handleLogin enters Case 1 (enableBiometricLogin)
-        } catch (error) {
-          console.error('Error toggling biometric:', error);
-          setUseBiometric(false);
-          showFlashMessage({
-            title: t('NOTICE'),
-            message: 'Failed to validate biometric capability',
-            type: 'danger',
-          });
-        }
+        }, 300);
       },
       [vm]
     );
@@ -278,6 +297,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
       disableSuccessScreen,
       claimedAmountUsd,
       tokenName,
+      useBiometric
     ]);
 
     useImperativeHandle(
@@ -373,7 +393,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
             <Switch
               value={useBiometric}
               onValueChange={(value) => {
-                void handleToggleBiometric(value);
+                handleToggleBiometric(value);
               }}
               trackColor={{ false: '#ccc', true: '#FD4912' }}
               thumbColor={useBiometric ? '#fff' : '#f4f3f4'}
