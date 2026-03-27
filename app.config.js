@@ -83,6 +83,10 @@ module.exports = {
           'fb',
           'twitter',
           'x-com.twitter.android',
+          'metamask',
+          'bitkeep',
+          'phantom',
+          'trust',
         ],
         NSPhotoLibraryAddUsageDescription:
           'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',

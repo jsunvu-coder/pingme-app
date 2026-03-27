@@ -9,17 +9,6 @@ import TopupTransferCryptoIcon from 'assets/Topup/TransferCryptoIcon';
 import TopupAddHKDIcon from 'assets/Topup/AddHKDIcon';
 import { showFlashMessage } from 'utils/flashMessage';
 
-const WALLETS = [
-  {
-    name: 'MetaMask',
-    icon: 'https://assets.coingecko.com/coins/images/13447/small/metamask_fox.png?1696501628',
-  },
-  {
-    name: 'Trust Wallet',
-    icon: 'https://assets.coingecko.com/coins/images/13447/small/metamask_fox.png?1696501628',
-  },
-];
-
 const METHODS = [
   {
     name: 'Bridge from another wallet',

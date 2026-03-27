@@ -258,6 +258,7 @@ const SCREEN_GROUPS: {
         name: 'LeaderBoardScreen',
         component: LeaderBoardScreen,
       },
+      {
         name: 'TopUpScreen',
         component: TopUpScreen,
       },
