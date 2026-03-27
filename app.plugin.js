@@ -198,35 +198,85 @@ const withAndroidSigning = (config) => {
       }
     });
 
-    // Add queries section for Facebook and HTTPS intents
+    // Add queries section for app install checks (canOpenURL on Android 11+)
+    // NOTE: <package> makes the app visible to PackageManager but does NOT help
+    // Linking.canOpenURL() which uses Intent resolution. For canOpenURL() to work
+    // with custom schemes (trust://, phantom://, etc.), we need <intent> with the scheme.
+    const requiredPackages = [
+      'com.facebook.katana',
+      'app.phantom',
+      'com.wallet.crypto.trustapp',
+      'com.bitkeep.wallet',
+    ];
+
+    // Wallet custom URL schemes needed for Linking.canOpenURL() to work on Android 11+
+    // bitkeep requires host=bkconnect to match Bitget Wallet's registered intent filter
+    const requiredSchemes = [
+      { scheme: 'trust' },
+      { scheme: 'phantom' },
+      { scheme: 'bitkeep', host: 'bkconnect' },
+      { scheme: 'metamask' },
+    ];
+
     if (!manifest.queries) {
       manifest.queries = [
         {
-          package: [{ $: { 'android:name': 'com.facebook.katana' } }],
+          package: requiredPackages.map((pkg) => ({ $: { 'android:name': pkg } })),
           intent: [
             {
               action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
               category: [{ $: { 'android:name': 'android.intent.category.BROWSABLE' } }],
               data: [{ $: { 'android:scheme': 'https' } }],
             },
+            ...requiredSchemes.map(({ scheme, host }) => ({
+              action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+              data: [
+                { $: { 'android:scheme': scheme, ...(host ? { 'android:host': host } : {}) } },
+              ],
+            })),
           ],
         },
       ];
-      console.log('  ✓ Added queries section');
+      console.log('  ✓ Added queries section with packages:', requiredPackages.join(', '));
+      console.log('  ✓ Added queries section with schemes:', requiredSchemes.join(', '));
     } else {
-      // Check if Facebook package exists
-      const hasFacebookPackage = manifest.queries.some(
-        (q) => q.package && q.package.some((p) => p.$['android:name'] === 'com.facebook.katana')
-      );
-      if (!hasFacebookPackage) {
-        if (!Array.isArray(manifest.queries)) {
-          manifest.queries = [manifest.queries];
-        }
-        manifest.queries.push({
-          package: [{ $: { 'android:name': 'com.facebook.katana' } }],
-        });
-        console.log('  ✓ Added Facebook package to queries');
+      if (!Array.isArray(manifest.queries)) {
+        manifest.queries = [manifest.queries];
       }
+
+      // Ensure packages are declared
+      requiredPackages.forEach((pkg) => {
+        const hasPackage = manifest.queries.some(
+          (q) => q.package && q.package.some((p) => p.$['android:name'] === pkg)
+        );
+        if (!hasPackage) {
+          if (manifest.queries[0]?.package) {
+            manifest.queries[0].package.push({ $: { 'android:name': pkg } });
+          } else if (manifest.queries[0]) {
+            manifest.queries[0].package = [{ $: { 'android:name': pkg } }];
+          } else {
+            manifest.queries.push({ package: [{ $: { 'android:name': pkg } }] });
+          }
+          console.log(`  ✓ Added package to queries: ${pkg}`);
+        }
+      });
+
+      // Ensure scheme intents are declared (required for Linking.canOpenURL on Android 11+)
+      if (!manifest.queries[0].intent) {
+        manifest.queries[0].intent = [];
+      }
+      requiredSchemes.forEach(({ scheme, host }) => {
+        const hasScheme = manifest.queries[0].intent.some(
+          (i) => i.data && i.data.some((d) => d.$['android:scheme'] === scheme)
+        );
+        if (!hasScheme) {
+          manifest.queries[0].intent.push({
+            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+            data: [{ $: { 'android:scheme': scheme, ...(host ? { 'android:host': host } : {}) } }],
+          });
+          console.log(`  ✓ Added scheme intent to queries: ${scheme}://${host ?? ''}`);
+        }
+      });
     }
 
     // Add custom intent-filter with pingme schemes to MainActivity
