@@ -162,7 +162,7 @@ const WalletItem = ({
   return (
     <TouchableOpacity
       onPress={handleOpenWallet}
-      // disabled={!isInstalled}
+      disabled={!isInstalled}
       style={[
         { borderRadius: 16, backgroundColor: 'white', padding: 16 },
         !isInstalled ? { opacity: 0.2 } : undefined,
