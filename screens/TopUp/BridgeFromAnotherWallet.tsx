@@ -140,7 +140,7 @@ const WalletItem = ({
       onPress={handleOpenWallet}
       disabled={!isInstalled}
       style={[
-        { marginBottom: 16, borderRadius: 16, backgroundColor: 'white', padding: 16 },
+        { borderRadius: 16, backgroundColor: 'white', padding: 16 },
         !isInstalled ? { opacity: 0.2 } : undefined,
       ]}>
       <Image source={wallet.icon} className="h-12 w-12" />
