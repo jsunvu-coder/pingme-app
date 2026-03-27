@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.2.2</string>
+    <string>1.2.3</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -45,7 +45,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>25</string>
+    <string>22</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSApplicationQueriesSchemes</key>
@@ -55,6 +55,10 @@
       <string>fb</string>
       <string>twitter</string>
       <string>x-com.twitter.android</string>
+      <string>metamask</string>
+      <string>bitkeep</string>
+      <string>phantom</string>
+      <string>trust</string>
       <string>tiktoksharesdk</string>
     </array>
     <key>LSMinimumSystemVersion</key>
