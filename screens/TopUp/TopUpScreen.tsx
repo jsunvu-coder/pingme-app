@@ -33,21 +33,21 @@ const METHODS = [
       },
     },
   },
-  {
-    name: 'Add HKD via FPS',
-    description: 'Send HKD using FPS to top up your PingMe balance — fast and local.',
-    icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
-    button: {
-      title: 'Top Up with FPS',
-      onPress: () => {
-        showFlashMessage({
-          title: 'Coming soon',
-          message: 'This feature is coming soon',
-          type: 'info',
-        });
-      },
-    },
-  },
+  // {
+  //   name: 'Add HKD via FPS',
+  //   description: 'Send HKD using FPS to top up your PingMe balance — fast and local.',
+  //   icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
+  //   button: {
+  //     title: 'Top Up with FPS',
+  //     onPress: () => {
+  //       showFlashMessage({
+  //         title: 'Coming soon',
+  //         message: 'This feature is coming soon',
+  //         type: 'info',
+  //       });
+  //     },
+  //   },
+  // },
 ];
 
 export default function TopUpScreen() {
@@ -76,7 +76,7 @@ export default function TopUpScreen() {
 
 const TopupMethodItem = ({ method }: { method: (typeof METHODS)[0] }) => {
   return (
-    <View className="mb-4 bg-white p-6">
+    <View className="mb-4 bg-white p-6 rounded-2xl">
       <View className="flex-row items-center">
         {method.icon}
 
