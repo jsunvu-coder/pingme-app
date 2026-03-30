@@ -1,26 +1,34 @@
 import { FlatList, Image, Linking, Platform, Text, TouchableOpacity, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 import ArrowUpRightFromSquare from 'assets/Topup/ArrowUpRightFromSquare';
+import CopyIcon from 'assets/CopyIcon';
 import NavigationBar from 'components/NavigationBar';
 import { useEffect, useState } from 'react';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { showFlashMessage } from 'utils/flashMessage';
+import WalletSimpleIcon from 'assets/WalletSimpleIcon';
 
 const getAvailUrl = (address: string) =>
   encodeURIComponent(
     `https://fastbridge.availproject.org/monad/?recipient=${address}&toChain=143&token=USDC`
   );
 
+const OTHER_WALLETS_PREFIX = 'https://pingme.app/wallet/';
+const walletSimpleIcon =
+  'https://www.figma.com/api/mcp/asset/858e17fa-e6ad-4e4f-aede-0ed7a5d14d42';
+
 const WALLETS = [
   {
     name: 'MetaMask',
     icon: require('assets/Topup/WalletIcons/metamask.png'),
-    universalUrl: (address: string) =>{
-      return `https://metamask.app.link/dapp/${getAvailUrl(address)}`
+    universalUrl: (address: string) => {
+      return `https://metamask.app.link/dapp/https://fastbridge.availproject.org/monad/?recipient=${address}&toChain=143&token=USDC`;
     },
     getUrl: (address: string) => `metamask://`,
+    description: null,
   },
-
   {
     name: 'Bitget Wallet',
     icon: require('assets/Topup/WalletIcons/bitget.png'),
@@ -33,8 +41,8 @@ const WALLETS = [
     // Android: bitkeep:// is NOT registered in Bitget's intent filter on Android →
     //   return null to skip check and default to installed (universal link handles fallback)
     getUrl: () => Platform.select({ ios: 'bitkeep://', android: 'bitkeep://bkconnect' }),
+    description: 'Start wallet app first before proceeding.',
   },
-
   {
     name: 'Phantom',
     icon: require('assets/Topup/WalletIcons/phantom.png'),
@@ -44,6 +52,7 @@ const WALLETS = [
     },
     // Custom scheme used only for canOpenURL install check (https:// always returns true)
     getUrl: () => 'phantom://',
+    description: null,
   },
   {
     name: 'Trust Wallet',
@@ -54,6 +63,7 @@ const WALLETS = [
     // trust://open_url is the documented path — more specific than bare trust://
     // which may not match Trust Wallet's intent filter on Android.
     getUrl: () => 'trust://open_url?coin_id=60&url=https://trustwallet.com',
+    description: null,
   },
 ];
 
@@ -106,6 +116,45 @@ export default function BridgeFromAnotherWalletScreen() {
             paddingVertical: 16,
             rowGap: 12,
           }}
+          ListFooterComponent={() => {
+          if (!forwarder) return null;
+
+          const otherWalletUrl = `https://fastbridge.availproject.org/monad/?recipient=${forwarder}&toChain=143&token=USDC`;
+          const handleCopy = async () => {
+            try {
+              await Clipboard.setStringAsync(otherWalletUrl);
+              showFlashMessage({ message: 'Link copied to clipboard.' });
+            } catch (err) {
+              console.error('❌ Copy link failed:', err);
+              showFlashMessage({ message: 'Copy failed.', type: 'warning' });
+            }
+          };
+
+          return (
+            <View className="w-full py-[4px] mt-10">
+              <View className="flex-row items-end gap-[16px]">
+                <WalletSimpleIcon width={24} height={24} color="#FD4912" />
+                <Text className="text-[18px] leading-[28px] font-medium text-[#FD4912]">
+                  For other wallets
+                </Text>
+              </View>
+
+              <View className="mt-[16px] h-px w-full bg-[#FFDBD0]" />
+
+                <TouchableOpacity onPress={handleCopy} activeOpacity={0.7} className="mt-[16px] flex-row items-center gap-[16px]">
+              
+                <Text
+                  className="flex-1 text-[20px] leading-[30px] font-medium text-[#0F0F0F]"
+                  numberOfLines={1}
+                  ellipsizeMode="tail">
+                  {otherWalletUrl}
+                </Text>
+
+                  <CopyIcon />
+                </TouchableOpacity>
+            </View>
+          );
+          }}
           renderItem={({ item }) => (
             <View className="flex-1">
               <WalletItem wallet={item} address={forwarder} />
@@ -114,9 +163,9 @@ export default function BridgeFromAnotherWalletScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         />
-        <Text className="text-center text-sm text-gray-400">
+        {/* <Text className="text-center text-sm text-gray-400">
           Only show wallets that are installed on your device.
-        </Text>
+        </Text> */}
       </View>
     </View>
   );
@@ -164,14 +213,28 @@ const WalletItem = ({
       onPress={handleOpenWallet}
       disabled={!isInstalled}
       style={[
-        { borderRadius: 16, backgroundColor: 'white', padding: 16 },
-        !isInstalled ? { opacity: 0.2 } : undefined,
+        { borderRadius: 16, backgroundColor: 'white', padding: 16, flex: 1 },
+        !isInstalled ? { backgroundColor: '#E9E9E9' } : undefined,
       ]}>
       <Image source={wallet.icon} className="h-12 w-12" />
       <View className="mt-2 flex-row items-center justify-between">
-        <Text className="text-base font-bold">{wallet.name}</Text>
-        <ArrowUpRightFromSquare width={16} height={16} color="#FD4912" />
+        <Text
+          style={{
+            fontWeight: '700',
+            color: !isInstalled ? '#909090' : '#0F0F0F',
+            fontSize: 16,
+          }}>
+          {wallet.name}
+        </Text>
+        <ArrowUpRightFromSquare
+          width={16}
+          height={16}
+          color={!isInstalled ? '#BEBEBE' : '#FD4912'}
+        />
       </View>
+      {wallet.description && (
+        <Text className="text-[10px] text-[#444]  font-normal">{wallet.description}</Text>
+      )}
     </TouchableOpacity>
   );
 };
