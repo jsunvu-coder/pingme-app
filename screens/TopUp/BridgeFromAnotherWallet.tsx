@@ -29,6 +29,28 @@ const WALLETS = [
     getUrl: (address: string) => `metamask://`,
     description: null,
   },
+  // {
+  //   name: 'Phantom',
+  //   icon: require('assets/Topup/WalletIcons/phantom.png'),
+  //   // Universal link works on both iOS & Android (falls back to web if not installed)
+  //   universalUrl: (address: string) => {
+  //     return `https://phantom.app/ul/browse/${getAvailUrl(address)}?ref=${encodeURIComponent('https://fastbridge.availproject.org')}`;
+  //   },
+  //   // Custom scheme used only for canOpenURL install check (https:// always returns true)
+  //   getUrl: () => 'phantom://',
+  //   description: null,
+  // },
+  {
+    name: 'Trust Wallet',
+    icon: require('assets/Topup/WalletIcons/trust.png'),
+    // Universal link works on both iOS & Android (falls back to download page if not installed)
+    universalUrl: (address: string) =>
+      `https://link.trustwallet.com/open_url?coin_id=60&url=${getAvailUrl(address)}`,
+    // trust://open_url is the documented path — more specific than bare trust://
+    // which may not match Trust Wallet's intent filter on Android.
+    getUrl: () => 'trust://open_url?coin_id=60&url=https://trustwallet.com',
+    description: null,
+  },
   {
     name: 'Bitget Wallet',
     icon: require('assets/Topup/WalletIcons/bitget.png'),
@@ -42,28 +64,6 @@ const WALLETS = [
     //   return null to skip check and default to installed (universal link handles fallback)
     getUrl: () => Platform.select({ ios: 'bitkeep://', android: 'bitkeep://bkconnect' }),
     description: 'Start wallet app first before proceeding.',
-  },
-  {
-    name: 'Phantom',
-    icon: require('assets/Topup/WalletIcons/phantom.png'),
-    // Universal link works on both iOS & Android (falls back to web if not installed)
-    universalUrl: (address: string) => {
-      return `https://phantom.app/ul/browse/${getAvailUrl(address)}?ref=${encodeURIComponent('https://fastbridge.availproject.org')}`;
-    },
-    // Custom scheme used only for canOpenURL install check (https:// always returns true)
-    getUrl: () => 'phantom://',
-    description: null,
-  },
-  {
-    name: 'Trust Wallet',
-    icon: require('assets/Topup/WalletIcons/trust.png'),
-    // Universal link works on both iOS & Android (falls back to download page if not installed)
-    universalUrl: (address: string) =>
-      `https://link.trustwallet.com/open_url?coin_id=60&url=${getAvailUrl(address)}`,
-    // trust://open_url is the documented path — more specific than bare trust://
-    // which may not match Trust Wallet's intent filter on Android.
-    getUrl: () => 'trust://open_url?coin_id=60&url=https://trustwallet.com',
-    description: null,
   },
 ];
 
@@ -108,8 +108,8 @@ export default function BridgeFromAnotherWalletScreen() {
         <FlatList
           data={WALLETS}
           keyExtractor={(item) => item.name}
-          numColumns={2}
-          columnWrapperStyle={{ columnGap: 12 }}
+          // numColumns={2}
+          // columnWrapperStyle={{ columnGap: 12 }}
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: 40,
@@ -156,9 +156,9 @@ export default function BridgeFromAnotherWalletScreen() {
           );
           }}
           renderItem={({ item }) => (
-            <View className="flex-1">
+            // <View className="flex-1">
               <WalletItem wallet={item} address={forwarder} />
-            </View>
+            // </View>
           )}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -233,7 +233,7 @@ const WalletItem = ({
         />
       </View>
       {wallet.description && (
-        <Text className="text-[10px] text-[#444]  font-normal">{wallet.description}</Text>
+        <Text style={{ fontSize: 10, fontWeight: "400", color: !isInstalled ? '#909090' : "#444" }}>{wallet.description}</Text>
       )}
     </TouchableOpacity>
   );
