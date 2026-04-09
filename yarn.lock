@@ -1628,6 +1628,11 @@
   resolved "https://registry.yarnpkg.com/@nolyfill/is-core-module/-/is-core-module-1.0.39.tgz#3dc35ba0f1e66b403c00b39344f870298ebb1c8e"
   integrity sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==
 
+"@onramp.money/onramp-react-native-sdk@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@onramp.money/onramp-react-native-sdk/-/onramp-react-native-sdk-1.0.0.tgz#58caf47700e979b94c433db1f549a508b2144da4"
+  integrity sha512-aMG6K/zxdXL5jLG+o7UetoOsfak0egvD5+ubPyN34eFZ7imJJA9X8x9v68Z4uvuXoXaRbuNazZJ5eusG9+kYzw==
+
 "@react-native-async-storage/async-storage@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-2.2.0.tgz#a3aa565253e46286655560172f4e366e8969f5ad"

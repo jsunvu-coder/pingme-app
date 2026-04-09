@@ -285,7 +285,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - OpenSSL-Universal (3.3.3001)
+  - OnrampKit (1.0.0)
+  - OpenSSL-Universal (3.6.0000)
   - RCTDeprecation (0.81.4)
   - RCTRequired (0.81.4)
   - RCTTypeSafety (0.81.4):
@@ -306,6 +307,7 @@ PODS:
     - React-RCTText (= 0.81.4)
     - React-RCTVibration (= 0.81.4)
   - React-callinvoker (0.81.4)
+  - React-Codegen (0.1.0)
   - React-Core (0.81.4):
     - hermes-engine
     - RCTDeprecation
@@ -1614,6 +1616,13 @@ PODS:
     - Yoga
   - react-native-netinfo (11.4.1):
     - React-Core
+  - react-native-onramp (1.0.0):
+    - OnrampKit (~> 1.0)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Codegen
+    - React-Core
+    - ReactCommon/turbomodule/core
   - react-native-quick-base64 (2.2.2):
     - React-Core
   - react-native-quick-crypto (0.7.17):
@@ -2434,6 +2443,7 @@ DEPENDENCIES:
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-keyboard-controller (from `../node_modules/react-native-keyboard-controller`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
+  - "react-native-onramp (from `../node_modules/@onramp.money/onramp-react-native-sdk`)"
   - react-native-quick-base64 (from `../node_modules/react-native-quick-base64`)
   - react-native-quick-crypto (from `../node_modules/react-native-quick-crypto`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2480,7 +2490,9 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - lottie-ios
+    - OnrampKit
     - OpenSSL-Universal
+    - React-Codegen
     - ZXingObjC
 
 EXTERNAL SOURCES:
@@ -2611,6 +2623,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-keyboard-controller"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
+  react-native-onramp:
+    :path: "../node_modules/@onramp.money/onramp-react-native-sdk"
   react-native-quick-base64:
     :path: "../node_modules/react-native-quick-base64"
   react-native-quick-crypto:
@@ -2725,12 +2739,14 @@ SPEC CHECKSUMS:
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   lottie-ios: a881093fab623c467d3bce374367755c272bdd59
   lottie-react-native: 8e5dd0e51847600666057d2c9b95815ac9fdb165
-  OpenSSL-Universal: 6082b0bf950e5636fe0d78def171184e2b3899c2
+  OnrampKit: db685155d328f1249be072d2964e9159212bf77a
+  OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   RCTDeprecation: 7487d6dda857ccd4cb3dd6ecfccdc3170e85dcbc
   RCTRequired: 54128b7df8be566881d48c7234724a78cb9b6157
   RCTTypeSafety: d2b07797a79e45d7b19e1cd2f53c79ab419fe217
   React: 2073376f47c71b7e9a0af7535986a77522ce1049
   React-callinvoker: 00fa0972a70df7408a4f088144b67207b157e386
+  React-Codegen: 4b8b4817cea7a54b83851d4c1f91f79aa73de30a
   React-Core: d375dd308561785c739a621a21802e5e7e047dee
   React-Core-prebuilt: dde79b89f8863efebb1d532a3335f472927da669
   React-CoreModules: 3eb9b1410a317987c557afc683cc50099562c91d
@@ -2762,6 +2778,7 @@ SPEC CHECKSUMS:
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
   react-native-keyboard-controller: 17c32d5bb43cce4c57c348d1cbea7377557c2f8e
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
+  react-native-onramp: de79bf0a73037a6460dec49cbd3de741e3cd2923
   react-native-quick-base64: 6568199bb2ac8e72ecdfdc73a230fbc5c1d3aac4
   react-native-quick-crypto: 1a2467cf17acc57dce5bb076a953978b79e3fd11
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2

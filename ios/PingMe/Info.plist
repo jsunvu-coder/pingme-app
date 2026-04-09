@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.2.3</string>
+    <string>1.2.4</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -45,7 +45,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>26</string>
+    <string>29</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSApplicationQueriesSchemes</key>
@@ -59,6 +59,11 @@
       <string>bitkeep</string>
       <string>phantom</string>
       <string>trust</string>
+      <string>paytmmp</string>
+      <string>gpay</string>
+      <string>bhim</string>
+      <string>upi</string>
+      <string>phonepe</string>
       <string>tiktoksharesdk</string>
     </array>
     <key>LSMinimumSystemVersion</key>
