@@ -87,6 +87,11 @@ module.exports = {
           'bitkeep',
           'phantom',
           'trust',
+          'paytmmp',
+          'gpay',
+          'bhim',
+          'upi',
+          'phonepe',
         ],
         NSPhotoLibraryAddUsageDescription:
           'Allow $(PRODUCT_NAME) to save your recovery QR code to Photos.',

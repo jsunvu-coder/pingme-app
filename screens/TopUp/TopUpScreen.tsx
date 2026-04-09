@@ -1,13 +1,11 @@
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import NavigationBar from 'components/NavigationBar';
-import WalletAddIcon from 'assets/WalletAddIcon';
 import OutlineButton from 'components/OutlineButton';
 import TopupBridgeWalletIcon from 'assets/Topup/BridgeWalletIcon';
 import { push } from 'navigation/Navigation';
 import TopupTransferCryptoIcon from 'assets/Topup/TransferCryptoIcon';
 import TopupAddHKDIcon from 'assets/Topup/AddHKDIcon';
-import { showFlashMessage } from 'utils/flashMessage';
 
 const METHODS = [
   {
@@ -33,21 +31,17 @@ const METHODS = [
       },
     },
   },
-  // {
-  //   name: 'Add HKD via FPS',
-  //   description: 'Send HKD using FPS to top up your PingMe balance — fast and local.',
-  //   icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
-  //   button: {
-  //     title: 'Top Up with FPS',
-  //     onPress: () => {
-  //       showFlashMessage({
-  //         title: 'Coming soon',
-  //         message: 'This feature is coming soon',
-  //         type: 'info',
-  //       });
-  //     },
-  //   },
-  // },
+  {
+    name: 'Buy Crypto via Onramp',
+    description: 'Purchase crypto directly with your local currency using bank transfer or UPI.',
+    icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
+    button: {
+      title: 'Buy Now',
+      onPress: () => {
+        push('OnrampCurrencyScreen');
+      },
+    },
+  },
 ];
 
 export default function TopUpScreen() {

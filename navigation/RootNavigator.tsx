@@ -37,6 +37,9 @@ import HongBaoErrorScreen from 'screens/HongBao/HongBaoErrorScreen';
 import LeaderBoardScreen from 'screens/Leaderboard/LeaderBoardScreen';
 import TopUpScreen from 'screens/TopUp/TopUpScreen';
 import BridgeFromAnotherWalletScreen from 'screens/TopUp/BridgeFromAnotherWallet';
+import OnrampScreen from 'screens/TopUp/OnrampScreen';
+import OnrampCurrencyScreen from 'screens/TopUp/OnrampCurrencyScreen';
+import OnrampProviderScreen from 'screens/TopUp/OnrampProviderScreen';
 
 const Stack = createStackNavigator();
 
@@ -265,6 +268,18 @@ const SCREEN_GROUPS: {
       {
         name: 'BridgeFromAnotherWalletScreen',
         component: BridgeFromAnotherWalletScreen,
+      },
+      {
+        name: 'OnrampCurrencyScreen',
+        component: OnrampCurrencyScreen,
+      },
+      {
+        name: 'OnrampProviderScreen',
+        component: OnrampProviderScreen,
+      },
+      {
+        name: 'OnrampScreen',
+        component: OnrampScreen,
       },
     ],
   },

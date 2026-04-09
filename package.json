@@ -27,12 +27,14 @@
     "fastlane:ios:production": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production",
     "fastlane:ios:production:upload": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_upload",
     "fastlane:ios:production:testflight": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_testflight",
-    "fastlane:ios:production:firebase": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_firebase"
+    "fastlane:ios:production:firebase": "cd ios && EXPO_PUBLIC_ENV=production bundle exec fastlane production_firebase",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.6",
     "@noble/hashes": "^2.0.1",
+    "@onramp.money/onramp-react-native-sdk": "^1.0.0",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/netinfo": "^11.3.1",
     "@react-navigation/bottom-tabs": "^7.4.9",

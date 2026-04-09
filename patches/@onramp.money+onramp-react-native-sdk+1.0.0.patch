@@ -1,0 +1,12 @@
+diff --git a/node_modules/@onramp.money/onramp-react-native-sdk/react-native-onramp.podspec b/node_modules/@onramp.money/onramp-react-native-sdk/react-native-onramp.podspec
+index 8d2f15c..ea6c45a 100644
+--- a/node_modules/@onramp.money/onramp-react-native-sdk/react-native-onramp.podspec
++++ b/node_modules/@onramp.money/onramp-react-native-sdk/react-native-onramp.podspec
+@@ -28,7 +28,6 @@ Pod::Spec.new do |s|
+         "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
+     }
+     s.dependency "React-Codegen"
+-    s.dependency "RCT-Folly"
+     s.dependency "RCTRequired"
+     s.dependency "RCTTypeSafety"
+     s.dependency "ReactCommon/turbomodule/core"

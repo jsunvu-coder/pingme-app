@@ -96,6 +96,10 @@ export const loadEnvFromStorage = async (): Promise<EnvName> => {
   return ENV;
 };
 
+// TODO: Replace with your merchant app ID from https://onramp.money
+export const ONRAMP_APP_ID = 1948770;
+// export const ONRAMP_APP_ID = ENV === 'production' ? 1948770 : 2;
+
 export const EXPIRY_MS = 60 * 60 * 1000;
 export const MIN_PASSWORD_LENGTH = 8;
 export const PAGINATION = 15; // 8 entries per account record pagination
