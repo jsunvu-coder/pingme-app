@@ -1,6 +1,7 @@
 const {
   withGradleProperties,
   withAppBuildGradle,
+  withProjectBuildGradle,
   withDangerousMod,
   withAndroidManifest,
   AndroidConfig,
@@ -328,6 +329,52 @@ const withAndroidSigning = (config) => {
       }
     }
 
+    return config;
+  });
+
+  // Fix JVM target mismatch for react-native-onramp (Java 17 vs Kotlin 11)
+  config = withProjectBuildGradle(config, (config) => {
+    let buildGradle = config.modResults.contents;
+
+    const subprojectsBlock = `
+subprojects {
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+      jvmTarget = '17'
+    }
+  }
+}`;
+
+    if (!buildGradle.includes('KotlinCompile')) {
+      buildGradle += subprojectsBlock;
+      console.log('  ✓ Added subprojects JVM target fix for react-native-onramp');
+    }
+
+    config.modResults.contents = buildGradle;
+    return config;
+  });
+
+  config = withAppBuildGradle(config, (config) => {
+    let buildGradle = config.modResults.contents;
+
+    const compileOptions = `
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }`;
+
+    if (!buildGradle.includes('kotlinOptions')) {
+      buildGradle = buildGradle.replace(
+        /(\s*androidResources\s*\{[\s\S]*?\})\s*\}/,
+        `$1${compileOptions}\n}`
+      );
+      console.log('  ✓ Added compileOptions/kotlinOptions jvmTarget = 17');
+    }
+
+    config.modResults.contents = buildGradle;
     return config;
   });
 

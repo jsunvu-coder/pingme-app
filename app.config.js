@@ -21,7 +21,7 @@ module.exports = {
   expo: {
     name: 'PingMe', // Always use same name, only bundle ID differs
     slug: 'pingme',
-    version: '1.2.3',
+    version: '1.2.4',
     scheme: 'pingme',
     web: {
       favicon: './assets/intro_1.png',
@@ -73,7 +73,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      buildNumber: '26',
+      buildNumber: '27',
       ...iosConfig,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -99,7 +99,7 @@ module.exports = {
       },
     },
     android: {
-      versionCode: 16,
+      versionCode: 17,
       adaptiveIcon: {
         foregroundImage: './assets/icon.png',
         backgroundColor: '#ffffff',
