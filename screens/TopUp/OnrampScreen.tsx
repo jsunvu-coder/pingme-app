@@ -20,6 +20,7 @@ export default function OnrampScreen({ route }: Props) {
   const { fiatType } = route?.params ?? {};
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const sdkStarted = useRef(false);
+  const sdkClosed = useRef(false);
 
   useEffect(() => {
     const listener = onRampSDKNativeEvent.addListener('widgetEvents', (eventData) => {
@@ -27,24 +28,25 @@ export default function OnrampScreen({ route }: Props) {
       console.log('[Onramp] widgetEvent:', eventData);
 
       if (event === 'ONRAMP_WIDGET_TX_COMPLETED') {
+        sdkClosed.current = true;
         showFlashMessage({
           title: 'Top-up successful',
           message: 'Your balance will update shortly.',
           type: 'success',
         });
-        closeOnrampSDK();
-        push('MainTab', {
-          screen: 'Home',
-        });
+        // SDK closes itself — just navigate
+        push('MainTab', { screen: 'Home' });
       } else if (event === 'ONRAMP_WIDGET_CLOSE_REQUEST_CONFIRMED') {
-        closeOnrampSDK();
+        sdkClosed.current = true;
+        // SDK has already closed itself — just navigate back
         goBack();
       }
     });
 
     return () => {
       listener.remove();
-      if (sdkStarted.current) {
+      // Only force-close if user navigated away without the SDK closing itself
+      if (sdkStarted.current && !sdkClosed.current) {
         closeOnrampSDK();
       }
     };
