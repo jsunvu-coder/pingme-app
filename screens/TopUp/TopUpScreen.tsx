@@ -33,7 +33,7 @@ const METHODS = [
   },
   {
     name: 'Buy Crypto via Onramp',
-    description: 'Purchase crypto directly with your local currency using bank transfer or UPI.',
+    description: 'Purchase crypto directly with your local currency.',
     icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
     button: {
       title: 'Buy Now',
@@ -58,11 +58,9 @@ export default function TopUpScreen() {
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {
-          METHODS.map((method) => (
-            <TopupMethodItem key={method.name} method={method} />
-          ))
-        }
+        {METHODS.map((method) => (
+          <TopupMethodItem key={method.name} method={method} />
+        ))}
       </ScrollView>
     </View>
   );
@@ -70,18 +68,14 @@ export default function TopUpScreen() {
 
 const TopupMethodItem = ({ method }: { method: (typeof METHODS)[0] }) => {
   return (
-    <View className="mb-4 bg-white p-6 rounded-2xl">
+    <View className="mb-4 rounded-2xl bg-white p-6">
       <View className="flex-row items-center">
         {method.icon}
 
-        <Text className="ml-4 flex-1 text-[16px] font-medium text-[#FD4912]">
-          {method.name}
-        </Text>
+        <Text className="ml-4 flex-1 text-[16px] font-medium text-[#FD4912]">{method.name}</Text>
       </View>
 
-      <Text className="mt-4 text-base leading-6 text-black">
-        {method.description}
-      </Text>
+      <Text className="mt-4 text-base leading-6 text-black">{method.description}</Text>
 
       <OutlineButton
         title={method.button.title}
