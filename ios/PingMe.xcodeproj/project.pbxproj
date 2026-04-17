@@ -9,29 +9,29 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		69CF945BB4D868E852E3F829 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 70E1032704EE4FE69D9BFE4B /* PrivacyInfo.xcprivacy */; };
+		77E9875B9216C656BE853F09 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0590768D9BCD523FA50DB813 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		C6040EABA86FB850469F7EF3 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 590499859A8CAF63F176F921 /* ExpoModulesProvider.swift */; };
-		D3266B7BA699127242BF1E53 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ECE3534945CB55756725565E /* PrivacyInfo.xcprivacy */; };
-		E8C6D7D93BE06ED3B5C2FCD5 /* libPods-PingMe.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C212AEA4644264C7CB12A302 /* libPods-PingMe.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F69C04F1A5E905E226DE4749 /* libPods-PingMe.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CFD5A742CEA5E969ECB61A76 /* libPods-PingMe.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0590768D9BCD523FA50DB813 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-PingMe/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* PingMe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PingMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PingMe/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PingMe/Info.plist; sourceTree = "<group>"; };
-		590499859A8CAF63F176F921 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-PingMe/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		3E08E0A71540DA00205847D8 /* Pods-PingMe.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.debug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.debug.xcconfig"; sourceTree = "<group>"; };
+		70E1032704EE4FE69D9BFE4B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = PingMe/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		86882996798274C71A0BA1AD /* Pods-PingMe.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.release.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.release.xcconfig"; sourceTree = "<group>"; };
+		8F6CE45C5CCB1D274DA8C2BC /* Pods-PingMe.developdebug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developdebug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developdebug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = PingMe/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BC02442CD6011B1C24692098 /* Pods-PingMe.developdebug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developdebug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developdebug.xcconfig"; sourceTree = "<group>"; };
-		C212AEA4644264C7CB12A302 /* libPods-PingMe.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PingMe.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C96BE5B993FD41CBFB7A037F /* Pods-PingMe.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.debug.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.debug.xcconfig"; sourceTree = "<group>"; };
-		E65F3CE8EE0BE4792A226400 /* Pods-PingMe.developrelease.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developrelease.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developrelease.xcconfig"; sourceTree = "<group>"; };
-		ECE3534945CB55756725565E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = PingMe/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CFD5A742CEA5E969ECB61A76 /* libPods-PingMe.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PingMe.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		EFDC48C974E9E025FD24FAF5 /* Pods-PingMe.developrelease.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.developrelease.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.developrelease.xcconfig"; sourceTree = "<group>"; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = PingMe/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* PingMe-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "PingMe-Bridging-Header.h"; path = "PingMe/PingMe-Bridging-Header.h"; sourceTree = "<group>"; };
-		F4E71C2E8B4228C52DC82D99 /* Pods-PingMe.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PingMe.release.xcconfig"; path = "Target Support Files/Pods-PingMe/Pods-PingMe.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,21 +39,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E8C6D7D93BE06ED3B5C2FCD5 /* libPods-PingMe.a in Frameworks */,
+				F69C04F1A5E905E226DE4749 /* libPods-PingMe.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		045CD76EFE5C01B3E43C4C69 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				A8DB881B70B18ED9B5D89F6D /* PingMe */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* PingMe */ = {
 			isa = PBXGroup;
 			children = (
@@ -63,7 +55,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				ECE3534945CB55756725565E /* PrivacyInfo.xcprivacy */,
+				70E1032704EE4FE69D9BFE4B /* PrivacyInfo.xcprivacy */,
 			);
 			name = PingMe;
 			sourceTree = "<group>";
@@ -72,21 +64,17 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				C212AEA4644264C7CB12A302 /* libPods-PingMe.a */,
+				CFD5A742CEA5E969ECB61A76 /* libPods-PingMe.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		755D90BE121E390CC53F0B90 /* Pods */ = {
+		6ECAAEAC649883155FBDB31A /* PingMe */ = {
 			isa = PBXGroup;
 			children = (
-				C96BE5B993FD41CBFB7A037F /* Pods-PingMe.debug.xcconfig */,
-				F4E71C2E8B4228C52DC82D99 /* Pods-PingMe.release.xcconfig */,
-				BC02442CD6011B1C24692098 /* Pods-PingMe.developdebug.xcconfig */,
-				E65F3CE8EE0BE4792A226400 /* Pods-PingMe.developrelease.xcconfig */,
+				0590768D9BCD523FA50DB813 /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
+			name = PingMe;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -103,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				755D90BE121E390CC53F0B90 /* Pods */,
-				045CD76EFE5C01B3E43C4C69 /* ExpoModulesProviders */,
+				8DE87B1F4834720CB4C2F5B8 /* Pods */,
+				D4F57465FB060254C71D7BF9 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -119,12 +107,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A8DB881B70B18ED9B5D89F6D /* PingMe */ = {
+		8DE87B1F4834720CB4C2F5B8 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				590499859A8CAF63F176F921 /* ExpoModulesProvider.swift */,
+				3E08E0A71540DA00205847D8 /* Pods-PingMe.debug.xcconfig */,
+				86882996798274C71A0BA1AD /* Pods-PingMe.release.xcconfig */,
+				8F6CE45C5CCB1D274DA8C2BC /* Pods-PingMe.developdebug.xcconfig */,
+				EFDC48C974E9E025FD24FAF5 /* Pods-PingMe.developrelease.xcconfig */,
 			);
-			name = PingMe;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -136,6 +128,14 @@
 			path = PingMe/Supporting;
 			sourceTree = "<group>";
 		};
+		D4F57465FB060254C71D7BF9 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				6ECAAEAC649883155FBDB31A /* PingMe */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -144,13 +144,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "PingMe" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				E0CBE4CC5B357D92D7F1B30B /* [Expo] Configure project */,
+				748208478A904983E25F4791 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				56655A6FE8E9396CCBED7F00 /* [CP] Embed Pods Frameworks */,
+				8E955066C0B4F063FBE9F020 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -200,7 +200,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				D3266B7BA699127242BF1E53 /* PrivacyInfo.xcprivacy in Resources */,
+				69CF945BB4D868E852E3F829 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,29 +246,29 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		56655A6FE8E9396CCBED7F00 /* [CP] Embed Pods Frameworks */ = {
+		748208478A904983E25F4791 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-PingMe/Pods-PingMe-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/OpenSSL-Universal/OpenSSL.framework/OpenSSL",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			inputFileListPaths = (
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/PingMe/PingMe.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-PingMe/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OpenSSL.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-PingMe/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PingMe/Pods-PingMe-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-PingMe/expo-configure-project.sh\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -314,29 +314,29 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PingMe/Pods-PingMe-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E0CBE4CC5B357D92D7F1B30B /* [Expo] Configure project */ = {
+		8E955066C0B4F063FBE9F020 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputFileListPaths = (
-			);
 			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/PingMe/PingMe.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-PingMe/expo-configure-project.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-PingMe/Pods-PingMe-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/OpenSSL-Universal/OpenSSL.framework/OpenSSL",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
+			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-PingMe/ExpoModulesProvider.swift",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/OpenSSL.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-PingMe/expo-configure-project.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PingMe/Pods-PingMe-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -346,82 +346,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				C6040EABA86FB850469F7EF3 /* ExpoModulesProvider.swift in Sources */,
+				77E9875B9216C656BE853F09 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		13B07F941A680F5B00A75B9A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = C96BE5B993FD41CBFB7A037F /* Pods-PingMe.debug.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CURRENT_PROJECT_VERSION = 29;
-				DEVELOPMENT_TEAM = BMN9N6C39P;
-				ENABLE_BITCODE = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"FB_SONARKIT_ENABLED=1",
-				);
-				INFOPLIST_FILE = PingMe/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = xyz.pingme.app;
-				PRODUCT_NAME = PingMe;
-				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Debug;
-		};
-		13B07F951A680F5B00A75B9A /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = F4E71C2E8B4228C52DC82D99 /* Pods-PingMe.release.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CURRENT_PROJECT_VERSION = 29;
-				DEVELOPMENT_TEAM = BMN9N6C39P;
-				INFOPLIST_FILE = PingMe/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = xyz.pingme.app;
-				PRODUCT_NAME = PingMe;
-				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
-		};
-		2CD36969731A6CC25D5456B3 /* DevelopDebug */ = {
+		0096C2EB21CB0A13477E193C /* DevelopRelease */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -450,18 +382,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = NO;
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -474,24 +399,23 @@
 					"$(inherited)",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
-				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
+				VALIDATE_PRODUCT = YES;
 			};
-			name = DevelopDebug;
+			name = DevelopRelease;
 		};
-		64BA85F6A62C0FA371827C2C /* DevelopDebug */ = {
+		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BC02442CD6011B1C24692098 /* Pods-PingMe.developdebug.xcconfig */;
+			baseConfigurationReference = 3E08E0A71540DA00205847D8 /* Pods-PingMe.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 698L9G9LDH;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -519,18 +443,17 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
-			name = DevelopDebug;
+			name = Debug;
 		};
-		83A635E79E7A9E459DACCFA6 /* DevelopRelease */ = {
+		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E65F3CE8EE0BE4792A226400 /* Pods-PingMe.developrelease.xcconfig */;
+			baseConfigurationReference = 86882996798274C71A0BA1AD /* Pods-PingMe.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
-				DEVELOPMENT_TEAM = 698L9G9LDH;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BMN9N6C39P;
 				INFOPLIST_FILE = PingMe/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -544,14 +467,14 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.pingme.app;
 				PRODUCT_NAME = PingMe;
 				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
-			name = DevelopRelease;
+			name = Release;
 		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -671,7 +594,77 @@
 			};
 			name = Release;
 		};
-		AA5DBF2300F00A2928CF8C54 /* DevelopRelease */ = {
+		A2FF7A03508AEDE921D6D0C3 /* DevelopRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = EFDC48C974E9E025FD24FAF5 /* Pods-PingMe.developrelease.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 698L9G9LDH;
+				INFOPLIST_FILE = PingMe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
+				PRODUCT_NAME = PingMe;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = DevelopRelease;
+		};
+		C9402E0C9C70C7BD16A9D23F /* DevelopDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8F6CE45C5CCB1D274DA8C2BC /* Pods-PingMe.developdebug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = PingMe/PingMe.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 698L9G9LDH;
+				ENABLE_BITCODE = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"FB_SONARKIT_ENABLED=1",
+				);
+				INFOPLIST_FILE = PingMe/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hailstonelab.pingme.demo;
+				PRODUCT_NAME = PingMe;
+				SWIFT_OBJC_BRIDGING_HEADER = "PingMe/PingMe-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = DevelopDebug;
+		};
+		FDA15545CB0894F13B5FC238 /* DevelopDebug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -700,11 +693,18 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = YES;
-				ENABLE_NS_ASSERTIONS = NO;
+				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -717,14 +717,14 @@
 					"$(inherited)",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
-				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
-				VALIDATE_PRODUCT = YES;
 			};
-			name = DevelopRelease;
+			name = DevelopDebug;
 		};
 /* End XCBuildConfiguration section */
 
@@ -734,8 +734,8 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
-				64BA85F6A62C0FA371827C2C /* DevelopDebug */,
-				83A635E79E7A9E459DACCFA6 /* DevelopRelease */,
+				C9402E0C9C70C7BD16A9D23F /* DevelopDebug */,
+				A2FF7A03508AEDE921D6D0C3 /* DevelopRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -745,8 +745,8 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
-				2CD36969731A6CC25D5456B3 /* DevelopDebug */,
-				AA5DBF2300F00A2928CF8C54 /* DevelopRelease */,
+				FDA15545CB0894F13B5FC238 /* DevelopDebug */,
+				0096C2EB21CB0A13477E193C /* DevelopRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
