@@ -28,8 +28,12 @@ import ScanRecoveryScreen from 'screens/Recovery/ScanRecoveryScreen';
 import RecoveryPasswordScreen from 'screens/Recovery/RecoveryPasswordScreen';
 import TransactionDetailsScreen from 'screens/Home/History/Detail/TransactionDetailsScreen';
 import WithdrawScreen from 'screens/Withdraw/WithdrawScreen';
+import WithdrawToWalletScreen from 'screens/Withdraw/WithdrawToWalletScreen';
 import WithdrawSuccessScreen from 'screens/Withdraw/WithdrawSuccessScreen';
 import WithdrawConfirmationScreen from 'screens/Withdraw/WithdrawConfirmationScreen';
+import OfframpScreen from 'screens/Withdraw/OfframpScreen';
+import OfframpCurrencyScreen from 'screens/Withdraw/OfframpCurrencyScreen';
+import OfframpProviderScreen from 'screens/Withdraw/OfframpProviderScreen';
 import HongBaoWithAuthScreen from 'screens/HongBao/HongBaoWithAuthScreen';
 import HongBaoVerificationScreen from 'screens/HongBao/HongBaoVerificationScreen';
 import HongBaoSuccessScreen from 'screens/HongBao/HongBaoSuccessScreen';
@@ -243,6 +247,22 @@ const SCREEN_GROUPS: {
       {
         name: 'WithdrawScreen',
         component: WithdrawScreen,
+      },
+      {
+        name: 'WithdrawToWalletScreen',
+        component: WithdrawToWalletScreen,
+      },
+      {
+        name: 'OfframpCurrencyScreen',
+        component: OfframpCurrencyScreen,
+      },
+      {
+        name: 'OfframpProviderScreen',
+        component: OfframpProviderScreen,
+      },
+      {
+        name: 'OfframpScreen',
+        component: OfframpScreen,
       },
       {
         name: 'WithdrawConfirmationScreen',
