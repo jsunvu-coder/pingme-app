@@ -4,19 +4,136 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform } from 'react-native';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
+import { MessagingService } from 'business/services/MessagingService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { setRootScreen, push, presentOverMain } from 'navigation/Navigation';
 import { hasTranslation, t } from 'i18n';
-import { EMAIL_KEY, PASSWORD_KEY, USE_BIOMETRIC_KEY } from 'business/Constants';
+import {
+  EMAIL_KEY,
+  PASSWORD_KEY,
+  USE_BIOMETRIC_KEY,
+  ACCOUNT_EMAILS_KEY,
+  GLOBAL_SALT_CACHE_KEY,
+} from 'business/Constants';
+import { ENV_STORAGE_KEY } from 'business/Config';
 import { showFlashMessage } from 'utils/flashMessage';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
+import { store } from 'store';
+import { setMessagingKeysAvailable, resetMessagingKeysAvailable } from 'store/authSlice';
 
 export type BiometricType = 'Face ID' | 'Touch ID' | 'Biometric Authentication' | null;
+
+/**
+ * Spec (multi-account persistence): these AsyncStorage keys / prefixes must
+ * survive logout so the list of accounts, per-email secrets (enc_key_ref),
+ * global salt cache, and env choice persist across sessions.
+ *
+ * Everything not in this allowlist is wiped by logout.
+ */
+const PRESERVE_KEYS_ON_LOGOUT = new Set<string>([
+  ACCOUNT_EMAILS_KEY,
+  GLOBAL_SALT_CACHE_KEY,
+  ENV_STORAGE_KEY,
+]);
+
+const PRESERVE_KEY_PREFIXES_ON_LOGOUT = [
+  'pingme.account.', // per-email account data (enc_key_ref, etc.)
+  LOCKBOX_METADATA_STORAGE_PREFIX,
+];
+
+function shouldPreserveOnLogout(key: string): boolean {
+  if (PRESERVE_KEYS_ON_LOGOUT.has(key)) return true;
+  return PRESERVE_KEY_PREFIXES_ON_LOGOUT.some((prefix) => key.startsWith(prefix));
+}
 
 export class LoginViewModel {
   public biometricType: BiometricType = null;
   public useBiometric = false;
+
+  /** Shared with AccountActionList / other logout callers. */
+  static shouldPreserveAsyncKeyOnLogout(key: string): boolean {
+    return shouldPreserveOnLogout(key);
+  }
+
+  /**
+   * Checks local key presence for the given email and dispatches the result to
+   * Redux so UI gating (selectAppFullyFunctional) reflects reality.
+   * Used by inline login flows (HongBao / claim) that want the flag updated
+   * without showing the Skip / Generate prompt.
+   */
+  static async syncMessagingKeysAvailable(email: string): Promise<boolean> {
+    try {
+      const has = await AuthService.getInstance().hasMessagingKeys(email);
+      store.dispatch(setMessagingKeysAvailable(has));
+      return has;
+    } catch (err) {
+      console.error('[LoginVM] syncMessagingKeysAvailable failed', err);
+      return false;
+    }
+  }
+
+  /**
+   * Spec (Sign In step 2 + Sign In Alternates): after login / claim, the app
+   * must check whether messaging keys exist for the active email. If missing,
+   * prompt the user to generate them (Skip / Generate).
+   *
+   * Reusable by LoginViewModel.handleLogin AND by non-standard entrypoints
+   * like HongBao claim success where we want the same prompt AFTER the claim.
+   *
+   * Outcomes:
+   *   - 'has_keys': keys already present, nothing to do.
+   *   - 'skip':     user chose Skip; caller should continue normal routing.
+   *   - 'generate': user chose Generate; /pm_register_key was called, caller
+   *                 should push VerifyEmailScreen with mode='generate_new_key'.
+   *   - 'error':    a check / registration failed; caller should continue.
+   *
+   * Side effects: always dispatches setMessagingKeysAvailable; 'generate'
+   * additionally stashes pending signup state for the OTP screen.
+   */
+  static async promptKeyCheckAndMaybeGenerate(
+    email: string
+  ): Promise<'has_keys' | 'skip' | 'generate' | 'error'> {
+    const auth = AuthService.getInstance();
+    let hasKeys: boolean;
+    try {
+      hasKeys = await auth.hasMessagingKeys(email);
+    } catch (err) {
+      console.error('[LoginVM] hasMessagingKeys failed', err);
+      return 'error';
+    }
+
+    store.dispatch(setMessagingKeysAvailable(hasKeys));
+    if (hasKeys) return 'has_keys';
+
+    const wantGenerate = await new Promise<boolean>((resolve) => {
+      Alert.alert(
+        'Enable secure messaging',
+        'Messaging keys are missing for this account. Generate them now? You can also skip and generate later from the Account menu.',
+        [
+          { text: 'Skip', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Generate', onPress: () => resolve(true) },
+        ],
+        { cancelable: false }
+      );
+    });
+
+    if (!wantGenerate) return 'skip';
+
+    try {
+      await auth.initiateKeyGeneration(email);
+      return 'generate';
+    } catch (err) {
+      console.error('[LoginVM] initiateKeyGeneration failed', err);
+      showFlashMessage({
+        title: 'Notice',
+        message:
+          'Could not start the key generation flow. You can retry later from the Account menu.',
+        type: 'warning',
+      });
+      return 'error';
+    }
+  }
 
   async initialize(): Promise<{ biometricType: BiometricType; useBiometric: boolean }> {
     this.useBiometric = await LoginViewModel.isBiometricEnabled();
@@ -177,7 +294,25 @@ export class LoginViewModel {
       biometricEnabled = false;
     }
 
+    // Spec (Sign In step 2): key presence check + GENERATE NEW KEY prompt.
+    if (disableSuccessCallback) {
+      // Inline login (HongBao / claim): no prompt, but we still sync the flag
+      // so downstream UI (AniCover "Send a Hongbao", tabs, etc.) reflects reality.
+      await LoginViewModel.syncMessagingKeysAvailable(email);
+    } else {
+      const outcome = await LoginViewModel.promptKeyCheckAndMaybeGenerate(email);
+      if (outcome === 'generate') {
+        AccountDataService.getInstance().email = email;
+        push('VerifyEmailScreen', { email, mode: 'generate_new_key' });
+        return { success: true, biometricEnabled };
+      }
+      // 'has_keys' | 'skip' | 'error' → fall through to normal navigation
+    }
+
     this.handleSuccessfulLogin(email, shareParams, disableSuccessCallback);
+    // Warm up inbox right after login so the Account badge reflects reality
+    // without waiting for the user to open the Account tab.
+    void MessagingService.getInstance().refreshForEmail(email);
     return { success: true, biometricEnabled };
   }
 
@@ -194,11 +329,13 @@ export class LoginViewModel {
 
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const keysToRemove = keys.filter((k) => !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX));
+      // Multi-account: preserve account list, per-email secrets, global salt cache, env.
+      const keysToRemove = keys.filter((k) => !shouldPreserveOnLogout(k));
       if (keysToRemove.length) await AsyncStorage.multiRemove(keysToRemove);
     } catch (err) {
       console.warn('⚠️ Failed to clear AsyncStorage on logout', err);
     }
+    store.dispatch(resetMessagingKeysAvailable());
     AuthService.getInstance().logout();
     push('SplashScreen');
   }

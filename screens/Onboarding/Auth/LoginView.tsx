@@ -13,6 +13,11 @@ import { showFlashMessage } from 'utils/flashMessage';
 import * as SecureStore from 'expo-secure-store';
 import { Utils } from 'business/Utils';
 
+/** Spec: redacted email = first char + exactly 7 stars + @domain. */
+const EMAIL_REDACTION_STARS = 7;
+/** Spec: redacted password = exactly 8 stars, regardless of actual length. */
+const PASSWORD_REDACTED_DISPLAY = '********';
+
 export interface LoginViewRef {
   login: () => Promise<void>;
 }
@@ -48,12 +53,18 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
   const vm = useMemo(() => new LoginViewModel(), []);
   const routeLockboxProof = route?.params?.lockboxProof;
 
-  const [email, setEmail] = useState(prefillUsername ?? route?.params?.prefillUsername ?? '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(__DEV__? "jsunvu@pingme.xyz" : prefillUsername ?? route?.params?.prefillUsername ?? '');
+  const [password, setPassword] = useState(__DEV__? "999999Aa" : '');
   const [loading, setLoading] = useState(false);
   const [useBiometric, setUseBiometric] = useState(false);
   const [biometricType, setBiometricType] = useState<BiometricType>(null);
   const [initialized, setInitialized] = useState(false);
+  // Spec: when a previously-saved email is recalled from memory, display it
+  // redacted ("a*******@gmail.com") until the user taps the field to edit.
+  const [emailRedacted, setEmailRedacted] = useState(false);
+  // Spec: when password is recalled after biometric auth, display it as exactly
+  // 8 stars ("********"); erase the entire field on edit.
+  const [passwordRedacted, setPasswordRedacted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,9 +89,12 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
       const result = await vm.autoTriggerBiometric();
       if (!result.success || !result.email || !result.password || cancelled) return;
 
-      // Fill credentials but don't login automatically
+      // Fill credentials but don't login automatically.
+      // Spec: both email and password are recalled with redaction after FaceID.
       setEmail(result.email);
+      setEmailRedacted(true);
       setPassword(result.password);
+      setPasswordRedacted(true);
     })();
 
     return () => {
@@ -205,6 +219,56 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
     login: handleLogin,
   }), [handleLogin]);
 
+  /**
+   * Spec (erase-on-edit): when the user taps the redacted email field, the
+   * entire input is cleared. There is NO in-place redaction while typing.
+   */
+  const handleEmailFocus = useCallback(() => {
+    if (emailRedacted) {
+      setEmail('');
+      setEmailRedacted(false);
+    }
+  }, [emailRedacted]);
+
+  const handleEmailChange = useCallback(
+    (text: string) => {
+      if (emailRedacted) {
+        // Defensive: keystroke without passing through focus (e.g. paste).
+        setEmailRedacted(false);
+      }
+      setEmail(text);
+    },
+    [emailRedacted]
+  );
+
+  const displayEmail = emailRedacted && email ? Utils.maskEmail(email, EMAIL_REDACTION_STARS) : email;
+
+  /**
+   * Spec (erase-on-edit for password): tap on the redacted password field wipes
+   * it entirely. Characters entered afterward render as stars via secureTextEntry.
+   */
+  const handlePasswordFocus = useCallback(() => {
+    if (passwordRedacted) {
+      setPassword('');
+      setPasswordRedacted(false);
+    }
+  }, [passwordRedacted]);
+
+  const handlePasswordChange = useCallback(
+    (text: string) => {
+      if (passwordRedacted) {
+        // Defensive: keystroke arrived without going through focus (edge case).
+        setPasswordRedacted(false);
+        setPassword(text);
+        return;
+      }
+      setPassword(text);
+    },
+    [passwordRedacted]
+  );
+
+  const displayPassword = passwordRedacted && password ? PASSWORD_REDACTED_DISPLAY : password;
+
 
 
   const biometricLabel =
@@ -219,8 +283,9 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
       <View className="flex-1 gap-y-2 px-6">
         <AuthInput
           icon={<EmailIcon />}
-          value={email}
-          onChangeText={setEmail}
+          value={displayEmail}
+          onChangeText={handleEmailChange}
+          onFocus={handleEmailFocus}
           placeholder={t('AUTH_EMAIL_PLACEHOLDER')}
           editable={!loading}
           keyboardType="email-address"
@@ -230,8 +295,9 @@ const LoginView = forwardRef<LoginViewRef, LoginViewProps>(({
         <View>
           <AuthInput
             icon={<PasswordIcon />}
-            value={password}
-            onChangeText={setPassword}
+            value={displayPassword}
+            onChangeText={handlePasswordChange}
+            onFocus={handlePasswordFocus}
             placeholder={t('AUTH_PASSWORD_PLACEHOLDER')}
             editable={!loading}
             secureTextEntry

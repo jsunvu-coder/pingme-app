@@ -83,3 +83,60 @@ export const ALL_TOKEN_ADDRESSES = ALL_TOKENS.map((token) => TOKENS[token as key
 export const EMAIL_KEY = 'lastEmail';
 export const PASSWORD_KEY = 'lastPassword';
 export const USE_BIOMETRIC_KEY = 'useBiometric';
+
+// ── Multi-account storage (spec: Sign Up & Encrypted Notification Flow) ──────────────────────────
+//
+// Each account's secrets are isolated under a per-email namespace in SecureStore.
+// Non-sensitive list/pointer keys live in AsyncStorage (no need for Keychain protection).
+
+/** AsyncStorage — JSON array of normalized email strings for all saved accounts. */
+export const ACCOUNT_EMAILS_KEY = 'pingme:account_emails';
+
+/** AsyncStorage — normalized email string of the currently active session. */
+export const ACTIVE_ACCOUNT_EMAIL_KEY = 'pingme:active_account_email';
+
+/** AsyncStorage — cached hex value of GLOBAL_SALT from /pm_get_globals. */
+export const GLOBAL_SALT_CACHE_KEY = 'pingme:GLOBAL_SALT';
+
+/**
+ * Builds an email-namespaced SecureStore key.
+ *
+ * Used for NON-NULLABLE secrets that the spec requires to be gated by FaceID:
+ * SEED (root on-chain secret), MESSAGING_PRIVATE_KEY (decrypt in-app messages).
+ * ENC_KEY_REF is NOT stored here — per spec it is NON-SECURED UNENCRYPTED.
+ *
+ * expo-secure-store only allows: alphanumeric, ".", "-", "_"
+ * So we use "." as the path separator and replace "@" with "_at_".
+ *
+ * Examples:
+ *   accountSecureKey('User@Example.com', 'seed')
+ *   → 'pingme.account.user_at_example.com.seed'
+ */
+export function accountSecureKey(
+  email: string,
+  field: 'seed' | 'messaging_private_key'
+): string {
+  const normalized = email.trim().toLowerCase().replace('@', '_at_');
+  return `pingme.account.${normalized}.${field}`;
+}
+
+/**
+ * Builds an email-namespaced AsyncStorage key for NON-SECURE account data.
+ *
+ * Per spec, ENC_KEY_REF is stored in NON-SECURED UNENCRYPTED memory (accessible
+ * without FaceID), keyed by email.
+ */
+export function accountDataKey(email: string, field: 'enc_key_ref'): string {
+  const normalized = email.trim().toLowerCase().replace('@', '_at_');
+  return `pingme.account.${normalized}.${field}`;
+}
+
+/**
+ * AsyncStorage key for the set of notification ids this device has marked as
+ * handled (user tapped / acted on) per email.
+ * Value is JSON array of numbers.
+ */
+export function notificationHandledKey(email: string): string {
+  const normalized = email.trim().toLowerCase().replace('@', '_at_');
+  return `pingme.account.${normalized}.notif_handled`;
+}

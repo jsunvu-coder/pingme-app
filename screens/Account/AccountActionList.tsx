@@ -6,13 +6,16 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { push, setRootScreen } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
 import { AccountDataService } from 'business/services/AccountDataService';
+import { MessagingService } from 'business/services/MessagingService';
 import { ENV_STORAGE_KEY, getEnv, loadEnvFromStorage, setEnv } from 'business/Config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginViewModel } from 'screens/Onboarding/Auth/LoginViewModel';
-import { LOCKBOX_METADATA_STORAGE_PREFIX } from 'business/services/LockboxMetadataStorage';
 import { useAppDispatch } from 'store/hooks';
+import { useSelector } from 'react-redux';
 import { clearHistory } from 'store/historySlice';
 import { resetHongBaoPopupShown } from 'store/eventSlice';
+import { selectAppFullyFunctional } from 'store/authSlice';
+import { selectNotificationCount } from 'store/notificationSlice';
 
 const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
@@ -22,16 +25,22 @@ type ItemProps = {
   action?: () => void;
   rightView?: React.ReactNode;
   disabled?: boolean;
+  /** When true, action is replaced with a "keys required" alert and the item is dimmed. */
+  gatedByKeys?: boolean;
+  /** Unread / count badge next to the label (orange pill, white text). 0 hides. */
+  badgeCount?: number;
 };
 
 export default function AccountActionList() {
   const dispatch = useAppDispatch();
+  const fullyFunctional = useSelector(selectAppFullyFunctional);
   const [biometricType, setBiometricType] = useState<
     'Face ID' | 'Touch ID' | 'Biometric Authentication' | null
   >(null);
   const [useBiometric, setUseBiometric] = useState(false);
   const [env, setEnvState] = useState<'staging' | 'production'>(getEnv());
   const [loggingOut, setLoggingOut] = useState(false);
+  const notifCount = useSelector(selectNotificationCount);
   const email = AccountDataService.getInstance().email ?? '';
   const canChangeEnvironment = /@hailstonelabs\.com$/i.test(email);
 
@@ -50,22 +59,22 @@ export default function AccountActionList() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!email) return;
+    void MessagingService.getInstance().refreshForEmail(email);
+  }, [email]);
+
   const handleLogout = async () => {
     if (loggingOut) return;
     setLoggingOut(true);
 
     dispatch(resetHongBaoPopupShown());
     try {
-      const preservedEnv = await AsyncStorage.getItem(ENV_STORAGE_KEY);
       await AuthService.getInstance().logout();
       const keys = await AsyncStorage.getAllKeys();
-      const keysToRemove = keys.filter(
-        (k) => k !== ENV_STORAGE_KEY && !k.startsWith(LOCKBOX_METADATA_STORAGE_PREFIX)
-      );
+      // Multi-account: preserve account list, per-email secrets, global salt cache, env.
+      const keysToRemove = keys.filter((k) => !LoginViewModel.shouldPreserveAsyncKeyOnLogout(k));
       if (keysToRemove.length) await AsyncStorage.multiRemove(keysToRemove);
-      if (preservedEnv) {
-        await AsyncStorage.setItem(ENV_STORAGE_KEY, preservedEnv);
-      }
       await LoginViewModel.clearSavedCredentials();
       await LoginViewModel.setUseBiometricPreference(false);
 
@@ -172,6 +181,56 @@ export default function AccountActionList() {
     );
   };
 
+  /**
+   * Spec: "Generate New Key" is a manual option under Account menu. It can be
+   * triggered regardless of whether keys already exist (e.g. user on an older
+   * device wanting fresh keys, or recovery from a cancelled flow).
+   */
+  const handleGenerateNewKey = async () => {
+    const activeEmail = AccountDataService.getInstance().email;
+    if (!activeEmail) {
+      Alert.alert('Not signed in', 'Please sign in before generating new keys.');
+      return;
+    }
+
+    const auth = AuthService.getInstance();
+    let existing = false;
+    try {
+      existing = await auth.hasMessagingKeys(activeEmail);
+    } catch (err) {
+      console.warn('[Account] hasMessagingKeys check failed', err);
+    }
+
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Alert.alert(
+        'Generate new messaging keys?',
+        existing
+          ? 'This will overwrite the existing keys on this device. Old encrypted messages may no longer be readable.'
+          : 'We will send a verification code to your email to generate new messaging keys.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          {
+            text: 'Continue',
+            style: existing ? 'destructive' : 'default',
+            onPress: () => resolve(true),
+          },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await auth.initiateKeyGeneration(activeEmail);
+      push('VerifyEmailScreen', { email: activeEmail, mode: 'generate_new_key' });
+    } catch (err) {
+      console.error('[Account] initiateKeyGeneration failed', err);
+      const message = err instanceof Error ? err.message : 'Please try again later.';
+      Alert.alert('Failed to start key generation', message);
+    }
+  };
+
   const handleEnvSwitch = (nextEnv: 'staging' | 'production') => {
     if (nextEnv === env) return;
 
@@ -218,9 +277,16 @@ export default function AccountActionList() {
 
   const items: ItemProps[] = [
     {
+      label: 'Notifications',
+      action: () => push('NotificationsScreen'),
+      rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+      badgeCount: notifCount,
+    },
+    {
       label: 'Leaderboard',
       action: () => push('LeaderBoardScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+      gatedByKeys: true,
     },
     {
       label: 'Withdraw',
@@ -228,14 +294,21 @@ export default function AccountActionList() {
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },
     {
+      label: 'Generate New Key',
+      action: handleGenerateNewKey,
+      rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+    },
+    {
       label: 'Password Recovery',
       action: () => push('AccountRecoveryScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+      gatedByKeys: true,
     },
     {
       label: 'Change Password',
       action: () => push('ChangePasswordScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
+      gatedByKeys: true,
     },
     // {
     //   label: 'Clear History',
@@ -275,9 +348,24 @@ export default function AccountActionList() {
       </View>
 
       {/* Default Items */}
-      {items.map((item, index) => (
-        <Item key={index} {...item} />
-      ))}
+      {items.map((item, index) => {
+        const locked = item.gatedByKeys && !fullyFunctional;
+        return (
+          <Item
+            key={index}
+            {...item}
+            action={
+              locked
+                ? () =>
+                    Alert.alert(
+                      'Messaging keys required',
+                      'Generate messaging keys first to use this feature.'
+                    )
+                : item.action
+            }
+          />
+        );
+      })}
 
       {/* Spacer */}
       <View className="h-6" />
@@ -292,12 +380,29 @@ export default function AccountActionList() {
   );
 }
 
-const Item = ({ label, action, rightView }: ItemProps) => (
+const Item = ({ label, action, rightView, badgeCount }: ItemProps) => (
   <TouchableOpacity
     onPress={action}
     activeOpacity={0.7}
     className="mt-3 flex-row items-center justify-between rounded-2xl bg-white p-6">
-    <Text className="text-lg text-black">{label}</Text>
+    <View className="flex-1 flex-row items-center gap-2">
+      <Text className="text-lg text-black">{label}</Text>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <View
+          style={{
+            width: 16,
+            height: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 100,
+            backgroundColor: '#FD4912',
+          }}>
+          <Text style={{ fontSize: 10, lineHeight: 14, color: 'white', textAlign: 'center' }}>
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </Text>
+        </View>
+      )}
+    </View>
     {rightView ?? <Ionicons name="chevron-forward" size={20} color="#FD4912" />}
   </TouchableOpacity>
 );

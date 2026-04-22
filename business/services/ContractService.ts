@@ -387,6 +387,55 @@ export class ContractService {
   }
 
   // ========================================================
+  // ✉️ EMAIL KEY / MESSAGING
+  // ========================================================
+
+  /**
+   * Calls /pm_register_key — registers the user's email + X25519 public key.
+   * Triggers a 6-digit OTP email. Returns `enc_key_ref` which must be kept
+   * in memory (and later in SecureStore) until /pm_verify_key succeeds.
+   *
+   * Spec body: { email, pk }  where pk = hex-encoded X25519 public key.
+   */
+  async registerEmailKey(email: string, pk: string): Promise<{ enc_key_ref: string }> {
+    return this.post('/pm_register_key', { email, pk });
+  }
+
+  /**
+   * Calls /pm_verify_key — submits the OTP code received by email.
+   * Must be called with the enc_key_ref returned by registerEmailKey.
+   * On success: persist enc_key_ref + private messaging key + seed to SecureStore,
+   * then call pm_faucet to bootstrap the on-chain account.
+   *
+   * Spec body: { enc_key_ref, v_code }
+   */
+  async verifyEmailKey(encKeyRef: string, vCode: string) {
+    return this.post('/pm_verify_key', { enc_key_ref: encKeyRef, v_code: vCode });
+  }
+
+  /**
+   * Calls /pm_faucet — bootstraps the user's on-chain account.
+   * Must be called after /pm_verify_key succeeds, using salt and commitment
+   * derived from the random seed (NOT from email:password).
+   *
+   * Spec body: { salt, commitment }
+   */
+  async faucet(salt: string, commitment: string) {
+    return this.post('/pm_faucet', { salt, commitment });
+  }
+
+  /**
+   * Calls /pm_get_enc_msgs — retrieves unexpired encrypted messages for the
+   * given active key reference. Client decrypts locally with its private key.
+   *
+   * Spec body: { enc_key_ref }
+   * Response: { messages: [{ id, enc_msg, expired_at, created_at }] }
+   */
+  async getEncMsgs(encKeyRef: string) {
+    return this.post('/pm_get_enc_msgs', { enc_key_ref: encKeyRef });
+  }
+
+  // ========================================================
   // 🧩 RECOVERY FUNCTIONS
   // ========================================================
   async rvChangePassword(

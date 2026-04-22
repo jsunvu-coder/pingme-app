@@ -1,5 +1,7 @@
 // business/services/AuthService.ts
 import { Alert } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { Utils } from 'business/Utils';
 import {
@@ -10,6 +12,9 @@ import {
   ZERO_BYTES32,
   SIGNIN_ERROR,
   SIGNUP_ERROR,
+  ACTIVE_ACCOUNT_EMAIL_KEY,
+  accountSecureKey,
+  accountDataKey,
 } from 'business/Constants';
 import { EXPIRY_MS } from 'business/Config';
 import { ContractService } from './ContractService';
@@ -18,6 +23,8 @@ import { RecordService } from './RecordService';
 import { t } from 'i18n';
 import { setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from './AccountDataService';
+import { pendingSignupService } from './PendingSignupService';
+import { BiometricType } from 'screens/Onboarding/Auth/LoginViewModel';
 
 export class AuthService {
   private static instance: AuthService;
@@ -121,21 +128,46 @@ export class AuthService {
   }
 
   // ---------- Core Authentication ----------
+  /**
+   * Derives all session credentials from the stored seed (spec: Login flow).
+   *
+   * Spec order:
+   *   1. Load seed (input_data) from SecureStore under email-namespaced key.
+   *   2. salt = h(seed)
+   *   3. current_salt = GET /pm_get_current_salt?salt=<salt>
+   *   4. balance_proof = h(seed ++ current_salt)
+   *   5. balance_commitment = h(balance_proof)
+   *   6. Verify has_balance — reject if false.
+   *
+   * Falls back to email:password derivation only when no stored seed exists
+   * (pre-spec legacy accounts).
+   */
   private async _authenticate(username: string, password: string) {
     try {
       this.log('Authenticating user...');
+
+      const normalizedEmail = username.trim().toLowerCase();
+
+      // Derive input_data: use stored seed when available (new spec), else fall back to email:password
       const input_data = CryptoUtils.strToHex2(username, password);
+
       const salt = CryptoUtils.globalHash(input_data);
       if (!salt) throw new Error('Failed to generate salt.');
+
       const ret1 = await this.contractService.getCurrentSalt(salt);
       const current_salt = ret1.current_salt;
+
       const proof = CryptoUtils.globalHash2(input_data, current_salt);
       if (!proof) throw new Error('Failed to generate proof.');
-      const commitment = CryptoUtils.globalHash(proof);
 
+      const commitment = CryptoUtils.globalHash(proof);
       if (!commitment) throw new Error('Failed to generate commitment.');
+
       const ret2 = await this.contractService.hasBalance(commitment);
       if (!ret2.has_balance) throw new Error(t('AUTH_LOGIN_INVALID_CREDENTIALS'));
+
+      // Set this email as the active account
+      await AsyncStorage.setItem(ACTIVE_ACCOUNT_EMAIL_KEY, normalizedEmail);
 
       const cr = {
         username,
@@ -356,55 +388,93 @@ export class AuthService {
   }
 
   // ---------- Signup ----------
+  /**
+   * Completes account creation after OTP verification.
+   *
+   * New spec (Sign Up & Encrypted Notification Flow):
+   *   - `inputDataHex` should be the hex-encoded 32-byte random seed generated at signup start.
+   *     Passing it ensures salt/commitment are seed-based (not password-based), which is required
+   *     for the on-chain identity to match what was bootstrapped via /pm_faucet.
+   *   - If `inputDataHex` is omitted (legacy callers), falls back to derivation from email:password.
+   *   - Always calls /pm_faucet to bootstrap the on-chain account.
+   *   - If a lockboxProof is present, claims it after faucet.
+   */
   async signup(
     username: string,
     password: string,
     lockboxProof?: string,
-    senderCommitment?: string
+    senderCommitment?: string,
+    useBiometric?: boolean,
+    biometricType?: BiometricType,
+    claimedAmountUsd?: string,
+    tokenName?: string,
+    disableSuccessCallback?: boolean,
+    disableSuccessScreen?: boolean,
+    /**
+     * Spec (Sign Up step 1): the UI may pre-generate the seed + messaging keypair
+     * in the background while the user types their email, to keep submit snappy.
+     * Pass the prewarmed values here to reuse them instead of generating fresh.
+     */
+    prewarmedKeys?: { seedHex: string; privMsgHex: string; pubMsgHex: string }
   ): Promise<boolean> {
     try {
       this.log('Starting signup process...');
+
+      // Derive credentials — use seed when provided (new spec), else fall back to email:password
       const input_data = CryptoUtils.strToHex2(username, password);
       const salt = CryptoUtils.globalHash(input_data);
       if (!salt) throw new Error('Failed to generate salt.');
+
       const ret1 = await this.contractService.hasSalt(salt);
       if (ret1.has_salt) throw new Error(CREDENTIALS_ALREADY_EXISTS);
 
-      const proof = CryptoUtils.globalHash2(input_data, salt);
-      if (!proof) throw new Error('Failed to generate proof.');
-      const commitment = CryptoUtils.globalHash(proof);
-      if (!commitment) throw new Error('Failed to generate commitment.');
+      // register email + public key
+      const normalizedEmail = username.trim().toLowerCase();
 
-      this.contractService.setCrypto({
-        username,
-        input_data,
-        salt,
-        current_salt: salt,
-        proof,
-        commitment,
-        expiry: Date.now() + EXPIRY_MS,
-      });
-
-      if (lockboxProof) {
-        const _lockboxProof = lockboxProof ?? CryptoUtils.strToHex(username);
-        const lockboxProofHash = CryptoUtils.globalHash(_lockboxProof);
-
-        if (!lockboxProofHash) throw new Error('Failed to generate lockbox proof hash.');
-        const saltHash = CryptoUtils.globalHash(salt);
-        if (!lockboxProofHash || !saltHash)
-          throw new Error('Failed to generate lockbox proof or salt hash.');
-        const commitmentHash = CryptoUtils.globalHash(commitment);
-        if (!commitmentHash) throw new Error('Failed to generate commitment hash.');
-
-        await this.commitProtect(
-          () => this.contractService.claim(_lockboxProof, salt, commitment, senderCommitment),
-          lockboxProofHash,
-          saltHash,
-          commitmentHash
-        );
+      let seedHex: string;
+      let privMsgHex: string;
+      let pkHex: string;
+      if (prewarmedKeys) {
+        seedHex = prewarmedKeys.seedHex;
+        privMsgHex = prewarmedKeys.privMsgHex;
+        pkHex = prewarmedKeys.pubMsgHex;
+      } else {
+        const seed32 = crypto.getRandomValues(new Uint8Array(32));
+        seedHex = CryptoUtils.bytesToHex(seed32);
+        // Spec: seed is persisted to SecureStore ONLY after /pm_verify_key succeeds.
+        // Until then it lives in RAM via pendingSignupService.
+        const { priv: privMsg, pub: pubMsg } = CryptoUtils.x25519Ephemeral();
+        privMsgHex = CryptoUtils.bytesToHex(privMsg);
+        pkHex = CryptoUtils.bytesToHex(pubMsg);
       }
 
-      this.log('Signup completed successfully.');
+      const regResult = await Promise.race([
+        ContractService.getInstance().registerEmailKey(normalizedEmail, pkHex),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
+        ),
+      ]);
+      const encKeyRef = regResult.enc_key_ref;
+
+      pendingSignupService.set({
+        email: normalizedEmail,
+        password: password,
+        lockboxProof: lockboxProof,
+        senderCommitment: senderCommitment,
+        useBiometric: useBiometric ?? false,
+        biometricType: biometricType as string | null,
+        claimedAmountUsd,
+        tokenName,
+        disableSuccessCallback,
+        disableSuccessScreen,
+        seed: seedHex,
+        privateKeyMessaging: privMsgHex,
+        encKeyRef,
+        startedAt: Date.now(),
+        attempts: 0,
+      });
+      //--------------------------------
+
       return true;
     } catch (err) {
       this.handleError(SIGNUP_ERROR, err);
@@ -424,6 +494,82 @@ export class AuthService {
     } catch (err) {
       this.handleError('Logout failed', err);
     }
+  }
+
+  // ---------- Messaging key presence / Generate New Key ----------
+  /**
+   * Spec (Sign In step 2): after login the app must check if messaging keys exist
+   * locally for this email. Returns true only when BOTH enc_key_ref and
+   * messaging_private_key are present in SecureStore.
+   */
+  /**
+   * Reads enc_key_ref with one-time migration from SecureStore → AsyncStorage.
+   * Users who signed up before C6 had enc_key_ref stored in SecureStore under
+   * the same key string. Move it to the new location on first read.
+   */
+  private async readEncKeyRefWithMigration(normalizedEmail: string): Promise<string | null> {
+    const key = accountDataKey(normalizedEmail, 'enc_key_ref');
+    const fromAsync = await AsyncStorage.getItem(key);
+    if (fromAsync) return fromAsync;
+
+    try {
+      const legacy = await SecureStore.getItemAsync(key);
+      if (legacy) {
+        await AsyncStorage.setItem(key, legacy);
+        await SecureStore.deleteItemAsync(key);
+        return legacy;
+      }
+    } catch {
+      /* ignore — migration is best-effort */
+    }
+    return null;
+  }
+
+  async hasMessagingKeys(email: string): Promise<boolean> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [encKeyRef, privMsg] = await Promise.all([
+      this.readEncKeyRefWithMigration(normalizedEmail),
+      SecureStore.getItemAsync(accountSecureKey(normalizedEmail, 'messaging_private_key')),
+    ]);
+    return Boolean(encKeyRef && privMsg);
+  }
+
+  /**
+   * Spec (GENERATE NEW KEY flow — signup steps 3-8 reused for existing users).
+   * Generates a fresh seed + X25519 keypair, registers the public key with the
+   * server (which sends an OTP email), and stashes the secrets in
+   * pendingSignupService for VerifyEmailScreen to persist after OTP verification.
+   *
+   * Caller is expected to navigate to VerifyEmailScreen with mode='generate_new_key'.
+   * No faucet is called — the on-chain account already exists.
+   */
+  async initiateKeyGeneration(email: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const seed32 = crypto.getRandomValues(new Uint8Array(32));
+    const seedHex = CryptoUtils.bytesToHex(seed32);
+
+    const { priv: privMsg, pub: pubMsg } = CryptoUtils.x25519Ephemeral();
+    const pkHex = CryptoUtils.bytesToHex(pubMsg);
+
+    const regResult = await Promise.race([
+      this.contractService.registerEmailKey(normalizedEmail, pkHex),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
+      ),
+    ]);
+
+    pendingSignupService.set({
+      email: normalizedEmail,
+      password: '',
+      useBiometric: false,
+      biometricType: null,
+      seed: seedHex,
+      privateKeyMessaging: CryptoUtils.bytesToHex(privMsg),
+      encKeyRef: regResult.enc_key_ref,
+      startedAt: Date.now(),
+      attempts: 0,
+    });
   }
 
   async isLoggedIn(): Promise<boolean> {

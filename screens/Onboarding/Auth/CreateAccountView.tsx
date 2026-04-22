@@ -1,6 +1,18 @@
-import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, Linking, TouchableWithoutFeedback, Switch } from 'react-native';
+import {
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import { View, Text, Linking, TouchableWithoutFeedback, Switch, Alert } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { accountSecureKey, accountDataKey } from 'business/Constants';
+import { CryptoUtils } from 'business/CryptoUtils';
 import PasswordRules from 'components/PasswordRules';
 import AuthInput from 'components/AuthInput';
 import EmailIcon from 'assets/EmailIcon';
@@ -9,7 +21,7 @@ import CheckSquareIcon from 'assets/CheckSquareIcon';
 import { TOC_URL } from 'business/Config';
 import PrimaryButton from 'components/PrimaryButton';
 import { AuthService } from 'business/services/AuthService';
-import { setRootScreen } from 'navigation/Navigation';
+import { push, setRootScreen } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import { shareFlowService } from 'business/services/ShareFlowService';
@@ -21,8 +33,49 @@ import { BiometricType, LoginViewModel } from './LoginViewModel';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Spec: if PRIVATE_KEY and ENC_KEY_REF already exist locally for this email,
+ * the app must warn the user that proceeding will overwrite the existing keys.
+ */
+async function hasExistingAccountKeys(normalizedEmail: string): Promise<boolean> {
+  // Spec: ENC_KEY_REF is in AsyncStorage (non-secure); messaging_private_key in SecureStore.
+  const key = accountDataKey(normalizedEmail, 'enc_key_ref');
+  // Migration fallback: pre-C6 users have enc_key_ref in SecureStore under the same key string.
+  let encKeyRef = await AsyncStorage.getItem(key);
+  if (!encKeyRef) {
+    try {
+      const legacy = await SecureStore.getItemAsync(key);
+      if (legacy) {
+        await AsyncStorage.setItem(key, legacy);
+        await SecureStore.deleteItemAsync(key);
+        encKeyRef = legacy;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const privMsg = await SecureStore.getItemAsync(
+    accountSecureKey(normalizedEmail, 'messaging_private_key')
+  );
+  return Boolean(encKeyRef && privMsg);
+}
+
+function confirmOverwriteKeys(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Overwrite existing account keys?',
+      'Account keys already exist on this device for this email. If you proceed, the existing keys will be overwritten.',
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Continue', style: 'destructive', onPress: () => resolve(true) },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) }
+    );
+  });
+}
+
 export interface CreateAccountViewRef {
-  register: () => Promise<void>;
+  register: (bundleMessagemessage?: string) => Promise<void>;
 }
 
 interface CreateAccountViewProps {
@@ -36,6 +89,7 @@ interface CreateAccountViewProps {
   setIsFormValid?: (valid: boolean) => void;
   setLoading?: (loading: boolean) => void;
   senderCommitment?: string;
+  bundle_uuid?: string;
 }
 
 const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProps>(
@@ -51,6 +105,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
       setIsFormValid = (valid: boolean) => valid,
       setLoading: setLoadingProp = (loading: boolean) => {},
       senderCommitment,
+      bundle_uuid,
     },
     ref
   ) => {
@@ -74,6 +129,31 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
     const [initialized, setInitialized] = useState(false);
     const toggleIdRef = useRef(0);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /**
+     * Spec (Sign Up step 1): "the app generates a pair of new public / private
+     * key while the user enters the email and keeps it in memory."
+     * Pre-generate once on mount so submit doesn't pay the keygen cost.
+     */
+    const prewarmedKeysRef = useRef<{
+      seedHex: string;
+      privMsgHex: string;
+      pubMsgHex: string;
+    } | null>(null);
+
+    useEffect(() => {
+      if (prewarmedKeysRef.current) return;
+      try {
+        const seed32 = crypto.getRandomValues(new Uint8Array(32));
+        const { priv, pub } = CryptoUtils.x25519Ephemeral();
+        prewarmedKeysRef.current = {
+          seedHex: CryptoUtils.bytesToHex(seed32),
+          privMsgHex: CryptoUtils.bytesToHex(priv),
+          pubMsgHex: CryptoUtils.bytesToHex(pub),
+        };
+      } catch (err) {
+        console.warn('[CreateAccountView] keygen prewarm failed', err);
+      }
+    }, []);
 
     useEffect(() => {
       let cancelled = false;
@@ -200,67 +280,48 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
       setIsFormValid(isFormValid);
     }, [isFormValid, setIsFormValid]);
 
-    const handleRegister = useCallback(async () => {
-      setLoadingProp(true);
-      setLoading(true);
+    const handleRegister = useCallback(async (bundleMessage?: string) => {
       const auth = AuthService.getInstance();
       console.log('🔐 [Biometric] handleLogin START:', {
         useBiometric_param: useBiometric,
         biometricType,
       });
 
+      // Spec: warn + confirm before overwriting locally stored keys for this email.
+      const normalizedEmail = email.trim().toLowerCase();
+      if (await hasExistingAccountKeys(normalizedEmail)) {
+        const confirmed = await confirmOverwriteKeys();
+        if (!confirmed) return;
+      }
+
+      setLoadingProp(true);
+      setLoading(true);
+
       try {
         const lockbox = lockboxProof ?? route?.params?.lockboxProof;
         const _senderCommitment = senderCommitment ?? route?.params?.senderCommitment;
+
         const ok = await Promise.race([
-          auth.signup(email, password, lockbox, _senderCommitment),
+          auth.signup(
+            email,
+            password,
+            lockbox,
+            _senderCommitment,
+            useBiometric,
+            biometricType,
+            claimedAmountUsd,
+            tokenName,
+            disableSuccessCallback,
+            disableSuccessScreen,
+            prewarmedKeysRef.current ?? undefined
+          ),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Request timed out. Please try again.')), 20000)
           ),
         ]);
 
         if (ok) {
-          if (useBiometric) {
-            // User wants biometric enabled
-            if (!vm.useBiometric) {
-              // Case 1: User just enabled biometric (toggle switched from OFF to ON)
-              const result = await vm.enableBiometricLogin(email, password, biometricType);
-
-              if (!result.success && result.message) {
-                showFlashMessage({
-                  title: 'Face ID',
-                  message: result.message,
-                  type: 'warning',
-                });
-              }
-            } else {
-              // Case 2: Biometric preference was already ON
-              // Always save/update credentials to ensure they persist after logout+login
-              await LoginViewModel.saveCredentials(email, password);
-              await LoginViewModel.setUseBiometricPreference(true);
-            }
-          } else {
-            // User wants biometric disabled
-            if (vm.useBiometric) {
-              // Case 3: User just disabled biometric (toggle switched from ON to OFF)
-              await vm.disableBiometricLogin();
-            }
-          }
-          AccountDataService.getInstance().email = email;
-          // Only set pending claim if we want to show success screen
-          if (!disableSuccessCallback) {
-            if (lockbox && !disableSuccessScreen) {
-              shareFlowService.setPendingClaim({
-                amountUsdStr: claimedAmountUsd,
-                from: 'signup',
-                tokenName,
-              });
-            }
-            setRootScreen(['MainTab']);
-
-            const pendingLink = deepLinkHandler.getPendingLink();
-            if (pendingLink) deepLinkHandler.resumePendingLink();
-          }
+          push('VerifyEmailScreen', { email: email, mode: 'signup', bundle_uuid: bundle_uuid, bundleMessage: bundleMessage });
         }
       } catch (err: any) {
         console.error('Signup error:', err);
@@ -297,7 +358,7 @@ const CreateAccountView = forwardRef<CreateAccountViewRef, CreateAccountViewProp
       disableSuccessScreen,
       claimedAmountUsd,
       tokenName,
-      useBiometric
+      useBiometric,
     ]);
 
     useImperativeHandle(

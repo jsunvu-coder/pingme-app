@@ -1,5 +1,5 @@
 import { Fragment, type ComponentType } from 'react';
-import { Platform , TouchableOpacity } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import type { StackNavigationOptions } from '@react-navigation/stack';
 import { goBack } from 'navigation/Navigation';
@@ -21,6 +21,7 @@ import QRCodeScreen from 'screens/Pay/QrCode/QRCodeScreen';
 import PayQrConfirmationScreen from 'screens/Pay/QrPayment/PayQrConfirmationScreen';
 import ShareScreen from 'screens/Share/ShareScreen';
 import AuthScreen from 'screens/Onboarding/Auth/AuthScreen';
+import VerifyEmailScreen from 'screens/Onboarding/Auth/VerifyEmailScreen';
 import ChangePasswordScreen from 'screens/Onboarding/Auth/ChangePasswordScreen';
 import RequestSuccessScreen from 'screens/Request/RequestSuccess/RequestSuccessScreen';
 import AccountRecoveryScreen from 'screens/Recovery/AccountRecoveryScreen';
@@ -39,6 +40,7 @@ import HongBaoVerificationScreen from 'screens/HongBao/HongBaoVerificationScreen
 import HongBaoSuccessScreen from 'screens/HongBao/HongBaoSuccessScreen';
 import HongBaoErrorScreen from 'screens/HongBao/HongBaoErrorScreen';
 import LeaderBoardScreen from 'screens/Leaderboard/LeaderBoardScreen';
+import NotificationsScreen from 'screens/Notifications/NotificationsScreen';
 import TopUpScreen from 'screens/TopUp/TopUpScreen';
 import BridgeFromAnotherWalletScreen from 'screens/TopUp/BridgeFromAnotherWallet';
 import OnrampScreen from 'screens/TopUp/OnrampScreen';
@@ -76,6 +78,14 @@ const SCREEN_GROUPS: {
       {
         name: 'AuthScreen',
         component: AuthScreen,
+        options: {
+          presentation: 'card',
+          animation: 'slide_from_right',
+        },
+      },
+      {
+        name: 'VerifyEmailScreen',
+        component: VerifyEmailScreen,
         options: {
           presentation: 'card',
           animation: 'slide_from_right',
@@ -280,6 +290,11 @@ const SCREEN_GROUPS: {
       {
         name: 'LeaderBoardScreen',
         component: LeaderBoardScreen,
+      },
+      {
+        name: 'NotificationsScreen',
+        component: NotificationsScreen,
+        options: { presentation: 'card', animation: 'slide_from_right' },
       },
       {
         name: 'TopUpScreen',

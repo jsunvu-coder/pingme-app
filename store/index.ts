@@ -7,6 +7,8 @@ import eventReducer from './eventSlice';
 import mainTabReducer from './mainTabSlice';
 import bundleReducer from './bundleSlice';
 import leaderboardReducer from './leaderboardSlice';
+import authReducer from './authSlice';
+import notificationReducer from './notificationSlice';
 import { saveStoreState, loadStoreState } from './storage';
 
 /**
@@ -35,6 +37,8 @@ export async function createStore() {
       mainTab: mainTabReducer,
       bundle: bundleReducer,
       leaderboard: leaderboardReducer,
+      auth: authReducer,
+      notification: notificationReducer,
     },
     preloadedState: persistedState
       ? ({
@@ -91,16 +95,6 @@ export const store = new Proxy({} as Awaited<ReturnType<typeof createStore>>, {
 void storePromise;
 
 // Define the store type structure
-const reducer = {
-  history: historyReducer,
-  balance: balanceReducer,
-  overlay: overlayReducer,
-  event: eventReducer,
-  mainTab: mainTabReducer,
-  bundle: bundleReducer,
-  leaderboard: leaderboardReducer,
-};
-
 // Export types - define directly from reducer structure
 export type RootState = {
   history: ReturnType<typeof historyReducer>;
@@ -110,5 +104,7 @@ export type RootState = {
   mainTab: ReturnType<typeof mainTabReducer>;
   bundle: ReturnType<typeof bundleReducer>;
   leaderboard: ReturnType<typeof leaderboardReducer>;
+  auth: ReturnType<typeof authReducer>;
+  notification: ReturnType<typeof notificationReducer>;
 };
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;

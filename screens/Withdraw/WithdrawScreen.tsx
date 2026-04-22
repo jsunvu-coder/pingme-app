@@ -2,17 +2,16 @@ import { ScrollView, Text, View } from 'react-native';
 
 import NavigationBar from 'components/NavigationBar';
 import OutlineButton from 'components/OutlineButton';
-import WithdrawlIcon from 'assets/WithdrawlIcon';
 import TopupAddHKDIcon from 'assets/Topup/AddHKDIcon';
-import { push } from 'navigation/Navigation';
+import TopupTransferCryptoIcon from 'assets/Topup/TransferCryptoIcon';
 import { t } from 'i18n';
+import { push } from 'navigation/Navigation';
 
 const METHODS = [
   {
     name: 'Withdraw to wallet',
-    description:
-      'Send crypto from PingMe to any wallet address on the Monad network.',
-    icon: <WithdrawlIcon width={40} height={40} />,
+    description: 'Send crypto from PingMe to any wallet address on the Monad network.',
+    icon: <TopupTransferCryptoIcon size={40} color="#FD4912" />,
     button: {
       title: 'Withdraw Now',
       onPress: () => {

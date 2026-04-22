@@ -6,6 +6,7 @@ import { Utils } from 'business/Utils';
 import { TOKENS, STABLE_TOKENS } from 'business/Constants';
 import { CryptoUtils } from 'business/CryptoUtils';
 import { AccountDataService } from './AccountDataService';
+import { MessagingService } from './MessagingService';
 import { getStore, type AppDispatch } from 'store/index';
 import { setStablecoinBalance, setOtherTokensBalance } from 'store/balanceSlice';
 
@@ -204,6 +205,10 @@ export class BalanceService {
 
       this.notifyBalanceChange();
       this.notifyUpdateTimeChange();
+
+      // Piggy-back notification refresh on every successful balance fetch so
+      // the Account badge stays in sync without a separate polling timer.
+      void MessagingService.getInstance().refreshActive();
     } catch (err) {
       console.error('❌ [BalanceService] Failed to fetch balance:', err);
       // Keep showing the last known balance instead of clearing to $0 on failure.

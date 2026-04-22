@@ -210,7 +210,8 @@ export class CryptoUtils {
     key: Uint8Array,
     ct: Uint8Array,
     tag: Uint8Array,
-    nonce: Uint8Array
+    nonce: Uint8Array,
+    aad?: Uint8Array
   ): Promise<Uint8Array> {
     const subtle: any = (crypto as any)?.subtle ?? (crypto as any).subtle;
     const k = await subtle.importKey(
@@ -223,11 +224,12 @@ export class CryptoUtils {
     const ctTag = new Uint8Array(ct.length + tag.length);
     ctTag.set(ct, 0);
     ctTag.set(tag, ct.length);
-    const pt = await subtle.decrypt(
-      { name: 'AES-GCM', iv: CryptoUtils.asArrayBufferStrict(nonce) },
-      k,
-      CryptoUtils.asArrayBufferStrict(ctTag)
-    );
+    const params: Record<string, unknown> = {
+      name: 'AES-GCM',
+      iv: CryptoUtils.asArrayBufferStrict(nonce),
+    };
+    if (aad) params.additionalData = CryptoUtils.asArrayBufferStrict(aad);
+    const pt = await subtle.decrypt(params, k, CryptoUtils.asArrayBufferStrict(ctTag));
     return new Uint8Array(pt);
   }
 }

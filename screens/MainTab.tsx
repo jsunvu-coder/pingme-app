@@ -20,12 +20,18 @@ import HongBaoScreen from './HongBao/HongBaoScreen';
 import { RootState } from 'store';
 import { useSelector } from 'react-redux';
 import { RouteProp } from '@react-navigation/native';
-import { TouchableOpacity } from 'react-native';
+import { Alert, TouchableOpacity } from 'react-native';
+import { selectAppFullyFunctional } from 'store/authSlice';
 
 const Tab = createBottomTabNavigator();
 
+// Spec: in "heavily disabled" state, only Home (balance/refresh) + Account
+// (withdraw/generate key/logout) are reachable. Ping Now + HongBao are blocked.
+const DISABLED_WHEN_LOCKED: readonly string[] = ['Ping Now', 'HongBao'];
+
 export default function MainTab() {
   const preventTouch = useSelector((state: RootState) => state.mainTab.preventTouch);
+  const fullyFunctional = useSelector(selectAppFullyFunctional);
 
   useEffect(() => {
     let claimTimer: ReturnType<typeof setTimeout> | null = null;
@@ -75,10 +81,20 @@ export default function MainTab() {
         },
         animation: 'none',
         tabBarButton(props) {
+          const isLocked = !fullyFunctional && DISABLED_WHEN_LOCKED.includes(route.name);
           return (
             <TouchableOpacity
               disabled={preventTouch}
-              onPress={props.onPress}
+              onPress={(e) => {
+                if (isLocked) {
+                  Alert.alert(
+                    'Messaging keys required',
+                    'Generate messaging keys from the Account menu to enable this feature.'
+                  );
+                  return;
+                }
+                props.onPress?.(e);
+              }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 50 }}>
               {props.children}
             </TouchableOpacity>

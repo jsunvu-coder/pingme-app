@@ -49,7 +49,10 @@ export default function OnboardingPager() {
   });
 
   const handleSignUp = () => {
-    Linking.openURL(SIGNUP_URL);
+    push('AuthScreen', {
+      mode: 'signup',
+      headerFull: true,
+    });
   };
 
   return (

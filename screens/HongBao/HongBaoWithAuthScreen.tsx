@@ -74,8 +74,7 @@ export default function HongBaoWithAuthScreen() {
       }
       if (mode === 'signup') {
         if (bundleStatus && redPocketService.verifyBundleInfo(bundleStatus)) {
-          await createAccountViewRef.current?.register();
-          navigateToHongBaoVerification(bundle_uuid || '', mode, bundleStatus.message || '');
+          await createAccountViewRef.current?.register(bundleStatus.message || '');
           return;
         } else {
           await AuthService.getInstance().logout();
@@ -160,6 +159,7 @@ export default function HongBaoWithAuthScreen() {
               removeButtonCreateAccount
               disableSuccessCallback
               setIsFormValid={setIsSignupFormValid}
+              bundle_uuid={bundle_uuid}
             />
           )}
         </KeyboardAwareScrollView>

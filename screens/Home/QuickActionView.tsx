@@ -1,16 +1,26 @@
-import { View, Text } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import IconButton from 'components/IconButton';
+import { useSelector } from 'react-redux';
 
 import ArrowUpRightIcon from 'assets/ArrowUpRightIcon';
 import ArrowDownLeftIcon from 'assets/ArrowDownLeftIcon';
 import QRCode1Icon from 'assets/QRCode1Icon';
 import QRCode2Icon from 'assets/QRCode2Icon';
+import { selectAppFullyFunctional } from 'store/authSlice';
 
 export default function QuickActionsView() {
   const navigation = useNavigation<any>();
+  const fullyFunctional = useSelector(selectAppFullyFunctional);
 
   const handleActionPress = (label: string) => {
+    // if (!fullyFunctional) {
+    //   Alert.alert(
+    //     'Messaging keys required',
+    //     'Please generate messaging keys to use this feature. You can do it from the Account menu.'
+    //   );
+    //   return;
+    // }
     switch (label) {
       case 'Send':
         navigation.navigate('Ping Now', { mode: 'send' });
