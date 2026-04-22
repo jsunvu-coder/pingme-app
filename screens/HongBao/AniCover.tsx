@@ -6,7 +6,6 @@ import PrimaryButton from 'components/PrimaryButton';
 import { push, setRootScreen } from 'navigation/Navigation';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import {
-  Alert,
   Dimensions,
   Image,
   ImageBackground,
@@ -25,9 +24,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { hideOverlay, triggerAction } from 'store/overlaySlice';
-import { selectAppFullyFunctional } from 'store/authSlice';
+import { useRequireMessagingKeys } from 'hooks/useRequireMessagingKeys';
 
 const HongbaoCoverLibImage = require('../../assets/HongBaoAni/Hongbao_opened_2.png');
 const HongbaoCoverBaseImage = require('../../assets/HongBaoAni/Hongbao_opened_3.png');
@@ -76,7 +75,9 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     const isFocused = useIsFocused();
     const progress = useSharedValue(0);
     const dispatch = useDispatch();
-    const fullyFunctional = useSelector(selectAppFullyFunctional);
+    const { guard: requireKeys } = useRequireMessagingKeys({
+      message: 'Generate messaging keys from the Account menu to send a Hongbao.',
+    });
 
     useEffect(() => {
       progress.value = withTiming(1, { duration: 2500 });
@@ -260,13 +261,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     };
 
     const handleSendHongbao = () => {
-      if (!fullyFunctional) {
-        Alert.alert(
-          'Messaging keys required',
-          'Generate messaging keys from the Account menu to send a Hongbao.'
-        );
-        return;
-      }
+      if (!requireKeys()) return;
       // Navigate to HongBao tab in MainTab
       setRootScreen([
         {
