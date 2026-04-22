@@ -6,7 +6,8 @@ import {
   setRootScreen,
 } from 'navigation/Navigation';
 import { AuthService } from 'business/services/AuthService';
-import { Linking } from 'react-native';
+import { AccountDataService } from 'business/services/AccountDataService';
+import { Alert, Linking } from 'react-native';
 import { computeLockboxProof, getLockbox, getLockboxInfo } from 'utils/claim';
 import { BundleStatusResponse, RedPocketService } from './RedPocketService';
 import { HongBaoVerificationParams } from 'screens/HongBao/HongBaoVerificationScreen';
@@ -15,6 +16,28 @@ import { HongBaoErrorParams } from 'screens/HongBao/HongBaoErrorScreen';
 class DeepLinkHandler {
   private pendingURL: string | null = null;
   private initialURLHandled = false;
+
+  /**
+   * Spec (Sign In step 2 "heavily disabled" state): when the user is signed in
+   * but has no messaging keys locally, deep-linked actions (claim / redPocket /
+   * pay / deposit) must not proceed until keys are generated.
+   *
+   * Returns true when the caller may continue. When keys are missing, stores
+   * the URL for later resume, shows a blocking alert, and returns false.
+   */
+  private async guardMessagingKeys(url?: string): Promise<boolean> {
+    const email = AccountDataService.getInstance().email;
+    if (!email) return true;
+    const hasKeys = await AuthService.getInstance().hasMessagingKeys(email);
+    if (hasKeys) return true;
+
+    if (url) this.setPendingURL(url);
+    Alert.alert(
+      'Messaging keys required',
+      'Please generate messaging keys from the Account menu, then open this link again.'
+    );
+    return false;
+  }
 
   setPendingURL(url: string) {
     this.pendingURL = url;
@@ -100,7 +123,10 @@ class DeepLinkHandler {
 
           if (isLoggedIn) {
             setRootScreen(['MainTab']);
-            setTimeout(() => this.navigateClaim(params), 400);
+            setTimeout(async () => {
+              if (!(await this.guardMessagingKeys(url))) return;
+              this.navigateClaim(params);
+            }, 400);
           } else {
             // If signup=true and not logged in, verify first then go to auth
             if (params.signup === 'true') {
@@ -115,7 +141,8 @@ class DeepLinkHandler {
           return;
         }
 
-        // REDPOCKET (HongBao) → check login status
+        // REDPOCKET (HongBao) → check login status. Claim is a receive op, so
+        // it is allowed even when the user has no messaging keys yet.
         if (path === 'redPocket' || path === 'redpocket') {
           const params = Object.fromEntries(u.searchParams);
           if (isLoggedIn) {
@@ -219,6 +246,7 @@ class DeepLinkHandler {
           );
           await this.handleClaimWithSignup(params);
         } else {
+          if (isLoggedIn && !(await this.guardMessagingKeys(url))) return;
           this.navigateClaim(params);
         }
         return;
@@ -226,7 +254,8 @@ class DeepLinkHandler {
 
       case 'redPocket':
       case 'redpocket': {
-        // Check if logged in to decide which screen to show
+        // HongBao claim is a receive operation → allowed even when the user
+        // has no messaging keys yet (no "Generate keys first" prompt here).
         if (isLoggedIn) {
           this.navigateHongBaoVerification(params, true);
         } else {
@@ -274,6 +303,7 @@ class DeepLinkHandler {
           return;
         }
 
+        if (!(await this.guardMessagingKeys(url))) return;
         if (path === 'pay') this.navigatePay(params);
         else this.navigatePayQr(params);
         return;

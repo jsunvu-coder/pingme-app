@@ -22,6 +22,7 @@ import { showFlashMessage } from 'utils/flashMessage';
 import { push } from 'navigation/Navigation';
 import { shareFlowService } from 'business/services/ShareFlowService';
 import { deepLinkHandler } from 'business/services/DeepLinkHandler';
+import { useRequireMessagingKeys } from 'hooks/useRequireMessagingKeys';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
@@ -35,6 +36,8 @@ export default function HomeScreen() {
   const shouldShow = useAppSelector(selectShouldShowHongBaoPopup);
   const [hasPendingClaim, setHasPendingClaim] = useState<boolean | null>(null);
   const [hasPendingURL, setHasPendingURL] = useState<boolean | null>(null);
+
+  const { guard: requireKeys } = useRequireMessagingKeys();
 
   useFocusEffect(
     useCallback(() => {
@@ -164,9 +167,10 @@ export default function HomeScreen() {
   }, []);
 
   const handleSendHongBao = useCallback(() => {
+    if (!requireKeys()) return;
     // Navigate to HongBao creation screen
     push('HongBao');
-  }, []);
+  }, [requireKeys]);
 
   return (
     <View className="flex-1 bg-[#FD4912]">

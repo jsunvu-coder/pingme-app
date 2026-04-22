@@ -72,6 +72,12 @@ type VerifyEmailParams = {
   onCodeComplete?: (code: string) => void;
   bundle_uuid?: string;
   message?: string;
+  /**
+   * In 'generate_new_key' mode, when true, show a success flash message on the
+   * home page after successful OTP verification. Set by manual triggers (e.g.
+   * Account menu) so the post-login Alert flow stays silent.
+   */
+  showSuccessToast?: boolean;
 };
 
 const navigateToHongBaoVerification = (
@@ -279,7 +285,13 @@ async function completeKeyGenerationFlow(digits: string): Promise<void> {
 
 export default function VerifyEmailScreen() {
   const route = useRoute<RouteProp<Record<string, VerifyEmailParams>, string>>();
-  const { email: routeEmail, mode, bundle_uuid, message: routeBundleMessage } = route.params ?? {};
+  const {
+    email: routeEmail,
+    mode,
+    bundle_uuid,
+    message: routeBundleMessage,
+    showSuccessToast,
+  } = route.params ?? {};
   // encKeyRef is intentionally NOT destructured at the top — in signup mode it comes from
   // PendingSignupService (more secure); in generic mode it's read inside handleVerify.
   const emailDisplay = routeEmail ?? '[email address]';
@@ -357,6 +369,13 @@ export default function VerifyEmailScreen() {
         } else if (mode === 'generate_new_key') {
           await completeKeyGenerationFlow(digits);
           setRootScreen(['MainTab']);
+          if (showSuccessToast) {
+            showFlashMessage({
+              title: 'Success',
+              message: 'Messaging keys have been set up.',
+              type: 'success',
+            });
+          }
         } else {
           // Generic mode — verify with enc_key_ref from route params, then hand off to caller
           const encKeyRef = route.params?.encKeyRef ?? '';
@@ -390,7 +409,15 @@ export default function VerifyEmailScreen() {
         setCode('');
       }
     },
-    [mode, isOtpFlow, route.params, bundle_uuid, routeBundleMessage, restartVerifyFlow]
+    [
+      mode,
+      isOtpFlow,
+      route.params,
+      bundle_uuid,
+      routeBundleMessage,
+      restartVerifyFlow,
+      showSuccessToast,
+    ]
   );
 
   // Trigger verify when 6 digits entered

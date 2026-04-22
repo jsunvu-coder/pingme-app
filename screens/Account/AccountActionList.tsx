@@ -14,8 +14,8 @@ import { useAppDispatch } from 'store/hooks';
 import { useSelector } from 'react-redux';
 import { clearHistory } from 'store/historySlice';
 import { resetHongBaoPopupShown } from 'store/eventSlice';
-import { selectAppFullyFunctional } from 'store/authSlice';
 import { selectNotificationCount } from 'store/notificationSlice';
+import { useRequireMessagingKeys } from 'hooks/useRequireMessagingKeys';
 
 const version = Application.nativeApplicationVersion ?? '';
 const build = Application.nativeBuildVersion ?? '';
@@ -33,7 +33,9 @@ type ItemProps = {
 
 export default function AccountActionList() {
   const dispatch = useAppDispatch();
-  const fullyFunctional = useSelector(selectAppFullyFunctional);
+  const { fullyFunctional, guard: requireKeys } = useRequireMessagingKeys({
+    message: 'Generate messaging keys first to use this feature.',
+  });
   const [biometricType, setBiometricType] = useState<
     'Face ID' | 'Touch ID' | 'Biometric Authentication' | null
   >(null);
@@ -223,7 +225,11 @@ export default function AccountActionList() {
 
     try {
       await auth.initiateKeyGeneration(activeEmail);
-      push('VerifyEmailScreen', { email: activeEmail, mode: 'generate_new_key' });
+      push('VerifyEmailScreen', {
+        email: activeEmail,
+        mode: 'generate_new_key',
+        showSuccessToast: true,
+      });
     } catch (err) {
       console.error('[Account] initiateKeyGeneration failed', err);
       const message = err instanceof Error ? err.message : 'Please try again later.';
@@ -281,6 +287,7 @@ export default function AccountActionList() {
       action: () => push('NotificationsScreen'),
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
       badgeCount: notifCount,
+      gatedByKeys: true,
     },
     {
       label: 'Leaderboard',
@@ -350,21 +357,7 @@ export default function AccountActionList() {
       {/* Default Items */}
       {items.map((item, index) => {
         const locked = item.gatedByKeys && !fullyFunctional;
-        return (
-          <Item
-            key={index}
-            {...item}
-            action={
-              locked
-                ? () =>
-                    Alert.alert(
-                      'Messaging keys required',
-                      'Generate messaging keys first to use this feature.'
-                    )
-                : item.action
-            }
-          />
-        );
+        return <Item key={index} {...item} action={locked ? () => requireKeys() : item.action} />;
       })}
 
       {/* Spacer */}
