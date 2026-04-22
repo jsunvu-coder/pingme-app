@@ -14,13 +14,13 @@ export default function QuickActionsView() {
   const fullyFunctional = useSelector(selectAppFullyFunctional);
 
   const handleActionPress = (label: string) => {
-    // if (!fullyFunctional) {
-    //   Alert.alert(
-    //     'Messaging keys required',
-    //     'Please generate messaging keys to use this feature. You can do it from the Account menu.'
-    //   );
-    //   return;
-    // }
+    if (!fullyFunctional) {
+      Alert.alert(
+        'Messaging keys required',
+        'Please generate messaging keys to use this feature. You can do it from the Account menu.'
+      );
+      return;
+    }
     switch (label) {
       case 'Send':
         navigation.navigate('Ping Now', { mode: 'send' });
