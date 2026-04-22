@@ -123,10 +123,7 @@ class DeepLinkHandler {
 
           if (isLoggedIn) {
             setRootScreen(['MainTab']);
-            setTimeout(async () => {
-              if (!(await this.guardMessagingKeys(url))) return;
-              this.navigateClaim(params);
-            }, 400);
+            this.navigateClaim(params);
           } else {
             // If signup=true and not logged in, verify first then go to auth
             if (params.signup === 'true') {
@@ -246,7 +243,6 @@ class DeepLinkHandler {
           );
           await this.handleClaimWithSignup(params);
         } else {
-          if (isLoggedIn && !(await this.guardMessagingKeys(url))) return;
           this.navigateClaim(params);
         }
         return;

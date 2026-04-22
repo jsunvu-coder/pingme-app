@@ -306,7 +306,11 @@ export class LoginViewModel {
         push('VerifyEmailScreen', { email, mode: 'generate_new_key' });
         return { success: true, biometricEnabled };
       }
-      // 'has_keys' | 'skip' | 'error' → fall through to normal navigation
+      // 'has_keys' | 'skip' | 'error' → fall through to normal navigation.
+      // If a pending deep link requires messaging keys, DeepLinkHandler's
+      // guardMessagingKeys will surface the "keys required" alert at resume
+      // time; we deliberately leave the pending URL intact so the user can
+      // still retry after generating keys from the Account menu.
     }
 
     this.handleSuccessfulLogin(email, shareParams, disableSuccessCallback);
