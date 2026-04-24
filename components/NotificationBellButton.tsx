@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import BellIcon from 'assets/BellIcon';
 import { push } from 'navigation/Navigation';
 import { selectNotificationCount } from 'store/notificationSlice';
+import { useRequireMessagingKeys } from 'hooks/useRequireMessagingKeys';
 
 type Props = Omit<TouchableOpacityProps, 'onPress'> & {
   /** Override default navigation behavior (go to NotificationsScreen). */
@@ -26,10 +27,16 @@ export default function NotificationBellButton({
 }: Props) {
   const count = useSelector(selectNotificationCount);
   const hasUnread = count > 0;
+  const { guard: requireKeys } = useRequireMessagingKeys();
+
+  const defaultPress = () => {
+    if (!requireKeys()) return;
+    push('NotificationsScreen');
+  };
 
   return (
     <TouchableOpacity
-      onPress={onPress ?? (() => push('NotificationsScreen'))}
+      onPress={onPress ?? defaultPress}
       hitSlop={hitSlop}
       accessibilityRole="button"
       accessibilityLabel={hasUnread ? `${count} new notifications` : 'Notifications'}
