@@ -97,19 +97,24 @@ type CardProps = {
 function NotificationCard({ item, onPress }: CardProps) {
   const typeLabel =
     item.type === 'received' ? 'RECEIVED' : item.type === 'requested' ? 'REQUESTED' : 'MESSAGE';
+  const unread = !item.isHandled;
 
   const content = (
     <>
       <View style={styles.typeRow}>
+        {unread ? <View style={styles.unreadDot} /> : null}
         <Text style={styles.typeLabel}>{typeLabel}</Text>
-        {!item.isHandled && <Text style={styles.pendingLabel}>PENDING</Text>}
         <View style={styles.amountWrap}>
           <TypeIcon type={item.type} />
-          <Text style={styles.amountText}>{item.amountUsd ?? '—'}</Text>
-          {item.tokenName ? <Text style={styles.tokenText}>{item.tokenName}</Text> : null}
+          <Text style={[styles.amountText, unread && styles.pendingText]}>
+            {item.amountUsd ?? '—'}
+          </Text>
+          {item.tokenName ? (
+            <Text style={[styles.tokenText, unread && styles.pendingText]}>{item.tokenName}</Text>
+          ) : null}
         </View>
       </View>
-      <Text style={styles.email} numberOfLines={1}>
+      <Text style={[styles.email, unread && styles.pendingText]} numberOfLines={1}>
         {item.senderEmail ?? 'Could not read this message. Please check your mailbox.'}
       </Text>
       {item.customMessage ? (
@@ -120,11 +125,11 @@ function NotificationCard({ item, onPress }: CardProps) {
       <View style={styles.divider} />
       <View style={styles.dateRow}>
         <View style={styles.dateCell}>
-          <Text style={styles.dateLabel}>Created</Text>
+          <Text style={styles.dateLabel}>Created at</Text>
           <Text style={styles.dateValue}>{formatDateTime(item.createdAt)}</Text>
         </View>
         <View style={[styles.dateCell, styles.dateCellRight]}>
-          <Text style={styles.dateLabel}>Expired</Text>
+          <Text style={styles.dateLabel}>Expires at</Text>
           <Text style={styles.dateValue}>{formatDateTime(item.expiredAt)}</Text>
         </View>
       </View>
@@ -294,11 +299,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
   },
-  pendingLabel: {
-    color: C_ORANGE,
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '500',
+  pendingText: {
+    fontWeight: '700',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C_ORANGE,
   },
   amountWrap: {
     flex: 1,
