@@ -212,8 +212,13 @@ class DeepLinkHandler {
 
   /**
    * 🔹 Handles runtime or resumed deep links
+   *
+   * `keepStack`: when true, navigate by pushing onto the current stack instead
+   * of resetting to MainTab. Used when the link is opened from within the app
+   * (e.g. Notifications) so dismissing the action screen returns the user to
+   * where they were rather than Home.
    */
-  async handleURL(url: string) {
+  async handleURL(url: string, options: { keepStack?: boolean } = {}) {
     let path: string;
     const params: Record<string, string> = {};
 
@@ -300,8 +305,8 @@ class DeepLinkHandler {
         }
 
         if (!(await this.guardMessagingKeys(url))) return;
-        if (path === 'pay') this.navigatePay(params);
-        else this.navigatePayQr(params);
+        if (path === 'pay') this.navigatePay(params, options.keepStack);
+        else this.navigatePayQr(params, options.keepStack);
         return;
 
       default:
@@ -486,7 +491,7 @@ class DeepLinkHandler {
     }
   }
 
-  private navigatePay(params: Record<string, string>) {
+  private navigatePay(params: Record<string, string>, keepStack = false) {
     const amount = params.amount;
     const token = params.token;
     const recipient = params.requester ?? params.recipient ?? params.email ?? params.requestee;
@@ -507,11 +512,15 @@ class DeepLinkHandler {
       replace('SendConfirmationScreen', payload);
       return;
     }
+    if (keepStack) {
+      push('SendConfirmationScreen', payload);
+      return;
+    }
     // Always surface the send flow, even if the user is currently deep in another stack.
     presentOverMain('SendConfirmationScreen', payload);
   }
 
-  private navigatePayQr(params: Record<string, string>) {
+  private navigatePayQr(params: Record<string, string>, keepStack = false) {
     console.log('[DeepLinkHandler] Navigating to PayQrConfirmationScreen', params);
     this.clearPendingURL();
     const isPayQrOnTop =
@@ -519,6 +528,10 @@ class DeepLinkHandler {
       navigationRef.getCurrentRoute()?.name === 'PayQrConfirmationScreen';
     if (isPayQrOnTop) {
       replace('PayQrConfirmationScreen', params);
+      return;
+    }
+    if (keepStack) {
+      push('PayQrConfirmationScreen', params);
       return;
     }
 

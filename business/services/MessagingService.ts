@@ -155,7 +155,14 @@ export class MessagingService {
             ? (rawType as NotificationType)
             : 'unknown';
 
-        const sender = typeof obj.sender === 'string' ? obj.sender : null;
+        // 'received' payloads carry `sender`; 'requested' payloads carry `requester`
+        // (the person asking for money). Fall back across both so the UI can show
+        // the counterparty email regardless of notification type.
+        const senderRaw =
+          (typeof obj.sender === 'string' && obj.sender) ||
+          (typeof obj.requester === 'string' && obj.requester) ||
+          null;
+        const sender = senderRaw || null;
         const tokenName = typeof obj.token_name === 'string' ? obj.token_name : null;
         const customMessageRaw =
           typeof obj.custom_message === 'string' ? obj.custom_message.trim() : '';

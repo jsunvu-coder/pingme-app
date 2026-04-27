@@ -83,7 +83,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
 
 async function openNotificationLink(url: string): Promise<void> {
   try {
-    await deepLinkHandler.handleURL(url);
+    await deepLinkHandler.handleURL(url, { keepStack: true });
   } catch (err) {
     console.warn('[NotificationsScreen] failed to open deep link', url, err);
   }

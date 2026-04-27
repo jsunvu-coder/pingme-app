@@ -2,7 +2,7 @@ import { Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { setRootScreen } from 'navigation/Navigation';
+import { navigationRef, setRootScreen } from 'navigation/Navigation';
 
 // Components
 import { PassphraseInput } from './PassphraseInput';
@@ -48,6 +48,12 @@ export default function ClaimPaymentScreen() {
   }, [lockboxSalt]);
 
   const handleBack = async () => {
+    // Prefer goBack so opening Claim from inside the app (e.g. Notifications)
+    // returns the user to where they were instead of dropping them on Home.
+    if (navigationRef.isReady() && navigationRef.canGoBack()) {
+      navigationRef.goBack();
+      return;
+    }
     const isLoggedIn = await AuthService.getInstance().isLoggedIn();
     if (isLoggedIn) {
       setRootScreen(['MainTab']);
