@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SpinnerIcon from 'assets/SpinnerIcon';
 import { goBack } from 'navigation/Navigation';
 import { AccountDataService } from 'business/services/AccountDataService';
+import { deepLinkHandler } from 'business/services/DeepLinkHandler';
 import {
   DecryptedNotification,
   MessagingService,
@@ -83,7 +83,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
 
 async function openNotificationLink(url: string): Promise<void> {
   try {
-    await Linking.openURL(url);
+    await deepLinkHandler.handleURL(url);
   } catch (err) {
     console.warn('[NotificationsScreen] failed to open deep link', url, err);
   }
