@@ -60,6 +60,7 @@ export class PayService {
     amount,
     passphrase,
     days,
+    customMessage,
     confirm,
     setLoading,
     setTxHash,
@@ -70,6 +71,7 @@ export class PayService {
     amount: string;
     passphrase: string;
     days: number;
+    customMessage?: string;
     confirm: (msg: string, okOnly?: boolean) => Promise<boolean>;
     setLoading: (loading: boolean) => void;
     setTxHash: (hash: string) => void;
@@ -179,7 +181,8 @@ export class PayService {
             nextCurrentSalt,
             nextProof,
             nextCommitment,
-            sender ?? ''
+            sender ?? '',
+            customMessage ?? ''
           );
 
           try {
@@ -264,7 +267,8 @@ export class PayService {
     nextCurrentSalt: string,
     nextProof: string,
     nextCommitment: string,
-    sender: string
+    sender: string,
+    customMessage: string = ''
   ): Promise<{ txHash: string; payLink?: string }> {
     const duration = days * 86400; // seconds per day
     const contractService = ContractService.getInstance();
@@ -298,7 +302,8 @@ export class PayService {
           username,
           lockboxSalt,
           tokenName,
-          sender
+          sender,
+          customMessage
         );
       } else {
         ret = await contractService.withdrawAndSend(

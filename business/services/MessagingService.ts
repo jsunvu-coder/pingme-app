@@ -41,11 +41,14 @@ export type DecryptedNotification = {
   type: NotificationType;
   amountUsd: string | null;
   senderEmail: string | null;
+  tokenName: string | null;
+  customMessage: string | null;
   /**
-   * Deep link extracted from the email HTML (first <a href>).
-   * Universal-link domains (`https://app.(staging.)?pingme.xyz/...`) are
-   * rewritten to the `pingme://` custom scheme so the in-app LinkingService
-   * picks it up directly without hitting the browser.
+   * Deep link extracted from the payload (JSON `pay_link` or first <a href>
+   * for legacy HTML messages). Universal-link domains
+   * (`https://app.(staging.)?pingme.xyz/...`) are rewritten to the `pingme://`
+   * custom scheme so the in-app LinkingService picks it up directly without
+   * hitting the browser.
    */
   actionUrl: string | null;
   /**
@@ -130,21 +133,58 @@ export class MessagingService {
 
   /**
    * Extract the minimal fields the Notifications UI needs from the decrypted
-   * HTML. The HTML equivalent of the mailed message includes subject keywords
-   * ("Payment request", "Payment received"), an amount like "$12.34", and
-   * the counterparty email. Best-effort parsing with safe fallbacks.
+   * payload. New BE format is `JSON.dumps({ type, sender, token_name,
+   * usd_amount, days, pay_link, custom_message, created_at })`. Older messages
+   * are still HTML — fall back to best-effort regex parsing in that case.
    */
-  private parseHtml(html: string): {
+  private parsePayload(payload: string): {
     type: NotificationType;
     amountUsd: string | null;
     senderEmail: string | null;
+    tokenName: string | null;
+    customMessage: string | null;
     actionUrl: string | null;
   } {
-    // Extract action URL from first <a href="..."> BEFORE stripping tags.
-    const hrefMatch = html.match(/<a\b[^>]*\bhref=["']([^"']+)["']/i);
+    const trimmed = payload.trimStart();
+    if (trimmed.startsWith('{')) {
+      try {
+        const obj = JSON.parse(trimmed) as Record<string, unknown>;
+        const rawType = typeof obj.type === 'string' ? obj.type.toLowerCase() : '';
+        const type: NotificationType =
+          rawType === 'received' || rawType === 'requested'
+            ? (rawType as NotificationType)
+            : 'unknown';
+
+        const sender = typeof obj.sender === 'string' ? obj.sender : null;
+        const tokenName = typeof obj.token_name === 'string' ? obj.token_name : null;
+        const customMessageRaw =
+          typeof obj.custom_message === 'string' ? obj.custom_message.trim() : '';
+        const customMessage = customMessageRaw.length > 0 ? customMessageRaw : null;
+
+        const usdRaw = obj.usd_amount;
+        let amountUsd: string | null = null;
+        if (typeof usdRaw === 'number' && Number.isFinite(usdRaw)) {
+          amountUsd = `$${usdRaw.toFixed(2)}`;
+        } else if (typeof usdRaw === 'string' && usdRaw.trim().length > 0) {
+          const cleaned = usdRaw.replace(/[$,\s]/g, '');
+          const num = Number(cleaned);
+          amountUsd = Number.isFinite(num) ? `$${num.toFixed(2)}` : `$${usdRaw}`;
+        }
+
+        const payLink = typeof obj.pay_link === 'string' ? obj.pay_link : null;
+        const actionUrl = payLink ? toDeepLink(payLink) : null;
+
+        return { type, amountUsd, senderEmail: sender, tokenName, customMessage, actionUrl };
+      } catch (err) {
+        console.warn('[MessagingService] JSON parse failed, falling back to HTML', err);
+      }
+    }
+
+    // Legacy HTML payload — keep best-effort regex parsing.
+    const hrefMatch = payload.match(/<a\b[^>]*\bhref=["']([^"']+)["']/i);
     const actionUrl = hrefMatch ? toDeepLink(hrefMatch[1]) : null;
 
-    const stripped = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    const stripped = payload.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
     const lower = stripped.toLowerCase();
 
     let type: NotificationType = 'unknown';
@@ -157,7 +197,14 @@ export class MessagingService {
     const emailMatch = stripped.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
     const senderEmail = emailMatch ? emailMatch[0] : null;
 
-    return { type, amountUsd, senderEmail, actionUrl };
+    return {
+      type,
+      amountUsd,
+      senderEmail,
+      tokenName: null,
+      customMessage: null,
+      actionUrl,
+    };
   }
 
   /**
@@ -212,13 +259,15 @@ export class MessagingService {
 
     const decrypted = await Promise.all(
       messages.map(async (m) => {
-        const html = await this.decryptBundle(keys.privKey, m.enc_msg);
-        const parsed = html
-          ? this.parseHtml(html)
+        const payload = await this.decryptBundle(keys.privKey, m.enc_msg);
+        const parsed = payload
+          ? this.parsePayload(payload)
           : {
               type: 'unknown' as NotificationType,
               amountUsd: null,
               senderEmail: null,
+              tokenName: null,
+              customMessage: null,
               actionUrl: null,
             };
         return {
@@ -226,9 +275,11 @@ export class MessagingService {
           type: parsed.type,
           amountUsd: parsed.amountUsd,
           senderEmail: parsed.senderEmail,
+          tokenName: parsed.tokenName,
+          customMessage: parsed.customMessage,
           actionUrl: parsed.actionUrl,
           isHandled: handledIds.has(m.id),
-          html: html ?? '',
+          html: payload ?? '',
           createdAt: new Date(m.created_at),
           expiredAt: new Date(m.expired_at),
         } satisfies DecryptedNotification;

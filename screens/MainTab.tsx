@@ -32,7 +32,7 @@ const DISABLED_WHEN_LOCKED: readonly string[] = ['Ping Now', 'HongBao'];
 export default function MainTab() {
   const preventTouch = useSelector((state: RootState) => state.mainTab.preventTouch);
   const { guard: requireKeys } = useRequireMessagingKeys({
-    message: 'Generate messaging keys from the Account menu to enable this feature.',
+    message: 'Verify your email from the Account menu to enable this feature.',
   });
 
   useEffect(() => {

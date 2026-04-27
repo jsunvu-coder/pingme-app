@@ -372,7 +372,7 @@ export default function VerifyEmailScreen() {
           if (showSuccessToast) {
             showFlashMessage({
               title: 'Success',
-              message: 'Messaging keys have been set up.',
+              message: 'Your email has been verified.',
               type: 'success',
             });
           }

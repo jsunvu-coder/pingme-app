@@ -63,8 +63,8 @@ async function hasExistingAccountKeys(normalizedEmail: string): Promise<boolean>
 function confirmOverwriteKeys(): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
-      'Overwrite existing account keys?',
-      'Account keys already exist on this device for this email. If you proceed, the existing keys will be overwritten.',
+      'Replace existing account?',
+      'An account already exists on this device for this email. If you proceed, the existing setup will be replaced.',
       [
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Continue', style: 'destructive', onPress: () => resolve(true) },

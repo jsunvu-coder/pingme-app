@@ -106,11 +106,17 @@ function NotificationCard({ item, onPress }: CardProps) {
         <View style={styles.amountWrap}>
           <TypeIcon type={item.type} />
           <Text style={styles.amountText}>{item.amountUsd ?? '—'}</Text>
+          {item.tokenName ? <Text style={styles.tokenText}>{item.tokenName}</Text> : null}
         </View>
       </View>
       <Text style={styles.email} numberOfLines={1}>
-        {item.senderEmail ?? 'Cannot decrypt message. Please retrieve from your mailbox.'}
+        {item.senderEmail ?? 'Could not read this message. Please check your mailbox.'}
       </Text>
+      {item.customMessage ? (
+        <Text style={styles.note} numberOfLines={3}>
+          “{item.customMessage}”
+        </Text>
+      ) : null}
       <View style={styles.divider} />
       <View style={styles.dateRow}>
         <View style={styles.dateCell}>
@@ -306,10 +312,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
+  tokenText: {
+    color: C_MUTED,
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: '500',
+    marginLeft: 2,
+  },
   email: {
     color: C_BLACK,
     fontSize: 14,
     lineHeight: 22,
+  },
+  note: {
+    color: C_BODY,
+    fontSize: 13,
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   divider: {
     height: 1,

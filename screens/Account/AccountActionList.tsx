@@ -34,7 +34,7 @@ type ItemProps = {
 export default function AccountActionList() {
   const dispatch = useAppDispatch();
   const { fullyFunctional, guard: requireKeys } = useRequireMessagingKeys({
-    message: 'Generate messaging keys first to use this feature.',
+    message: 'Verify your email first to use this feature.',
   });
   const [biometricType, setBiometricType] = useState<
     'Face ID' | 'Touch ID' | 'Biometric Authentication' | null
@@ -191,7 +191,7 @@ export default function AccountActionList() {
   const handleGenerateNewKey = async () => {
     const activeEmail = AccountDataService.getInstance().email;
     if (!activeEmail) {
-      Alert.alert('Not signed in', 'Please sign in before generating new keys.');
+      Alert.alert('Not signed in', 'Please sign in before verifying your email.');
       return;
     }
 
@@ -205,10 +205,10 @@ export default function AccountActionList() {
 
     const confirmed = await new Promise<boolean>((resolve) => {
       Alert.alert(
-        'Generate new messaging keys?',
+        'Verify your email?',
         existing
-          ? 'This will overwrite the existing keys on this device. Old encrypted messages may no longer be readable.'
-          : 'We will send a verification code to your email to generate new messaging keys.',
+          ? 'This will re-verify your email and replace the existing setup on this device. Some past messages may become unreadable.'
+          : 'We will send a verification code to your email.',
         [
           { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
           {
@@ -233,7 +233,7 @@ export default function AccountActionList() {
     } catch (err) {
       console.error('[Account] initiateKeyGeneration failed', err);
       const message = err instanceof Error ? err.message : 'Please try again later.';
-      Alert.alert('Failed to start key generation', message);
+      Alert.alert('Failed to start email verification', message);
     }
   };
 
@@ -301,7 +301,7 @@ export default function AccountActionList() {
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },
     {
-      label: 'Generate New Key',
+      label: 'Verify Email',
       action: handleGenerateNewKey,
       rightView: <Ionicons name="chevron-forward" size={20} color="#FD4912" />,
     },

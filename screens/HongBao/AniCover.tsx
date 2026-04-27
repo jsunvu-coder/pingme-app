@@ -76,7 +76,7 @@ const AniCover = forwardRef<AniCoverRef, AniCoverProps>(
     const progress = useSharedValue(0);
     const dispatch = useDispatch();
     const { guard: requireKeys } = useRequireMessagingKeys({
-      message: 'Generate messaging keys from the Account menu to send a Hongbao.',
+      message: 'Verify your email from the Account menu to send a Hongbao.',
     });
 
     useEffect(() => {

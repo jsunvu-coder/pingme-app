@@ -16,8 +16,8 @@ export default function QuickActionsView() {
   const handleActionPress = (label: string) => {
     if (!fullyFunctional) {
       Alert.alert(
-        'Messaging keys required',
-        'Please generate messaging keys to use this feature. You can do it from the Account menu.'
+        'Email verification required',
+        'Please verify your email address to use this feature. You can do it from the Account menu.'
       );
       return;
     }

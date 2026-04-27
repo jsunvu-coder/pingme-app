@@ -108,11 +108,11 @@ export class LoginViewModel {
 
     const wantGenerate = await new Promise<boolean>((resolve) => {
       Alert.alert(
-        'Enable secure messaging',
-        'Messaging keys are missing for this account. Generate them now? You can also skip and generate later from the Account menu.',
+        'Verify your email',
+        'Some features are disabled until you verify your email address. Verify now? You can also skip and verify later from the Account menu.',
         [
           { text: 'Skip', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'Generate', onPress: () => resolve(true) },
+          { text: 'Verify', onPress: () => resolve(true) },
         ],
         { cancelable: false }
       );
@@ -128,7 +128,7 @@ export class LoginViewModel {
       showFlashMessage({
         title: 'Notice',
         message:
-          'Could not start the key generation flow. You can retry later from the Account menu.',
+          'Could not start email verification. You can retry later from the Account menu.',
         type: 'warning',
       });
       return 'error';

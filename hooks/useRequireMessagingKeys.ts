@@ -44,9 +44,9 @@ export function useRequireMessagingKeys(options?: Options): HookResult {
 
   const showAlert = useCallback(() => {
     Alert.alert(
-      options?.title ?? 'Messaging keys required',
+      options?.title ?? 'Email verification required',
       options?.message ??
-        'Please generate messaging keys to use this feature. You can do it from the Account menu.'
+        'Please verify your email address to use this feature. You can do it from the Account menu.'
     );
   }, [options?.title, options?.message]);
 

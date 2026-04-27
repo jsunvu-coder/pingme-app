@@ -368,7 +368,8 @@ export class ContractService {
     username: string,
     lockbox_salt: string,
     token_name: string,
-    sender: string
+    sender: string,
+    custom_message: string = ''
   ) {
     return this.sessionGuard(() =>
       this.post('/pm_withdraw_and_send_email', {
@@ -382,6 +383,7 @@ export class ContractService {
         lockbox_salt,
         token_name: token_name ?? TOKEN_NAMES.USDC,
         sender,
+        custom_message,
       })
     );
   }

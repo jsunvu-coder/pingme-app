@@ -1,5 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, Platform, Keyboard, Animated, Easing } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Platform,
+  Keyboard,
+  Animated,
+  Easing,
+  TextInput,
+} from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -63,6 +72,7 @@ export default function SendConfirmationScreen() {
   const [token, setToken] = useState<string | undefined>(undefined);
   const [lockboxDuration, setLockboxDuration] = useState<number>(LOCKBOX_DURATION);
   const [balancesLoading, setBalancesLoading] = useState(false);
+  const [note, setNote] = useState('');
   const allowLockboxEdit = paramLockboxDuration === undefined || paramLockboxDuration === null;
   const prevPassphraseRequired = useRef<boolean>(false);
   const hasNavigated = useRef(false);
@@ -340,6 +350,7 @@ export default function SendConfirmationScreen() {
         amount,
         passphrase: normalizedPassphrase,
         days: durationDays,
+        customMessage: isEmailChannel ? note.trim() : '',
 
         // ✅ flexible confirm handler
         confirm: async (msg: string, okOnly = false) => {
@@ -522,6 +533,25 @@ export default function SendConfirmationScreen() {
                 toggleDisabled={passphraseRequired}
                 disabled={loading || balancesLoading}
               />
+
+              {params?.channel === 'Email' && (
+                <View className="mt-4">
+                  <Text className="mb-2 text-xs font-semibold tracking-[1px] text-gray-500">
+                    ENTER NOTE
+                  </Text>
+                  <TextInput
+                    placeholder="Add an optional message for the recipient"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    editable={!loading && !balancesLoading}
+                    textAlignVertical="top"
+                    maxLength={240}
+                    className="min-h-24 rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
+                    value={note}
+                    onChangeText={setNote}
+                  />
+                </View>
+              )}
 
               <View className="mt-10">
                 <PrimaryButton

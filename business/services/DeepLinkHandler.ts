@@ -33,8 +33,8 @@ class DeepLinkHandler {
 
     if (url) this.setPendingURL(url);
     Alert.alert(
-      'Messaging keys required',
-      'Please generate messaging keys from the Account menu, then open this link again.'
+      'Email verification required',
+      'Please verify your email from the Account menu, then open this link again.'
     );
     return false;
   }
