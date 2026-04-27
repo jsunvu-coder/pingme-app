@@ -545,7 +545,7 @@ export default function SendConfirmationScreen() {
                     multiline
                     editable={!loading && !balancesLoading}
                     textAlignVertical="top"
-                    maxLength={240}
+                    maxLength={140}
                     className="min-h-24 rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
                     value={note}
                     onChangeText={setNote}

@@ -330,7 +330,7 @@ export default function RequestConfirmationScreen() {
                       multiline
                       editable={!disabledInput}
                       textAlignVertical="top"
-                      maxLength={240}
+                      maxLength={140}
                       className="min-h-[96px] rounded-2xl border border-[#E5E7EB] bg-white p-4 text-base text-black"
                       value={note}
                       onChangeText={setNote}

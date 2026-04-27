@@ -117,11 +117,7 @@ function NotificationCard({ item, onPress }: CardProps) {
       <Text style={[styles.email, unread && styles.pendingText]} numberOfLines={1}>
         {item.senderEmail ?? 'Could not read this message. Please check your mailbox.'}
       </Text>
-      {item.customMessage ? (
-        <Text style={styles.note} numberOfLines={3}>
-          “{item.customMessage}”
-        </Text>
-      ) : null}
+      {item.customMessage ? <Text style={styles.note}>“{item.customMessage}”</Text> : null}
       <View style={styles.divider} />
       <View style={styles.dateRow}>
         <View style={styles.dateCell}>
