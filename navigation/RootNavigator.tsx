@@ -13,6 +13,7 @@ import RequestConfirmationScreen from 'screens/Request/RequestConfirmationScreen
 import SplashScreen from 'screens/SplashScreen';
 import OnboardingPager from 'screens/Onboarding/OnboardingPager';
 import SendConfirmationScreen from 'screens/Send/SendConfirmation/SendConfirmationScreen';
+import SendConfirmationPageScreen from 'screens/Send/SendConfirmation/SendConfirmationPageScreen';
 import ClaimPaymentScreen from 'screens/Claim/ClaimPaymentScreen';
 import PaymentLinkCreatedScreen from 'screens/Send/PaymentLinkCreated/PaymentLinkCreatedScreen';
 import PingHistoryScreen from 'screens/Home/History/List/PingHistoryScreen';
@@ -120,6 +121,10 @@ const SCREEN_GROUPS: {
         name: 'SendConfirmationScreen',
         component: SendConfirmationScreen,
         options: transparentModalOptions,
+      },
+      {
+        name: 'SendConfirmationPageScreen',
+        component: SendConfirmationPageScreen,
       },
       {
         name: 'PaymentSuccessScreen',

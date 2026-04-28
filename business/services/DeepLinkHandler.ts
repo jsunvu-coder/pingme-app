@@ -501,23 +501,30 @@ class DeepLinkHandler {
       token,
       recipient,
       channel: 'Email',
-      // When opened from inside the app, render as opaque full-screen so the
-      // prior screen (e.g. Notifications) does not bleed through the
-      // bottom-sheet scrim on Android.
-      fullscreen: keepStack,
     };
 
     console.log('[DeepLinkHandler] Navigating to SendConfirmationScreen', payload);
     this.clearPendingURL();
 
+    if (keepStack) {
+      // In-app open (e.g. from Notifications) — push the page-style screen
+      // (opaque, default card presentation) so dismiss returns to the prior
+      // screen and the previous screen does not bleed through on Android.
+      const isPageOnTop =
+        navigationRef.isReady() &&
+        navigationRef.getCurrentRoute()?.name === 'SendConfirmationPageScreen';
+      if (isPageOnTop) {
+        replace('SendConfirmationPageScreen', payload);
+      } else {
+        push('SendConfirmationPageScreen', payload);
+      }
+      return;
+    }
+
     const isPayOnTop =
       navigationRef.isReady() && navigationRef.getCurrentRoute()?.name === 'SendConfirmationScreen';
     if (isPayOnTop) {
       replace('SendConfirmationScreen', payload);
-      return;
-    }
-    if (keepStack) {
-      push('SendConfirmationScreen', payload);
       return;
     }
     // Always surface the send flow, even if the user is currently deep in another stack.
