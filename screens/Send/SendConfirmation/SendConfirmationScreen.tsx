@@ -44,6 +44,10 @@ type SendConfirmationParams = {
   token?: string;
   channel?: 'Email' | 'Link';
   lockboxDuration?: number;
+  // True when opened from inside the app (e.g. Notifications) — render as a
+  // full-screen opaque page so the prior screen does not show through the
+  // bottom-sheet scrim / top gap.
+  fullscreen?: boolean;
 };
 
 type RootStackParamList = {
@@ -490,7 +494,7 @@ export default function SendConfirmationScreen() {
   usePreventBackFuncAndroid(loading);
 
   return (
-    <ModalContainer loading={loading}>
+    <ModalContainer loading={loading} fullscreen={params.fullscreen}>
       <View className="flex-1 overflow-hidden rounded-t-[24px] bg-[#fafafa]">
         <View className="absolute top-0 right-0 left-0 z-10 bg-[#fafafa] pt-4 pr-4">
           <CloseButton isLoading={loading} />

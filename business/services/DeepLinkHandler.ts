@@ -501,6 +501,10 @@ class DeepLinkHandler {
       token,
       recipient,
       channel: 'Email',
+      // When opened from inside the app, render as opaque full-screen so the
+      // prior screen (e.g. Notifications) does not bleed through the
+      // bottom-sheet scrim on Android.
+      fullscreen: keepStack,
     };
 
     console.log('[DeepLinkHandler] Navigating to SendConfirmationScreen', payload);
