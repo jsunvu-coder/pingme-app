@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { Utils } from 'business/Utils';
 import { shareFlowService } from 'business/services/ShareFlowService';
@@ -36,6 +36,7 @@ export const useClaimPayment = () => {
     paymentId,
     onClaimSuccess,
     signup,
+    passphrase: passphraseParam,
     // Pre-verified data from DeepLinkHandler (when signup flow with empty passphrase)
     _lockboxData,
     _lockboxProof,
@@ -43,11 +44,16 @@ export const useClaimPayment = () => {
     sender_commitment: senderCommitment,
     ...restParams
   } = params as ClaimPaymentParams & {
+    passphrase?: string;
     _lockboxData?: string;
     _lockboxProof?: string;
     _derivedStatus?: LockboxStatus;
     sender_commitment?: string;
   };
+
+  // When the deep link declares passphrase=false, the sender opted out of a
+  // passphrase. Skip the input and verify with an empty value automatically.
+  const skipPassphrase = passphraseParam === 'false';
 
   const [passphrase, setPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
@@ -267,6 +273,42 @@ export const useClaimPayment = () => {
     }
   };
 
+  // When the deep link declares passphrase=false, run only the verification
+  // step (with an empty passphrase) so the user lands on the verified status
+  // card with the Claim button. Do NOT auto-claim — the success screen / claim
+  // confirmation must still be reached via the user tapping Claim.
+  const autoVerifiedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !skipPassphrase ||
+      autoVerifiedRef.current ||
+      _lockboxData ||
+      !lockboxSalt ||
+      lockbox ||
+      loading
+    ) {
+      return;
+    }
+    autoVerifiedRef.current = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setVerifyError(null);
+        const crypto = computeLockboxProof(username || '', '', lockboxSalt, code);
+        setLockboxProof(crypto.lockboxProof);
+        const ret = await getLockbox(crypto.lockboxCommitment);
+        setLockbox(ret);
+      } catch (err) {
+        console.error('❌ Auto-verify (passphrase=false) failed:', err);
+        autoVerifiedRef.current = false;
+        setVerifyError('Unable to verify payment link');
+      } finally {
+        setTimeout(() => setLoading(false), 500);
+      }
+    })();
+  }, [skipPassphrase, _lockboxData, lockboxSalt, lockbox, loading, username, code]);
+
   const updatePassphrase = useCallback(
     (value: string) => {
       if (verifyError) setVerifyError(null);
@@ -283,6 +325,7 @@ export const useClaimPayment = () => {
     lockbox,
     lockboxProof,
     verifyError,
+    skipPassphrase,
 
     // Computed values
     derivedStatus,

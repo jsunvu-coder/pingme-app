@@ -27,6 +27,7 @@ export default function ClaimPaymentScreen() {
     lockbox,
     lockboxProof,
     verifyError,
+    skipPassphrase,
     derivedStatus,
     statusColorClass,
     headerSubtitle,
@@ -70,7 +71,7 @@ export default function ClaimPaymentScreen() {
           <View>
             <ClaimHeader email={username} />
 
-            {!lockbox && (
+            {!lockbox && !skipPassphrase && (
               <View className="mt-6">
                 <PassphraseInput
                   value={passphrase}

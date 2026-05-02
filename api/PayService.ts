@@ -182,7 +182,8 @@ export class PayService {
             nextProof,
             nextCommitment,
             sender ?? '',
-            customMessage ?? ''
+            customMessage ?? '',
+            passphrase
           );
 
           try {
@@ -268,7 +269,8 @@ export class PayService {
     nextProof: string,
     nextCommitment: string,
     sender: string,
-    customMessage: string = ''
+    customMessage: string = '',
+    passphrase: string = ''
   ): Promise<{ txHash: string; payLink?: string }> {
     const duration = days * 86400; // seconds per day
     const contractService = ContractService.getInstance();
