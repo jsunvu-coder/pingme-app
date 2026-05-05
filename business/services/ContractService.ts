@@ -431,7 +431,9 @@ export class ContractService {
    * given active key reference. Client decrypts locally with its private key.
    *
    * Spec body: { enc_key_ref }
-   * Response: { messages: [{ id, enc_msg, expired_at, created_at }] }
+   * Response: { messages: [{ id, enc_json?, enc_msg?, expired_at, created_at }] }
+   *   - `enc_json` (preferred): encrypted JSON payload with structured fields.
+   *   - `enc_msg` (fallback): encrypted HTML, rendered directly when present.
    */
   async getEncMsgs(encKeyRef: string) {
     return this.post('/pm_get_enc_msgs', { enc_key_ref: encKeyRef });
