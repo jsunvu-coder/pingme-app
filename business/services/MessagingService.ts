@@ -29,7 +29,11 @@ export type EncryptedMessage = {
 
 export type EncMsgEnvelope = {
   id: number;
-  enc_msg: EncryptedMessage;
+  /** New encrypted JSON payload — preferred when present. */
+  enc_json?: EncryptedMessage;
+  /** Legacy encrypted HTML payload — fallback when `enc_json` is absent. */
+  enc_msg?: EncryptedMessage;
+  enc_html?: EncryptedMessage;
   created_at: string;
   expired_at: string;
 };
@@ -104,10 +108,7 @@ export class MessagingService {
    *   aad    = utf8(JSON.stringify({ enc_key_ref, version }))
    *   pt     = AES-GCM-256-decrypt(aesKey, iv=nonce, ct|tag, aad)
    */
-  private async decryptBundle(
-    privKey: Uint8Array,
-    enc: EncryptedMessage
-  ): Promise<string | null> {
+  private async decryptBundle(privKey: Uint8Array, enc: EncryptedMessage): Promise<string | null> {
     try {
       const ctKem = CryptoUtils.hexToBytes(enc.ct_kem);
       const ct = CryptoUtils.hexToBytes(enc.ct);
@@ -133,9 +134,10 @@ export class MessagingService {
 
   /**
    * Extract the minimal fields the Notifications UI needs from the decrypted
-   * payload. New BE format is `JSON.dumps({ type, sender, token_name,
-   * usd_amount, days, pay_link, custom_message, created_at })`. Older messages
-   * are still HTML — fall back to best-effort regex parsing in that case.
+   * payload. BE now returns JSON (`enc_json`) as the primary payload —
+   * `JSON.dumps({ type, sender, token_name, usd_amount, days, pay_link,
+   * custom_message, created_at })`. HTML payloads (legacy `enc_msg`) are not
+   * re-parsed here; the UI renders them as HTML directly.
    */
   private parsePayload(payload: string): {
     type: NotificationType;
@@ -187,27 +189,15 @@ export class MessagingService {
       }
     }
 
-    // Legacy HTML payload — keep best-effort regex parsing.
+    // HTML payload — render as-is, no field extraction. Still pull the first
+    // anchor href so taps can deep-link into the in-app claim/pay flow.
     const hrefMatch = payload.match(/<a\b[^>]*\bhref=["']([^"']+)["']/i);
     const actionUrl = hrefMatch ? toDeepLink(hrefMatch[1]) : null;
 
-    const stripped = payload.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-    const lower = stripped.toLowerCase();
-
-    let type: NotificationType = 'unknown';
-    if (/request/.test(lower)) type = 'requested';
-    else if (/receiv|sent you|you received/.test(lower)) type = 'received';
-
-    const amountMatch = stripped.match(/\$\s*([\d]+(?:,\d{3})*(?:\.\d+)?)/);
-    const amountUsd = amountMatch ? `$${amountMatch[1]}` : null;
-
-    const emailMatch = stripped.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-    const senderEmail = emailMatch ? emailMatch[0] : null;
-
     return {
-      type,
-      amountUsd,
-      senderEmail,
+      type: 'unknown',
+      amountUsd: null,
+      senderEmail: null,
       tokenName: null,
       customMessage: null,
       actionUrl,
@@ -266,7 +256,8 @@ export class MessagingService {
 
     const decrypted = await Promise.all(
       messages.map(async (m) => {
-        const payload = await this.decryptBundle(keys.privKey, m.enc_msg);
+        const bundle = m.enc_json ?? m.enc_msg ?? m.enc_html;
+        const payload = bundle ? await this.decryptBundle(keys.privKey, bundle) : null;
         const parsed = payload
           ? this.parsePayload(payload)
           : {
@@ -277,6 +268,7 @@ export class MessagingService {
               customMessage: null,
               actionUrl: null,
             };
+        console.log('payload', payload);
         return {
           id: m.id,
           type: parsed.type,
