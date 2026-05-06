@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -183,8 +184,6 @@ const HTML_CUSTOM_ELEMENT_MODELS = {
   }),
 };
 
-const HTML_SCALE = 0.8;
-
 function isHtmlPayload(html: string): boolean {
   return html.trimStart().startsWith('<');
 }
@@ -282,41 +281,65 @@ function NotificationCard({ item, onPress }: CardProps) {
     () => (htmlMode ? { html: prepareEmailHtml(item.html) } : { html: '' }),
     [htmlMode, item.html]
   );
-  // Card horizontal padding (12) * 2 + screen horizontal padding (16) * 2 = 56
-  const htmlContentWidth = Math.max(0, width - 56);
-  // Render the email body at 1/HTML_SCALE wider than the card, then scale
-  // down so the visible content fits the card at HTML_SCALE size. Measure
-  // the unscaled height via onLayout so the parent reserves the right space.
-  const [htmlInnerHeight, setHtmlInnerHeight] = useState(0);
-  const htmlScaledWidth = htmlContentWidth / HTML_SCALE;
+  // Modal HTML content width: modal padding (16) * 2 = 32
+  const modalHtmlWidth = Math.max(0, width - 32);
+  const [htmlOpen, setHtmlOpen] = useState(false);
 
   const content = htmlMode ? (
     <>
       <View style={styles.typeRow}>
         {unread ? <View style={styles.unreadDot} /> : null}
         <Text style={styles.typeLabel}>{typeLabel}</Text>
+        <View style={styles.amountWrap}>
+          <TouchableOpacity
+            style={[styles.openBtn, !unread && styles.openBtnRead]}
+            activeOpacity={0.7}
+            onPress={() => setHtmlOpen(true)}>
+            <Text style={[styles.openBtnText, !unread && styles.openBtnTextRead]}>Open</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <RenderHtml
-        contentWidth={htmlContentWidth}
-        source={htmlSource}
-        baseStyle={HTML_BASE_STYLE}
-        tagsStyles={HTML_TAGS_STYLES}
-        renderersProps={HTML_RENDERERS_PROPS}
-        customHTMLElementModels={HTML_CUSTOM_ELEMENT_MODELS}
-        enableCSSInlineProcessing
-        enableExperimentalMarginCollapsing
-      />
       <View style={styles.divider} />
       <View style={styles.dateRow}>
         <View style={styles.dateCell}>
           <Text style={styles.dateLabel}>Created at</Text>
           <Text style={styles.dateValue}>{formatDateTime(item.createdAt)}</Text>
         </View>
-        <View style={[styles.dateCell, styles.dateCellRight]}>
-          <Text style={styles.dateLabel}>Expires at</Text>
-          <Text style={styles.dateValue}>{formatDateTime(item.expiredAt)}</Text>
-        </View>
       </View>
+      <Modal
+        visible={htmlOpen}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setHtmlOpen(false)}>
+        <SafeAreaView style={styles.modalSafe} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <View style={styles.headerSide} />
+            <Text style={styles.title} numberOfLines={1}>
+              {typeLabel}
+            </Text>
+            <TouchableOpacity
+              style={styles.headerSide}
+              onPress={() => setHtmlOpen(false)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close">
+              <Ionicons name="close" size={24} color={C_BLACK} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <RenderHtml
+              contentWidth={modalHtmlWidth}
+              source={htmlSource}
+              baseStyle={HTML_BASE_STYLE}
+              tagsStyles={HTML_TAGS_STYLES}
+              renderersProps={HTML_RENDERERS_PROPS}
+              customHTMLElementModels={HTML_CUSTOM_ELEMENT_MODELS}
+              enableCSSInlineProcessing
+              enableExperimentalMarginCollapsing
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </>
   ) : (
     <>
@@ -351,7 +374,7 @@ function NotificationCard({ item, onPress }: CardProps) {
     </>
   );
 
-  if (!item.actionUrl) {
+  if (htmlMode || !item.actionUrl) {
     return <View style={styles.card}>{content}</View>;
   }
 
@@ -566,4 +589,35 @@ const styles = StyleSheet.create({
   dateCellRight: { alignItems: 'flex-end' },
   dateLabel: { color: C_MUTED, fontSize: 10, lineHeight: 14 },
   dateValue: { color: C_BODY, fontSize: 10, lineHeight: 14 },
+  openBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: C_ORANGE,
+  },
+  openBtnRead: {
+    backgroundColor: C_BORDER,
+  },
+  openBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+  openBtnTextRead: {
+    color: C_MUTED,
+  },
+  modalSafe: { flex: 1, backgroundColor: C_BG },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 56,
+    paddingHorizontal: 16,
+  },
+  modalScrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
 });
