@@ -268,7 +268,6 @@ export class MessagingService {
               customMessage: null,
               actionUrl: null,
             };
-        console.log('payload', payload);
         return {
           id: m.id,
           type: parsed.type,

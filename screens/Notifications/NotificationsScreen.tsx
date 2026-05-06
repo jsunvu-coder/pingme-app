@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import RenderHtml, { HTMLContentModel, defaultHTMLElementModels } from 'react-native-render-html';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import SpinnerIcon from 'assets/SpinnerIcon';
 import { goBack } from 'navigation/Navigation';
@@ -311,7 +311,8 @@ function NotificationCard({ item, onPress }: CardProps) {
         animationType="slide"
         transparent={false}
         onRequestClose={() => setHtmlOpen(false)}>
-        <SafeAreaView style={styles.modalSafe} edges={['top']}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <View style={styles.headerSide} />
             <Text style={styles.title} numberOfLines={1}>
@@ -337,8 +338,9 @@ function NotificationCard({ item, onPress }: CardProps) {
               enableCSSInlineProcessing
               enableExperimentalMarginCollapsing
             />
-          </ScrollView>
-        </SafeAreaView>
+            </ScrollView>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     </>
   ) : (
