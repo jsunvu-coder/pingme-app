@@ -256,7 +256,7 @@ export class MessagingService {
 
     const decrypted = await Promise.all(
       messages.map(async (m) => {
-        const bundle = m.enc_json ?? m.enc_msg ?? m.enc_html;
+        const bundle = m.enc_json ?? m.enc_html ?? m.enc_msg;
         const payload = bundle ? await this.decryptBundle(keys.privKey, bundle) : null;
         const parsed = payload
           ? this.parsePayload(payload)
