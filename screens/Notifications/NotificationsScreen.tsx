@@ -95,6 +95,7 @@ async function openNotificationLink(url: string): Promise<void> {
 type CardProps = {
   item: DecryptedNotification;
   onPress: (item: DecryptedNotification) => void;
+  onMarkHandled: (item: DecryptedNotification) => void;
 };
 
 const HTML_BASE_STYLE = {
@@ -271,7 +272,7 @@ function prepareEmailHtml(html: string): string {
   return stripHeadingMargins(normalizeInlineStyles(tablesStripped));
 }
 
-function NotificationCard({ item, onPress }: CardProps) {
+function NotificationCard({ item, onPress, onMarkHandled }: CardProps) {
   const { width } = useWindowDimensions();
   const typeLabel =
     item.type === 'received' ? 'RECEIVED' : item.type === 'requested' ? 'REQUESTED' : 'MESSAGE';
@@ -294,7 +295,10 @@ function NotificationCard({ item, onPress }: CardProps) {
           <TouchableOpacity
             style={[styles.openBtn, !unread && styles.openBtnRead]}
             activeOpacity={0.7}
-            onPress={() => setHtmlOpen(true)}>
+            onPress={() => {
+              setHtmlOpen(true);
+              if (unread) onMarkHandled(item);
+            }}>
             <Text style={[styles.openBtnText, !unread && styles.openBtnTextRead]}>Open</Text>
           </TouchableOpacity>
         </View>
@@ -428,19 +432,27 @@ export default function NotificationsScreen() {
     setRefreshing(false);
   }, [load]);
 
-  const handleCardPress = useCallback(async (item: DecryptedNotification) => {
-    if (!item.actionUrl) return;
-    // Mark handled optimistically so the PENDING label disappears immediately.
+  const markHandled = useCallback((item: DecryptedNotification) => {
+    if (item.isHandled) return;
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, isHandled: true } : i)));
-    try {
-      await MessagingService.getInstance().markHandledActive(item.id);
-      // Re-dispatch Redux unhandled count so the Account badge updates too.
-      void MessagingService.getInstance().refreshActive();
-    } catch (err) {
-      console.warn('[NotificationsScreen] markHandled failed', err);
-    }
-    void openNotificationLink(item.actionUrl);
+    void (async () => {
+      try {
+        await MessagingService.getInstance().markHandledActive(item.id);
+        void MessagingService.getInstance().refreshActive();
+      } catch (err) {
+        console.warn('[NotificationsScreen] markHandled failed', err);
+      }
+    })();
   }, []);
+
+  const handleCardPress = useCallback(
+    (item: DecryptedNotification) => {
+      if (!item.actionUrl) return;
+      markHandled(item);
+      void openNotificationLink(item.actionUrl);
+    },
+    [markHandled]
+  );
 
   const groups = useMemo(() => groupByDay(items), [items]);
 
@@ -476,7 +488,12 @@ export default function NotificationsScreen() {
             <View key={group.label} style={styles.groupBlock}>
               <Text style={styles.groupLabel}>{group.label}</Text>
               {group.items.map((item) => (
-                <NotificationCard key={item.id} item={item} onPress={handleCardPress} />
+                <NotificationCard
+                  key={item.id}
+                  item={item}
+                  onPress={handleCardPress}
+                  onMarkHandled={markHandled}
+                />
               ))}
             </View>
           ))
