@@ -34,6 +34,7 @@ const METHODS = [
   {
     name: 'Buy Crypto via Onramp',
     description: 'Purchase crypto directly with your local currency.',
+    notes: 'This service is provided by our licensed partners.',
     icon: <TopupAddHKDIcon size={40} color="#FD4912" />,
     button: {
       title: 'Buy Now',
@@ -76,6 +77,9 @@ const TopupMethodItem = ({ method }: { method: (typeof METHODS)[0] }) => {
       </View>
 
       <Text className="mt-4 text-base leading-6 text-black">{method.description}</Text>
+      {method.notes && (
+        <Text className="mt-1 text-sm leading-6 text-[#9CA3AF] italic">{method.notes}</Text>
+      )}
 
       <OutlineButton
         title={method.button.title}

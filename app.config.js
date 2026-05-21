@@ -73,7 +73,7 @@ module.exports = {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      buildNumber: '30',
+      buildNumber: '31',
       ...iosConfig,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
